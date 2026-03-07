@@ -1,0 +1,94 @@
+version: "3.8"
+
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: printqueue
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: printqueue
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U printqueue -d printqueue"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+
+  ollama:
+    image: ollama/ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+
+  web:
+    build: .
+    command: uvicorn src.app.main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - ./src:/app/src
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://printqueue:password@db:5432/printqueue
+      - REDIS_URL=redis://redis:6379/0
+      - OLLAMA_HOST=http://ollama:11434
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  worker:
+    build: .
+    command: celery -A src.worker.celery_app worker --loglevel=info
+    volumes:
+      - ./src:/app/src
+    environment:
+      - DATABASE_URL=postgresql://printqueue:password@db:5432/printqueue
+      - REDIS_URL=redis://redis:6379/0
+      - OLLAMA_HOST=http://ollama:11434
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  beat:
+    build: .
+    command: celery -A src.worker.celery_app beat --loglevel=info
+    volumes:
+      - ./src:/app/src
+    environment:
+      - DATABASE_URL=postgresql://printqueue:password@db:5432/printqueue
+      - REDIS_URL=redis://redis:6379/0
+      - OLLAMA_HOST=http://ollama:11434
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  watchdog:
+    build: .
+    command: python -m src.watchdog.main
+    volumes:
+      - ./src:/app/src
+      - ./watched_folder:/watched_folder
+    environment:
+      - DATABASE_URL=postgresql://printqueue:password@db:5432/printqueue
+      - WATCH_DIRECTORY=/watched_folder
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  ollama_data:

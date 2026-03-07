@@ -1,0 +1,94 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "print-queue-manager"
+version = "0.1.0"
+description = "A Local, Agentic 3D Print Queue Management System"
+authors = [
+    { name = "Developer", email = "dev@example.com" }
+]
+dependencies = [
+    "fastapi",
+    "uvicorn",
+    "pydantic",
+    "pydantic-settings",
+    "pydantic-ai",
+    "sqlalchemy",
+    "psycopg2-binary",
+    "alembic",
+    "celery",
+    "redis",
+    "watchdog",
+    "jinja2",
+    "python-multipart",
+    "requests",
+    "httpx",
+    "ollama"
+]
+requires-python = ">=3.10"
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+    "pytest-cov",
+    "hypothesis",
+    "tox",
+    "ruff",
+    "pylint",
+    "mypy"
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+addopts = "-v --cov=src --cov-report=term-missing"
+testpaths = ["tests"]
+asyncio_mode = "auto"
+
+[tool.tox]
+legacy_tox_ini = """
+[tox]
+envlist = py310, ruff, pylint, mypy
+isolated_build = True
+
+[testenv]
+deps =
+    pytest
+    pytest-asyncio
+    pytest-cov
+    hypothesis
+    fastapi
+    httpx
+    sqlalchemy
+    pydantic
+    pydantic-ai
+    celery
+    redis
+    watchdog
+    ollama
+    psycopg2-binary
+commands =
+    pytest tests/
+
+[testenv:ruff]
+deps = ruff
+commands = ruff check src/ tests/
+
+[testenv:pylint]
+deps = pylint
+commands = pylint src/ tests/ --disable=C0114,C0115,C0116
+
+[testenv:mypy]
+deps = mypy
+commands = mypy src/ tests/
+"""
