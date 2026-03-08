@@ -25,7 +25,8 @@ dependencies = [
     "python-multipart",
     "requests",
     "httpx",
-    "ollama"
+    "ollama",
+    "playwright"
 ]
 requires-python = ">=3.10"
 
@@ -45,6 +46,18 @@ dev = [
 line-length = 100
 target-version = "py310"
 
+[tool.ruff.lint]
+select = [
+    "E",  # pycodestyle errors
+    "F",  # pyflakes
+    "D",  # pydocstyle
+]
+ignore = [
+    "D104", # Allow tests without docstrings for brevity
+    "D100", # Missing module docstring
+    "D211", "D212", "D203" # Styling rules conflicts
+]
+
 [tool.mypy]
 python_version = "3.10"
 strict = true
@@ -54,41 +67,3 @@ ignore_missing_imports = true
 addopts = "-v --cov=src --cov-report=term-missing"
 testpaths = ["tests"]
 asyncio_mode = "auto"
-
-[tool.tox]
-legacy_tox_ini = """
-[tox]
-envlist = py310, ruff, pylint, mypy
-isolated_build = True
-
-[testenv]
-deps =
-    pytest
-    pytest-asyncio
-    pytest-cov
-    hypothesis
-    fastapi
-    httpx
-    sqlalchemy
-    pydantic
-    pydantic-ai
-    celery
-    redis
-    watchdog
-    ollama
-    psycopg2-binary
-commands =
-    pytest tests/
-
-[testenv:ruff]
-deps = ruff
-commands = ruff check src/ tests/
-
-[testenv:pylint]
-deps = pylint
-commands = pylint src/ tests/ --disable=C0114,C0115,C0116
-
-[testenv:mypy]
-deps = mypy
-commands = mypy src/ tests/
-"""

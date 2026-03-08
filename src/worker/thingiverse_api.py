@@ -1,3 +1,5 @@
+"""Direct API connector for fetching data from Thingiverse without an LLM."""
+
 import httpx
 from typing import List, Any
 from src.app.database import SessionLocal, engine
@@ -7,8 +9,10 @@ from .llm_scraper import ExtractedModelInfo
 
 def fetch_thingiverse_collections() -> List[dict[str, Any]]:
     """
-    Fetches liked or collected models from the official Thingiverse REST API.
+    Fetch liked or collected models from the official Thingiverse REST API.
+
     Bypasses the LLM agentic scraper entirely for perfect structured data.
+    Returns an empty list if no token is configured.
     """
     token = settings.thingiverse_api_token
     if not token:

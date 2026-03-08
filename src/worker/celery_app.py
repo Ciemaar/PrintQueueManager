@@ -1,9 +1,11 @@
+"""Celery worker configuration and scheduled tasks for external data sync."""
+
 import time
+from typing import List, Any
 from celery import Celery
 from src.app.config import settings
 from .llm_scraper import run_scraper
 from .thingiverse_api import fetch_thingiverse_collections
-from typing import List, Any
 
 celery_app = Celery(
     "printqueue",
@@ -21,7 +23,7 @@ celery_app.conf.update(
 
 @celery_app.on_after_configure.connect
 def setup_periodic_tasks(sender: Any, **kwargs: Any) -> None:
-    # Schedule all platforms to sync every 30 minutes
+    """Schedule recurring sync tasks for various 3D model platforms."""
     sender.add_periodic_task(1800.0, sync_makerworld.s(), name='sync_makerworld_every_30_mins')
     sender.add_periodic_task(1800.0, sync_printables.s(), name='sync_printables_every_30_mins')
     sender.add_periodic_task(1800.0, sync_thingiverse.s(), name='sync_thingiverse_every_30_mins')
@@ -30,6 +32,7 @@ def setup_periodic_tasks(sender: Any, **kwargs: Any) -> None:
 
 @celery_app.task
 def sync_makerworld() -> List[dict[str, Any]]:
+    """Synchronize liked models from MakerWorld using an LLM scraper."""
     print("Starting MakerWorld synchronization via Ollama agent...")
     time.sleep(2)
     result = run_scraper("makerworld", "https://makerworld.com/en/user/likes")
@@ -38,6 +41,7 @@ def sync_makerworld() -> List[dict[str, Any]]:
 
 @celery_app.task
 def sync_printables() -> List[dict[str, Any]]:
+    """Synchronize liked collections from Printables using an LLM scraper."""
     print("Starting Printables synchronization via Ollama agent...")
     time.sleep(2)
     result = run_scraper("printables", "https://www.printables.com/user/collections")
@@ -46,11 +50,11 @@ def sync_printables() -> List[dict[str, Any]]:
 
 @celery_app.task
 def sync_thingiverse() -> List[dict[str, Any]]:
+    """Synchronize liked models from Thingiverse using the API, falling back to LLM."""
     print("Starting Thingiverse synchronization via Official API...")
     time.sleep(2)
     # Prefer API logic for structured Thingiverse data.
     # If a token isn't provided, `fetch_thingiverse_collections` simply returns `[]`.
-    # For full fallback logic, we can revert to the agent if the API list is empty, but the prompt asks for an API connection if a token is provided.
     result = fetch_thingiverse_collections()
     if not result:
         print("Fallback to Ollama agent for Thingiverse...")
@@ -60,6 +64,7 @@ def sync_thingiverse() -> List[dict[str, Any]]:
 
 @celery_app.task
 def sync_cults3d() -> List[dict[str, Any]]:
+    """Synchronize liked collections from Cults3D using an LLM scraper."""
     print("Starting Cults3D synchronization via Ollama agent...")
     time.sleep(2)
     result = run_scraper("cults3d", "https://cults3d.com/en/users/collections")
@@ -68,6 +73,7 @@ def sync_cults3d() -> List[dict[str, Any]]:
 
 @celery_app.task
 def sync_minihoarder() -> List[dict[str, Any]]:
+    """Synchronize library from Minihoarder using an LLM scraper."""
     print("Starting Minihoarder synchronization via Ollama agent...")
     time.sleep(2)
     result = run_scraper("minihoarder", "https://www.minihoarder.com/library/")

@@ -1,3 +1,5 @@
+"""Unit tests for the FastAPI application main routes."""
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -14,6 +16,7 @@ TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engin
 Base.metadata.create_all(bind=engine)
 
 def override_get_db():
+    """Yield a database session connected to the local test database."""
     try:
         db = TestingSessionLocal()
         yield db
@@ -25,16 +28,19 @@ client = TestClient(app)
 
 @pytest.fixture(autouse=True)
 def setup_db():
+    """Set up and tear down the test database schema before/after each test."""
     Base.metadata.create_all(bind=engine)
     yield
     Base.metadata.drop_all(bind=engine)
 
 def test_read_main():
+    """Verify the root index page renders correctly with the application title."""
     response = client.get("/")
     assert response.status_code == 200
     assert b"Local 3D Print Queue Manager" in response.content
 
 def test_delete_job():
+    """Verify that posting to a delete route properly marks a job as DELETED in the database."""
     db = TestingSessionLocal()
     job = PrintJob(title="Test Job", source="Test")
     db.add(job)
@@ -51,6 +57,7 @@ def test_delete_job():
     db.close()
 
 def test_update_status():
+    """Verify that posting to the status route correctly updates the status text."""
     db = TestingSessionLocal()
     job = PrintJob(title="Test Job", source="Test", status="TO BE PRINTED")
     db.add(job)
@@ -69,13 +76,17 @@ def test_update_status():
     db.close()
 
 def test_update_notes():
+    """Verify that posting to the notes route correctly updates material and timing notes."""
     db = TestingSessionLocal()
     job = PrintJob(title="Test Job", source="Test", status="TO BE PRINTED")
     db.add(job)
     db.commit()
     db.refresh(job)
 
-    response = client.post(f"/jobs/{job.id}/notes", data={"material_notes": "PLA", "timing_notes": "2 hrs"})
+    response = client.post(
+        f"/jobs/{job.id}/notes",
+        data={"material_notes": "PLA", "timing_notes": "2 hrs"}
+    )
     assert response.status_code == 200
 
     db.expire_all()

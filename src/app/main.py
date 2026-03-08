@@ -1,3 +1,5 @@
+"""FastAPI application entrypoint and route definitions."""
+
 from fastapi import FastAPI, Request, Depends, Form
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
@@ -9,27 +11,39 @@ app = FastAPI(title="Print Queue Manager")
 
 @app.on_event("startup")
 def startup_event():
+    """Create database tables on application startup."""
     Base.metadata.create_all(bind=engine)
 
 templates = Jinja2Templates(directory="src/app/templates")
 
 @app.get("/", response_class=HTMLResponse)
 def index(request: Request, db: Session = Depends(get_db)) -> HTMLResponse:
-    # Filter out DELETED jobs from the main view
-    jobs = db.query(PrintJob).filter(PrintJob.status != 'DELETED').order_by(PrintJob.created_at.desc()).all()
+    """Render the main dashboard."""
+    jobs = (
+        db.query(PrintJob)
+        .filter(PrintJob.status != 'DELETED')
+        .order_by(PrintJob.created_at.desc())
+        .all()
+    )
     return templates.TemplateResponse("index.html", {"request": request, "jobs": jobs}) # type: ignore
 
 @app.post("/jobs/{job_id}/delete", response_class=HTMLResponse)
 def delete_job(job_id: int, request: Request, db: Session = Depends(get_db)) -> HTMLResponse:
+    """Mark a job as DELETED."""
     job = db.query(PrintJob).filter(PrintJob.id == job_id).first()
     if job:
-        # Instead of deleting from DB, mark as DELETED per new requirements
         job.status = "DELETED"
         db.commit()
     return HTMLResponse("")
 
 @app.post("/jobs/{job_id}/status", response_class=HTMLResponse)
-def update_status(job_id: int, request: Request, status: str = Form(...), db: Session = Depends(get_db)) -> HTMLResponse:
+def update_status(
+    job_id: int,
+    request: Request,
+    status: str = Form(...),
+    db: Session = Depends(get_db)
+) -> HTMLResponse:
+    """Update the status of a print job and return the updated row."""
     job = db.query(PrintJob).filter(PrintJob.id == job_id).first()
     if job:
         job.status = status
@@ -38,7 +52,14 @@ def update_status(job_id: int, request: Request, status: str = Form(...), db: Se
     return HTMLResponse("")
 
 @app.post("/jobs/{job_id}/notes", response_class=HTMLResponse)
-def update_notes(job_id: int, request: Request, material_notes: str = Form(""), timing_notes: str = Form(""), db: Session = Depends(get_db)) -> HTMLResponse:
+def update_notes(
+    job_id: int,
+    request: Request,
+    material_notes: str = Form(""),
+    timing_notes: str = Form(""),
+    db: Session = Depends(get_db)
+) -> HTMLResponse:
+    """Update the material and timing notes of a print job."""
     job = db.query(PrintJob).filter(PrintJob.id == job_id).first()
     if job:
         job.material_notes = material_notes

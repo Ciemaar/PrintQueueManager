@@ -1,3 +1,5 @@
+"""LLM-based web scraper for extracting 3D model metadata from unstructured HTML."""
+
 import os
 from pydantic import BaseModel, Field
 from typing import List, Optional, Any
@@ -10,29 +12,33 @@ from src.app.models import Base, PrintJob
 from src.app.config import settings
 
 class ExtractedModelInfo(BaseModel):
+    """Schema representing an individual 3D model extracted from a page."""
+
     title: str = Field(description="The name of the 3D model")
     url: str = Field(description="The direct link to the model page")
     thumbnail: Optional[str] = Field(None, description="The URL of the model's cover image")
     author: Optional[str] = Field(None, description="The creator of the model")
 
 class ScrapedPageData(BaseModel):
+    """Schema representing the structured output of an LLM scraping agent."""
+
     models: List[ExtractedModelInfo]
 
 if "OLLAMA_BASE_URL" not in os.environ:
     os.environ["OLLAMA_BASE_URL"] = settings.ollama_host
 
 scraper_agent: Agent[Any, ScrapedPageData] = Agent(
-    'ollama:llama3.2',
+    'ollama:llama3.2',  # Requires running Ollama locally with this model
     output_type=ScrapedPageData,
     system_prompt=(
         "You are an expert web scraping agent specialized in extracting 3D model data. "
-        "Extract the model's title, direct URL, author name, and thumbnail image URL from the provided HTML content. "
-        "Return the output exactly in the requested JSON format."
+        "Extract the model's title, direct URL, author name, and thumbnail image URL from the "
+        "provided HTML content. Return the output exactly in the requested JSON format."
     ),
 )
 
 def get_page_html(source: str, url: str) -> str:
-    """Uses Playwright to fetch dynamic HTML, injecting session cookies if available."""
+    """Use Playwright to fetch dynamic HTML, injecting session cookies if available."""
     cookie_str = ""
     domain = ""
     if source == "makerworld":
@@ -90,7 +96,7 @@ def get_page_html(source: str, url: str) -> str:
         return ""
 
 def run_scraper(source: str, url: str) -> List[dict[str, Any]]:
-    """Runs the agent against a URL and stores results in the database."""
+    """Run the LLM agent against a URL and store the results in the database."""
     Base.metadata.create_all(bind=engine)
 
     print(f"Fetching live HTML for {source} at {url}...")
@@ -111,6 +117,12 @@ def run_scraper(source: str, url: str) -> List[dict[str, Any]]:
                 title=f"Mock Vase from {source}",
                 url=f"http://{source}.com/1",
                 author="MockUser1",
+                thumbnail=""
+            ),
+            ExtractedModelInfo(
+                title=f"Mock Holder from {source}",
+                url=f"http://{source}.com/2",
+                author="MockUser2",
                 thumbnail=""
             )
         ]

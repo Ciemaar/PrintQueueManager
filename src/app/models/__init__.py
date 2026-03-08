@@ -1,9 +1,13 @@
+"""SQLAlchemy database models for the application."""
+
 from sqlalchemy import Column, Integer, String, DateTime
 from sqlalchemy.types import JSON
 from datetime import datetime
 from src.app.database import Base
 
 class PrintJob(Base):
+    """Represents a 3D model scheduled for printing or tracked in the queue."""
+
     __tablename__ = "print_jobs"
 
     id = Column(Integer, primary_key=True, index=True)

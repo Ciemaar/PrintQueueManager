@@ -1,3 +1,5 @@
+"""Watchdog service to monitor local directories for new 3D model files."""
+
 import os
 import time
 from typing import Any
@@ -9,7 +11,10 @@ from src.app.models import Base, PrintJob
 from src.app.config import settings
 
 class PrintQueueEventHandler(FileSystemEventHandler):
+    """Event handler for detecting new local 3D print files."""
+
     def on_created(self, event: Any) -> None:
+        """Triggered when a file or directory is created."""
         if not event.is_directory:
             file_path = event.src_path
             filename = os.path.basename(file_path)
@@ -19,6 +24,7 @@ class PrintQueueEventHandler(FileSystemEventHandler):
                 self._add_to_queue(file_path, filename)
 
     def _add_to_queue(self, file_path: str, filename: str) -> None:
+        """Insert the newly discovered local file into the database queue."""
         db: Session = SessionLocal()
         try:
             # Check if file already exists
@@ -43,6 +49,7 @@ class PrintQueueEventHandler(FileSystemEventHandler):
             db.close()
 
 def main() -> None:
+    """Start the watchdog monitoring service."""
     # Initialize DB tables
     Base.metadata.create_all(bind=engine)
 
