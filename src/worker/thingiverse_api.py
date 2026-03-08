@@ -1,0 +1,68 @@
+import httpx
+from typing import List, Any
+from src.app.database import SessionLocal, engine
+from src.app.models import Base, PrintJob
+from src.app.config import settings
+from .llm_scraper import ExtractedModelInfo
+
+def fetch_thingiverse_collections() -> List[dict[str, Any]]:
+    """
+    Fetches liked or collected models from the official Thingiverse REST API.
+    Bypasses the LLM agentic scraper entirely for perfect structured data.
+    """
+    token = settings.thingiverse_api_token
+    if not token:
+        print("No Thingiverse API Token found. Skipping Thingiverse API sync.")
+        return []
+
+    url = "https://api.thingiverse.com/users/me/likes"
+    headers = {"Authorization": f"Bearer {token}"}
+
+    saved_items: List[dict[str, Any]] = []
+
+    try:
+        response = httpx.get(url, headers=headers)
+        response.raise_for_status()
+        data = response.json()
+
+        # Initialize DB
+        Base.metadata.create_all(bind=engine)
+        db = SessionLocal()
+
+        try:
+            for item in data:
+                model_url = str(item.get('url', f"https://www.thingiverse.com/thing:{item.get('id')}"))
+
+                existing = db.query(PrintJob).filter(PrintJob.source_url == model_url).first()
+                if not existing:
+                    new_job = PrintJob(
+                        title=str(item.get('name', 'Unknown Thingiverse Model')),
+                        source='thingiverse',
+                        source_url=model_url,
+                        thumbnail_url=str(item.get('thumbnail', '')),
+                        author=str(item.get('creator', {}).get('name', 'Unknown')),
+                        metadata_json={"extracted_via": "official_api", "raw_api_data": item}
+                    )
+                    db.add(new_job)
+
+                    extracted = ExtractedModelInfo(
+                        title=str(new_job.title),
+                        url=str(new_job.source_url),
+                        thumbnail=str(new_job.thumbnail_url),
+                        author=str(new_job.author)
+                    )
+                    saved_items.append(extracted.model_dump())
+            db.commit()
+            print(f"Successfully synced {len(saved_items)} models from Thingiverse API.")
+        except Exception as e:
+            print(f"Database error saving Thingiverse models: {e}")
+            db.rollback()
+        finally:
+            db.close()
+
+    except httpx.RequestError as exc:
+        print(f"An error occurred while requesting Thingiverse API: {exc}")
+    except httpx.HTTPStatusError as exc:
+        print(f"Error response {exc.response.status_code} while requesting Thingiverse API.")
+
+    return saved_items

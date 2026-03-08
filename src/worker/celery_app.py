@@ -2,6 +2,7 @@ import time
 from celery import Celery
 from src.app.config import settings
 from .llm_scraper import run_scraper
+from .thingiverse_api import fetch_thingiverse_collections
 from typing import List, Any
 
 celery_app = Celery(
@@ -45,9 +46,15 @@ def sync_printables() -> List[dict[str, Any]]:
 
 @celery_app.task
 def sync_thingiverse() -> List[dict[str, Any]]:
-    print("Starting Thingiverse synchronization via Ollama agent...")
+    print("Starting Thingiverse synchronization via Official API...")
     time.sleep(2)
-    result = run_scraper("thingiverse", "https://www.thingiverse.com/user/collections")
+    # Prefer API logic for structured Thingiverse data.
+    # If a token isn't provided, `fetch_thingiverse_collections` simply returns `[]`.
+    # For full fallback logic, we can revert to the agent if the API list is empty, but the prompt asks for an API connection if a token is provided.
+    result = fetch_thingiverse_collections()
+    if not result:
+        print("Fallback to Ollama agent for Thingiverse...")
+        result = run_scraper("thingiverse", "https://www.thingiverse.com/user/collections")
     print(f"Sync complete. Found {len(result)} models.")
     return result
 
