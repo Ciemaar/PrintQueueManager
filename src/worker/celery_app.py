@@ -20,11 +20,12 @@ celery_app.conf.update(
 
 @celery_app.on_after_configure.connect
 def setup_periodic_tasks(sender: Any, **kwargs: Any) -> None:
-    # Calls sync_makerworld every 30 minutes
+    # Schedule all platforms to sync every 30 minutes
     sender.add_periodic_task(1800.0, sync_makerworld.s(), name='sync_makerworld_every_30_mins')
-
-    # Calls sync_printables every 30 minutes
     sender.add_periodic_task(1800.0, sync_printables.s(), name='sync_printables_every_30_mins')
+    sender.add_periodic_task(1800.0, sync_thingiverse.s(), name='sync_thingiverse_every_30_mins')
+    sender.add_periodic_task(1800.0, sync_cults3d.s(), name='sync_cults3d_every_30_mins')
+    sender.add_periodic_task(1800.0, sync_minihoarder.s(), name='sync_minihoarder_every_30_mins')
 
 @celery_app.task
 def sync_makerworld() -> List[dict[str, Any]]:
@@ -39,5 +40,29 @@ def sync_printables() -> List[dict[str, Any]]:
     print("Starting Printables synchronization via Ollama agent...")
     time.sleep(2)
     result = run_scraper("printables", "https://www.printables.com/user/collections")
+    print(f"Sync complete. Found {len(result)} models.")
+    return result
+
+@celery_app.task
+def sync_thingiverse() -> List[dict[str, Any]]:
+    print("Starting Thingiverse synchronization via Ollama agent...")
+    time.sleep(2)
+    result = run_scraper("thingiverse", "https://www.thingiverse.com/user/collections")
+    print(f"Sync complete. Found {len(result)} models.")
+    return result
+
+@celery_app.task
+def sync_cults3d() -> List[dict[str, Any]]:
+    print("Starting Cults3D synchronization via Ollama agent...")
+    time.sleep(2)
+    result = run_scraper("cults3d", "https://cults3d.com/en/users/collections")
+    print(f"Sync complete. Found {len(result)} models.")
+    return result
+
+@celery_app.task
+def sync_minihoarder() -> List[dict[str, Any]]:
+    print("Starting Minihoarder synchronization via Ollama agent...")
+    time.sleep(2)
+    result = run_scraper("minihoarder", "https://www.minihoarder.com/library/")
     print(f"Sync complete. Found {len(result)} models.")
     return result
