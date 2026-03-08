@@ -1,4 +1,4 @@
-<tr id="job-{{ job.id }}" class="{{ 'printed-true' if job.is_printed else '' }}">
+<tr id="job-{{ job.id }}" class="status-{{ job.status.replace(' ', '-') }}">
     <td>
         {% if job.thumbnail_url %}
             <img src="{{ job.thumbnail_url }}" alt="Thumbnail" width="64" height="64" class="rounded">
@@ -21,17 +21,23 @@
         {% endif %}
     </td>
     <td>
-        <span class="badge {{ 'bg-success' if job.is_printed else 'bg-warning text-dark' }}">
-            {{ 'Printed' if job.is_printed else 'Pending' }}
-        </span>
+        <form hx-post="/jobs/{{ job.id }}/status" hx-target="#job-{{ job.id }}" hx-swap="outerHTML">
+            <select name="status" class="form-select form-select-sm" onchange="this.form.requestSubmit()">
+                <option value="TO BE PRINTED" {% if job.status == 'TO BE PRINTED' %}selected{% endif %}>TO BE PRINTED</option>
+                <option value="PRINT IN PROGRESS" {% if job.status == 'PRINT IN PROGRESS' %}selected{% endif %}>PRINT IN PROGRESS</option>
+                <option value="PRINT AGAIN" {% if job.status == 'PRINT AGAIN' %}selected{% endif %}>PRINT AGAIN</option>
+                <option value="PRINTED" {% if job.status == 'PRINTED' %}selected{% endif %}>PRINTED</option>
+                <option value="SKIPPED" {% if job.status == 'SKIPPED' %}selected{% endif %}>SKIPPED</option>
+            </select>
+        </form>
     </td>
     <td>
-        <button class="btn btn-sm btn-outline-success"
-                hx-post="/jobs/{{ job.id }}/toggle"
-                hx-target="#job-{{ job.id }}"
-                hx-swap="outerHTML">
-            Toggle
-        </button>
+        <form hx-post="/jobs/{{ job.id }}/notes" hx-swap="outerHTML">
+            <input type="text" name="material_notes" value="{{ job.material_notes or '' }}" class="form-control form-control-sm mb-1" placeholder="Material Notes" hx-trigger="blur">
+            <input type="text" name="timing_notes" value="{{ job.timing_notes or '' }}" class="form-control form-control-sm" placeholder="Timing Notes" hx-trigger="blur">
+        </form>
+    </td>
+    <td>
         <button class="btn btn-sm btn-outline-danger"
                 hx-post="/jobs/{{ job.id }}/delete"
                 hx-target="#job-{{ job.id }}"

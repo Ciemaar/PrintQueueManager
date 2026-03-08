@@ -44,24 +44,43 @@ def test_delete_job():
     response = client.post(f"/jobs/{job.id}/delete")
     assert response.status_code == 200
 
+    db.expire_all()
     deleted_job = db.query(PrintJob).filter(PrintJob.id == job.id).first()
-    assert deleted_job is None
+    assert deleted_job is not None
+    assert deleted_job.status == "DELETED"
     db.close()
 
-def test_toggle_job():
+def test_update_status():
     db = TestingSessionLocal()
-    job = PrintJob(title="Test Job", source="Test", is_printed=False)
+    job = PrintJob(title="Test Job", source="Test", status="TO BE PRINTED")
     db.add(job)
     db.commit()
     db.refresh(job)
 
     # Note: HTMX toggle requests use POST and return 200 OK
-    response = client.post(f"/jobs/{job.id}/toggle")
+    response = client.post(f"/jobs/{job.id}/status", data={"status": "PRINT IN PROGRESS"})
     assert response.status_code == 200
 
     # Ensure to refresh db session when querying to get the updated row
     db.expire_all()
     updated_job = db.query(PrintJob).filter(PrintJob.id == job.id).first()
     assert updated_job is not None
-    assert updated_job.is_printed is True
+    assert updated_job.status == "PRINT IN PROGRESS"
+    db.close()
+
+def test_update_notes():
+    db = TestingSessionLocal()
+    job = PrintJob(title="Test Job", source="Test", status="TO BE PRINTED")
+    db.add(job)
+    db.commit()
+    db.refresh(job)
+
+    response = client.post(f"/jobs/{job.id}/notes", data={"material_notes": "PLA", "timing_notes": "2 hrs"})
+    assert response.status_code == 200
+
+    db.expire_all()
+    updated_job = db.query(PrintJob).filter(PrintJob.id == job.id).first()
+    assert updated_job is not None
+    assert updated_job.material_notes == "PLA"
+    assert updated_job.timing_notes == "2 hrs"
     db.close()
