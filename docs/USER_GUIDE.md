@@ -6,12 +6,15 @@ Welcome to the **Local 3D Print Queue Manager**. The system allows you to organi
 
 1. **Viewing the Queue:** Navigate to `http://localhost:8000` to view your current list of 3D models.
 2. **Local Sync (Watchdog):** Any `.stl` or `.3mf` files placed inside the configured watched directory (`watched_folder/` by default) will automatically appear in your queue.
-3. **Toggle Status:** Click the **Toggle** button next to a print job to mark it as either `Printed` (crossed out and green) or `Pending` (yellow).
+3. **Change Status:** Use the dropdown menu in the "Status" column to categorize your print job. Options include `TO BE PRINTED`, `PRINT IN PROGRESS`, `PRINT AGAIN`, `PRINTED`, and `SKIPPED`. Setting a job to `PRINTED` will cross it out, and setting it to `SKIPPED` will dim it.
 4. **Deleting Items:** If you no longer plan on printing a model, click the **Delete** button. It will immediately be removed from your dashboard.
+5. **Notes:** You can add specifics about your print to the `Material Notes` (e.g. "PLA Blue") and `Timing Notes` (e.g. "2 hours") text fields. These save automatically when you finish typing.
 
-## Cloud Platforms (MakerWorld, Printables, etc)
+## Cloud Platforms (MakerWorld, Printables, Thingiverse, etc)
 
 To retrieve the models you like from cloud platforms without using official APIs, the Print Queue Manager leverages local agents running **Ollama** and **Llama 3.2**.
+
+However, **when official APIs are available (such as for Thingiverse)**, the system prioritizes using them for perfect, structured data retrieval. You simply need to provide your `THINGIVERSE_API_TOKEN` in the environment configuration. If the token is missing, it will gracefully fall back to the local LLM scraping method.
 
 In the background, a Celery worker routinely queries these websites. The web page HTML is provided to an agent which understands its structure, extracting the Model Title, Author, Thumbnail, and a direct URL, then importing it into your dashboard.
 
