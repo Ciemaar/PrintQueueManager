@@ -21,6 +21,8 @@ jobs:
         python -m pip install --upgrade pip
         pip install -e ".[dev]"
     - name: Run tests with coverage
+      env:
+        PYTHONPATH: .
       run: |
         # Fail the build if coverage drops below 85%
         pytest tests/ --cov=src --cov-fail-under=85 --cov-report=xml
