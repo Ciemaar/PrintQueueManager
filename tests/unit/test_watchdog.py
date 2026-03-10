@@ -3,10 +3,11 @@
 from unittest.mock import patch, MagicMock
 from src.watchdog.main import PrintQueueEventHandler, main
 
+
 def test_on_created_file_detected():
     """Verify on_created triggers add_to_queue for valid files."""
     handler = PrintQueueEventHandler()
-    handler._add_to_queue = MagicMock() # pylint: disable=protected-access
+    handler._add_to_queue = MagicMock()  # pylint: disable=protected-access
 
     mock_event = MagicMock()
     mock_event.is_directory = False
@@ -14,14 +15,15 @@ def test_on_created_file_detected():
 
     handler.on_created(mock_event)
 
-    handler._add_to_queue.assert_called_once_with( # pylint: disable=protected-access
+    handler._add_to_queue.assert_called_once_with(  # pylint: disable=protected-access
         "/fake/path/test_model.stl", "test_model.stl"
     )
+
 
 def test_on_created_ignores_directories():
     """Verify on_created ignores directory creation events."""
     handler = PrintQueueEventHandler()
-    handler._add_to_queue = MagicMock() # pylint: disable=protected-access
+    handler._add_to_queue = MagicMock()  # pylint: disable=protected-access
 
     mock_event = MagicMock()
     mock_event.is_directory = True
@@ -29,12 +31,13 @@ def test_on_created_ignores_directories():
 
     handler.on_created(mock_event)
 
-    handler._add_to_queue.assert_not_called() # pylint: disable=protected-access
+    handler._add_to_queue.assert_not_called()  # pylint: disable=protected-access
+
 
 def test_on_created_ignores_non_3d_files():
     """Verify on_created ignores non-STL/3MF files."""
     handler = PrintQueueEventHandler()
-    handler._add_to_queue = MagicMock() # pylint: disable=protected-access
+    handler._add_to_queue = MagicMock()  # pylint: disable=protected-access
 
     mock_event = MagicMock()
     mock_event.is_directory = False
@@ -42,7 +45,8 @@ def test_on_created_ignores_non_3d_files():
 
     handler.on_created(mock_event)
 
-    handler._add_to_queue.assert_not_called() # pylint: disable=protected-access
+    handler._add_to_queue.assert_not_called()  # pylint: disable=protected-access
+
 
 @patch("src.watchdog.main.os.path.getsize")
 @patch("src.watchdog.main.SessionLocal")
@@ -56,11 +60,12 @@ def test_add_to_queue_new_file(mock_session_local, mock_getsize):
     mock_db.query.return_value.filter.return_value.first.return_value = None
 
     handler = PrintQueueEventHandler()
-    handler._add_to_queue("/fake/test.stl", "test.stl") # pylint: disable=protected-access
+    handler._add_to_queue("/fake/test.stl", "test.stl")  # pylint: disable=protected-access
 
     mock_db.add.assert_called_once()
     mock_db.commit.assert_called_once()
     mock_db.close.assert_called_once()
+
 
 @patch("src.watchdog.main.SessionLocal")
 def test_add_to_queue_existing_file(mock_session_local):
@@ -72,11 +77,12 @@ def test_add_to_queue_existing_file(mock_session_local):
     mock_db.query.return_value.filter.return_value.first.return_value = MagicMock()
 
     handler = PrintQueueEventHandler()
-    handler._add_to_queue("/fake/test.stl", "test.stl") # pylint: disable=protected-access
+    handler._add_to_queue("/fake/test.stl", "test.stl")  # pylint: disable=protected-access
 
     mock_db.add.assert_not_called()
     mock_db.commit.assert_not_called()
     mock_db.close.assert_called_once()
+
 
 @patch("src.watchdog.main.SessionLocal")
 def test_add_to_queue_exception_handling(mock_session_local):
@@ -88,10 +94,11 @@ def test_add_to_queue_exception_handling(mock_session_local):
     mock_db.query.side_effect = Exception("DB Connection Error")
 
     handler = PrintQueueEventHandler()
-    handler._add_to_queue("/fake/test.stl", "test.stl") # pylint: disable=protected-access
+    handler._add_to_queue("/fake/test.stl", "test.stl")  # pylint: disable=protected-access
 
     mock_db.rollback.assert_called_once()
     mock_db.close.assert_called_once()
+
 
 @patch("src.watchdog.main.time.sleep", side_effect=KeyboardInterrupt)
 @patch("src.watchdog.main.Observer")

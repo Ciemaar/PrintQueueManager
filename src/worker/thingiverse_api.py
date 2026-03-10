@@ -7,6 +7,7 @@ from src.app.models import Base, PrintJob
 from src.app.config import settings
 from .llm_scraper import ExtractedModelInfo
 
+
 def fetch_thingiverse_collections() -> List[dict[str, Any]]:
     """
     Fetch liked or collected models from the official Thingiverse REST API.
@@ -35,17 +36,19 @@ def fetch_thingiverse_collections() -> List[dict[str, Any]]:
 
         try:
             for item in data:
-                model_url = str(item.get('url', f"https://www.thingiverse.com/thing:{item.get('id')}"))
+                model_url = str(
+                    item.get("url", f"https://www.thingiverse.com/thing:{item.get('id')}")
+                )
 
                 existing = db.query(PrintJob).filter(PrintJob.source_url == model_url).first()
                 if not existing:
                     new_job = PrintJob(
-                        title=str(item.get('name', 'Unknown Thingiverse Model')),
-                        source='thingiverse',
+                        title=str(item.get("name", "Unknown Thingiverse Model")),
+                        source="thingiverse",
                         source_url=model_url,
-                        thumbnail_url=str(item.get('thumbnail', '')),
-                        author=str(item.get('creator', {}).get('name', 'Unknown')),
-                        metadata_json={"extracted_via": "official_api", "raw_api_data": item}
+                        thumbnail_url=str(item.get("thumbnail", "")),
+                        author=str(item.get("creator", {}).get("name", "Unknown")),
+                        metadata_json={"extracted_via": "official_api", "raw_api_data": item},
                     )
                     db.add(new_job)
 
@@ -53,7 +56,7 @@ def fetch_thingiverse_collections() -> List[dict[str, Any]]:
                         title=str(new_job.title),
                         url=str(new_job.source_url),
                         thumbnail=str(new_job.thumbnail_url),
-                        author=str(new_job.author)
+                        author=str(new_job.author),
                     )
                     saved_items.append(extracted.model_dump())
             db.commit()

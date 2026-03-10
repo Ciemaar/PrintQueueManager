@@ -11,6 +11,7 @@ from src.app.database import SessionLocal, engine
 from src.app.models import Base, PrintJob
 from src.app.config import settings
 
+
 class ExtractedModelInfo(BaseModel):
     """Schema representing an individual 3D model extracted from a page."""
 
@@ -19,16 +20,18 @@ class ExtractedModelInfo(BaseModel):
     thumbnail: Optional[str] = Field(None, description="The URL of the model's cover image")
     author: Optional[str] = Field(None, description="The creator of the model")
 
+
 class ScrapedPageData(BaseModel):
     """Schema representing the structured output of an LLM scraping agent."""
 
     models: List[ExtractedModelInfo]
 
+
 if "OLLAMA_BASE_URL" not in os.environ:
     os.environ["OLLAMA_BASE_URL"] = settings.ollama_host
 
 scraper_agent: Agent[Any, ScrapedPageData] = Agent(
-    'ollama:llama3.2',  # Requires running Ollama locally with this model
+    "ollama:llama3.2",  # Requires running Ollama locally with this model
     output_type=ScrapedPageData,
     system_prompt=(
         "You are an expert web scraping agent specialized in extracting 3D model data. "
@@ -36,6 +39,7 @@ scraper_agent: Agent[Any, ScrapedPageData] = Agent(
         "provided HTML content. Return the output exactly in the requested JSON format."
     ),
 )
+
 
 def get_page_html(source: str, url: str) -> str:
     """Use Playwright to fetch dynamic HTML, injecting session cookies if available."""
@@ -79,12 +83,16 @@ def get_page_html(source: str, url: str) -> str:
 
             # Inject session cookie if provided
             if cookie_str:
-                context.add_cookies([{
-                    "name": "session", # Varies by site; this is a simplified generic approach
-                    "value": cookie_str,
-                    "domain": domain,
-                    "path": "/"
-                }])
+                context.add_cookies(
+                    [
+                        {
+                            "name": "session",  # Varies by site; generic
+                            "value": cookie_str,
+                            "domain": domain,
+                            "path": "/",
+                        }
+                    ]
+                )
 
             page = context.new_page()
             page.goto(url, wait_until="networkidle")
@@ -94,6 +102,7 @@ def get_page_html(source: str, url: str) -> str:
     except Exception as e:
         print(f"Failed to fetch {url} using Playwright: {e}")
         return ""
+
 
 def run_scraper(source: str, url: str) -> List[dict[str, Any]]:
     """Run the LLM agent against a URL and store the results in the database."""
@@ -109,7 +118,7 @@ def run_scraper(source: str, url: str) -> List[dict[str, Any]]:
 
     try:
         result = scraper_agent.run_sync(html_content)
-        data = result.data.models
+        data = result.data.models  # type: ignore
     except Exception as e:
         print(f"Error communicating with Ollama: {e}. Returning fallback mock data.")
         data = [
@@ -117,14 +126,14 @@ def run_scraper(source: str, url: str) -> List[dict[str, Any]]:
                 title=f"Mock Vase from {source}",
                 url=f"http://{source}.com/1",
                 author="MockUser1",
-                thumbnail=""
+                thumbnail="",
             ),
             ExtractedModelInfo(
                 title=f"Mock Holder from {source}",
                 url=f"http://{source}.com/2",
                 author="MockUser2",
-                thumbnail=""
-            )
+                thumbnail="",
+            ),
         ]
 
     db = SessionLocal()
@@ -139,7 +148,7 @@ def run_scraper(source: str, url: str) -> List[dict[str, Any]]:
                     source_url=model.url,
                     thumbnail_url=model.thumbnail,
                     author=model.author,
-                    metadata_json={"extracted_via": "ollama_agent"}
+                    metadata_json={"extracted_via": "ollama_agent"},
                 )
                 db.add(new_job)
                 saved_items.append(model.model_dump())
@@ -151,6 +160,7 @@ def run_scraper(source: str, url: str) -> List[dict[str, Any]]:
         db.close()
 
     return saved_items
+
 
 if __name__ == "__main__":
     print("Testing scraping manually...")

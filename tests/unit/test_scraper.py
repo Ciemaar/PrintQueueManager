@@ -15,12 +15,14 @@ with patch("src.app.database.engine", engine):
         from src.worker.llm_scraper import get_page_html, run_scraper, ExtractedModelInfo
         from src.app.models import Base
 
+
 @pytest.fixture(autouse=True)
 def setup_db():
     """Set up and tear down the test database schema before/after each test."""
     Base.metadata.create_all(bind=engine)
     yield
     Base.metadata.drop_all(bind=engine)
+
 
 @patch("src.worker.llm_scraper.settings")
 def test_get_page_html_no_cookie(mock_settings):
@@ -31,8 +33,9 @@ def test_get_page_html_no_cookie(mock_settings):
     mock_settings.minihoarder_cookie = ""
 
     html = get_page_html("makerworld", "http://test.com")
-    assert "Mock Vase" not in html # the mock string has "Cool Vase"
+    assert "Mock Vase" not in html  # the mock string has "Cool Vase"
     assert "Cool Vase" in html
+
 
 @patch("src.worker.llm_scraper.sync_playwright")
 @patch("src.worker.llm_scraper.settings")
@@ -57,6 +60,7 @@ def test_get_page_html_with_cookie(mock_settings, mock_sync_playwright):
     mock_context.add_cookies.assert_called_once()
     mock_page.goto.assert_called_with("http://test.com", wait_until="networkidle")
 
+
 @patch("src.worker.llm_scraper.sync_playwright")
 @patch("src.worker.llm_scraper.settings")
 def test_get_page_html_playwright_error(mock_settings, mock_sync_playwright):
@@ -70,12 +74,14 @@ def test_get_page_html_playwright_error(mock_settings, mock_sync_playwright):
     html = get_page_html("makerworld", "http://test.com")
     assert html == ""
 
+
 @patch("src.worker.llm_scraper.get_page_html")
 def test_run_scraper_empty_html(mock_get_html):
     """Verify run_scraper exits early if no HTML is returned."""
     mock_get_html.return_value = ""
     result = run_scraper("test", "http://test.com")
     assert result == []
+
 
 @patch("src.worker.llm_scraper.scraper_agent.run_sync")
 @patch("src.worker.llm_scraper.get_page_html")
@@ -98,6 +104,7 @@ def test_run_scraper_success(mock_get_html, mock_run_sync):
     result2 = run_scraper("test", "http://test.com")
     assert len(result2) == 0
 
+
 @patch("src.worker.llm_scraper.scraper_agent.run_sync")
 @patch("src.worker.llm_scraper.get_page_html")
 def test_run_scraper_llm_error(mock_get_html, mock_run_sync):
@@ -109,6 +116,7 @@ def test_run_scraper_llm_error(mock_get_html, mock_run_sync):
 
     assert len(result) == 2
     assert "Mock Vase" in result[0]["title"]
+
 
 @patch("src.worker.llm_scraper.scraper_agent.run_sync")
 @patch("src.worker.llm_scraper.get_page_html")
@@ -126,5 +134,5 @@ def test_run_scraper_db_error(mock_get_html, mock_run_sync):
 
         result = run_scraper("test", "http://test.com")
 
-        assert result == [] # Return logic should fail properly
+        assert result == []  # Return logic should fail properly
         mock_db.rollback.assert_called_once()

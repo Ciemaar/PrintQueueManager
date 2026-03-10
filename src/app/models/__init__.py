@@ -5,6 +5,7 @@ from sqlalchemy.types import JSON
 from datetime import datetime
 from src.app.database import Base
 
+
 class PrintJob(Base):
     """Represents a 3D model scheduled for printing or tracked in the queue."""
 

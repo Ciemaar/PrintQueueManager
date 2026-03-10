@@ -2,6 +2,7 @@
 
 from pydantic_settings import BaseSettings
 
+
 class Settings(BaseSettings):
     """Application settings, loaded from environment variables."""
 
@@ -16,5 +17,6 @@ class Settings(BaseSettings):
     printables_cookie: str = ""
     cults3d_cookie: str = ""
     minihoarder_cookie: str = ""
+
 
 settings = Settings()

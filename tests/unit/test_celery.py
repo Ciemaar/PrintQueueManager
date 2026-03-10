@@ -7,14 +7,16 @@ from src.worker.celery_app import (
     sync_thingiverse,
     sync_cults3d,
     sync_minihoarder,
-    setup_periodic_tasks
+    setup_periodic_tasks,
 )
+
 
 def test_setup_periodic_tasks():
     """Verify all 5 platforms are scheduled."""
     sender_mock = MagicMock()
     setup_periodic_tasks(sender_mock)
     assert sender_mock.add_periodic_task.call_count == 5
+
 
 @patch("src.worker.celery_app.run_scraper")
 @patch("src.worker.celery_app.time.sleep")
@@ -25,6 +27,7 @@ def test_sync_makerworld(mock_sleep, mock_run_scraper):
     assert result == [{"title": "Vase"}]
     mock_run_scraper.assert_called_once_with("makerworld", "https://makerworld.com/en/user/likes")
 
+
 @patch("src.worker.celery_app.run_scraper")
 @patch("src.worker.celery_app.time.sleep")
 def test_sync_printables(mock_sleep, mock_run_scraper):
@@ -32,7 +35,10 @@ def test_sync_printables(mock_sleep, mock_run_scraper):
     mock_run_scraper.return_value = [{"title": "Vase"}]
     result = sync_printables()
     assert result == [{"title": "Vase"}]
-    mock_run_scraper.assert_called_once_with("printables", "https://www.printables.com/user/collections")
+    mock_run_scraper.assert_called_once_with(
+        "printables", "https://www.printables.com/user/collections"
+    )
+
 
 @patch("src.worker.celery_app.fetch_thingiverse_collections")
 @patch("src.worker.celery_app.time.sleep")
@@ -41,6 +47,7 @@ def test_sync_thingiverse_api_success(mock_sleep, mock_fetch_api):
     mock_fetch_api.return_value = [{"title": "Vase"}]
     result = sync_thingiverse()
     assert result == [{"title": "Vase"}]
+
 
 @patch("src.worker.celery_app.run_scraper")
 @patch("src.worker.celery_app.fetch_thingiverse_collections")
@@ -53,6 +60,7 @@ def test_sync_thingiverse_api_fallback(mock_sleep, mock_fetch_api, mock_run_scra
     assert result == [{"title": "Vase from scraper"}]
     mock_run_scraper.assert_called_once()
 
+
 @patch("src.worker.celery_app.run_scraper")
 @patch("src.worker.celery_app.time.sleep")
 def test_sync_cults3d(mock_sleep, mock_run_scraper):
@@ -60,6 +68,7 @@ def test_sync_cults3d(mock_sleep, mock_run_scraper):
     mock_run_scraper.return_value = [{"title": "Vase"}]
     result = sync_cults3d()
     assert result == [{"title": "Vase"}]
+
 
 @patch("src.worker.celery_app.run_scraper")
 @patch("src.worker.celery_app.time.sleep")

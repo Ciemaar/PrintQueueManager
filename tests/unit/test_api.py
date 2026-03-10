@@ -16,6 +16,7 @@ with patch("src.app.database.engine", engine):
         from src.worker.thingiverse_api import fetch_thingiverse_collections
         from src.app.models import Base
 
+
 @pytest.fixture(autouse=True)
 def setup_db():
     """Set up and tear down the test database schema before/after each test."""
@@ -23,12 +24,14 @@ def setup_db():
     yield
     Base.metadata.drop_all(bind=engine)
 
+
 @patch("src.worker.thingiverse_api.settings")
 def test_fetch_thingiverse_no_token(mock_settings):
     """Verify function returns empty list immediately if no token is provided."""
     mock_settings.thingiverse_api_token = ""
     result = fetch_thingiverse_collections()
     assert result == []
+
 
 @patch("src.worker.thingiverse_api.httpx.get")
 @patch("src.worker.thingiverse_api.settings")
@@ -47,6 +50,7 @@ def test_fetch_thingiverse_success(mock_settings, mock_get):
     assert len(result) == 1
     assert result[0]["title"] == "API Vase"
 
+
 @patch("src.worker.thingiverse_api.httpx.get")
 @patch("src.worker.thingiverse_api.settings")
 def test_fetch_thingiverse_existing_item(mock_settings, mock_get):
@@ -64,6 +68,7 @@ def test_fetch_thingiverse_existing_item(mock_settings, mock_get):
 
     assert len(result2) == 0
 
+
 @patch("src.worker.thingiverse_api.httpx.get")
 @patch("src.worker.thingiverse_api.settings")
 def test_fetch_thingiverse_http_error(mock_settings, mock_get):
@@ -72,15 +77,14 @@ def test_fetch_thingiverse_http_error(mock_settings, mock_get):
 
     mock_response = MagicMock()
     # Ensure line breaks to respect length limit
-    err = httpx.HTTPStatusError(
-        "Error", request=MagicMock(), response=MagicMock(status_code=500)
-    )
+    err = httpx.HTTPStatusError("Error", request=MagicMock(), response=MagicMock(status_code=500))
     mock_response.raise_for_status.side_effect = err
     mock_get.return_value = mock_response
 
     result = fetch_thingiverse_collections()
 
     assert result == []
+
 
 @patch("src.worker.thingiverse_api.httpx.get")
 @patch("src.worker.thingiverse_api.settings")

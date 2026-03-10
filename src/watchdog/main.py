@@ -10,6 +10,7 @@ from src.app.database import SessionLocal, engine
 from src.app.models import Base, PrintJob
 from src.app.config import settings
 
+
 class PrintQueueEventHandler(FileSystemEventHandler):
     """Event handler for detecting new local 3D print files."""
 
@@ -19,7 +20,7 @@ class PrintQueueEventHandler(FileSystemEventHandler):
             file_path = event.src_path
             filename = os.path.basename(file_path)
 
-            if file_path.endswith(('.stl', '.3mf')):
+            if file_path.endswith((".stl", ".3mf")):
                 print(f"Detected new file: {filename}")
                 self._add_to_queue(file_path, filename)
 
@@ -37,7 +38,7 @@ class PrintQueueEventHandler(FileSystemEventHandler):
                 title=filename,
                 source="Local",
                 file_path=file_path,
-                metadata_json={"size_bytes": os.path.getsize(file_path)}
+                metadata_json={"size_bytes": os.path.getsize(file_path)},
             )
             db.add(new_job)
             db.commit()
@@ -47,6 +48,7 @@ class PrintQueueEventHandler(FileSystemEventHandler):
             db.rollback()
         finally:
             db.close()
+
 
 def main() -> None:
     """Start the watchdog monitoring service."""
@@ -70,6 +72,7 @@ def main() -> None:
     except KeyboardInterrupt:
         observer.stop()
     observer.join()
+
 
 if __name__ == "__main__":
     main()

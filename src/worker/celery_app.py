@@ -7,11 +7,7 @@ from src.app.config import settings
 from .llm_scraper import run_scraper
 from .thingiverse_api import fetch_thingiverse_collections
 
-celery_app = Celery(
-    "printqueue",
-    broker=settings.redis_url,
-    backend=settings.redis_url
-)
+celery_app = Celery("printqueue", broker=settings.redis_url, backend=settings.redis_url)
 
 celery_app.conf.update(
     task_serializer="json",
@@ -21,14 +17,16 @@ celery_app.conf.update(
     enable_utc=True,
 )
 
-@celery_app.on_after_configure.connect
+
+@celery_app.on_after_configure.connect  # type: ignore
 def setup_periodic_tasks(sender: Any, **kwargs: Any) -> None:
     """Schedule recurring sync tasks for various 3D model platforms."""
-    sender.add_periodic_task(1800.0, sync_makerworld.s(), name='sync_makerworld_every_30_mins')
-    sender.add_periodic_task(1800.0, sync_printables.s(), name='sync_printables_every_30_mins')
-    sender.add_periodic_task(1800.0, sync_thingiverse.s(), name='sync_thingiverse_every_30_mins')
-    sender.add_periodic_task(1800.0, sync_cults3d.s(), name='sync_cults3d_every_30_mins')
-    sender.add_periodic_task(1800.0, sync_minihoarder.s(), name='sync_minihoarder_every_30_mins')
+    sender.add_periodic_task(1800.0, sync_makerworld.s(), name="sync_makerworld_every_30_mins")
+    sender.add_periodic_task(1800.0, sync_printables.s(), name="sync_printables_every_30_mins")
+    sender.add_periodic_task(1800.0, sync_thingiverse.s(), name="sync_thingiverse_every_30_mins")
+    sender.add_periodic_task(1800.0, sync_cults3d.s(), name="sync_cults3d_every_30_mins")
+    sender.add_periodic_task(1800.0, sync_minihoarder.s(), name="sync_minihoarder_every_30_mins")
+
 
 @celery_app.task
 def sync_makerworld() -> List[dict[str, Any]]:
@@ -39,6 +37,7 @@ def sync_makerworld() -> List[dict[str, Any]]:
     print(f"Sync complete. Found {len(result)} models.")
     return result
 
+
 @celery_app.task
 def sync_printables() -> List[dict[str, Any]]:
     """Synchronize liked collections from Printables using an LLM scraper."""
@@ -47,6 +46,7 @@ def sync_printables() -> List[dict[str, Any]]:
     result = run_scraper("printables", "https://www.printables.com/user/collections")
     print(f"Sync complete. Found {len(result)} models.")
     return result
+
 
 @celery_app.task
 def sync_thingiverse() -> List[dict[str, Any]]:
@@ -62,6 +62,7 @@ def sync_thingiverse() -> List[dict[str, Any]]:
     print(f"Sync complete. Found {len(result)} models.")
     return result
 
+
 @celery_app.task
 def sync_cults3d() -> List[dict[str, Any]]:
     """Synchronize liked collections from Cults3D using an LLM scraper."""
@@ -70,6 +71,7 @@ def sync_cults3d() -> List[dict[str, Any]]:
     result = run_scraper("cults3d", "https://cults3d.com/en/users/collections")
     print(f"Sync complete. Found {len(result)} models.")
     return result
+
 
 @celery_app.task
 def sync_minihoarder() -> List[dict[str, Any]]:
