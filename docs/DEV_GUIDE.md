@@ -11,6 +11,7 @@ The system is a Python-based backend that uses:
 - **HTMX + Jinja2:** To provide a responsive, reactive single-page dashboard without the overhead of heavy JavaScript frameworks.
 
 If you are new to HTMX, please read the [HTMX Tutorial](HTMX_TUTORIAL.md) for examples of how it is used in this codebase.
+
 - **Celery & Redis:** To execute asynchronous tasks in the background, like web scraping and syncing models from online sources.
 - **Watchdog:** A standalone process to monitor a local directory (`watched_folder/`) for 3D model files (`.stl`, `.3mf`) and insert them into the database.
 - **Pydantic AI & Ollama:** To power the "Source Specialist" agent. It extracts structured JSON data from raw HTML without requiring brittle CSS selectors.
@@ -20,8 +21,8 @@ If you are new to HTMX, please read the [HTMX Tutorial](HTMX_TUTORIAL.md) for ex
 Ensure you have Python 3.10+ and a local PostgreSQL + Redis instance running. We recommend using `docker-compose` to spin up your databases and then running your web/worker/watchdog locally via virtual environment.
 
 ```bash
-# Set up a virtual environment
-python -m venv venv
+# Set up a virtual environment (e.g. pyenv, virtualenv, uv)
+python3 -m venv venv
 source venv/bin/activate
 pip install -e ".[dev]"
 ```
@@ -30,14 +31,13 @@ pip install -e ".[dev]"
 
 We rely on `tox` for automation. Running `tox` will check the code quality across the entire project.
 
-- `tox -e mypy`: Runs MyPy type checking
-- `tox -e ruff`: Runs Ruff linter
-- `tox -e pylint`: Runs Pylint code checking
-- `pytest tests/`: Runs unit/integration tests with `hypothesis` for property-based generation and testing of schema components.
+- `tox -e pyright`: Runs Pyright type checking.
+- `tox -e ruff`: Runs Ruff linter and formatter.
+- `pytest tests/`: Runs unit and integration tests with `hypothesis` for property-based generation and testing of schema components.
 
 ```bash
 # Run all static analysis
-tox -e ruff,mypy,pylint
+tox -e ruff,pyright
 ```
 
 ## Integrating a New 3D Platform

@@ -9,8 +9,8 @@ Welcome! If you are an AI assistant working on this repository, please read thes
 4. **FastAPI & HTMX Backend:** Avoid complex JS frameworks. The user interface uses server-side rendered Jinja2 templates via FastAPI and `htmx` for dynamic frontend interactions.
 
 ## Coding Conventions
-- **Types:** Use Python type hints (`mypy` is enforced in strict mode). Use `typing.Any` or `Optional` sparingly, and try to be as specific as possible.
-- **Linters:** The repository uses `ruff` and `pylint`. You must maintain a 10/10 pylint score and resolve all `ruff` warnings.
+- **Types:** Use Python type hints (`pyright` is enforced). Use `typing.Any` or `Optional` sparingly, and try to be as specific as possible.
+- **Linters:** The repository uses `ruff` for formatting and linting. You must resolve all warnings.
 - **Database:** Use PostgreSQL `JSONB` columns in SQLAlchemy models for unstructured data storage (e.g., raw API responses, agent metadata) to ensure future flexibility without frequent schema migrations.
 
 ## Testing & Verification
@@ -24,7 +24,7 @@ export PYTHONPATH=src
 pytest tests/
 
 # Run static analysis
-tox -e ruff,mypy,pylint
+tox -e ruff,pyright
 ```
 
 All new features and API routes should include property-based tests using `pytest` and `hypothesis` when appropriate.
