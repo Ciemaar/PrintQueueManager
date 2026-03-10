@@ -38,7 +38,6 @@ dev = [
     "hypothesis",
     "tox",
     "ruff",
-
     "pyright"
 ]
 
@@ -57,11 +56,6 @@ ignore = [
     "D100", # Missing module docstring
     "D211", "D212", "D203" # Styling rules conflicts
 ]
-
-[tool.mypy]
-python_version = "3.13"
-strict = true
-ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 addopts = "-v --cov=src --cov-report=term-missing --cov-fail-under=85"
