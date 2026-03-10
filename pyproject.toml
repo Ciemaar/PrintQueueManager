@@ -66,3 +66,50 @@ asyncio_mode = "auto"
 include = ["src", "tests"]
 pythonVersion = "3.10"
 typeCheckingMode = "basic"
+
+[tool.tox]
+legacy_tox_ini = """
+[tox]
+envlist = py310, ruff, pyright
+isolated_build = True
+
+[testenv]
+deps =
+    pytest
+    pytest-asyncio
+    pytest-cov
+    hypothesis
+    fastapi
+    httpx
+    sqlalchemy
+    pydantic
+    pydantic-ai
+    celery
+    redis
+    watchdog
+    ollama
+    psycopg2-binary
+    playwright
+commands =
+    pytest tests/ --cov=src --cov-fail-under=85
+
+[testenv:ruff]
+deps = ruff
+commands =
+    ruff check src/ tests/
+    ruff format --check src/ tests/
+
+[testenv:pyright]
+deps =
+    pyright
+    pytest
+    hypothesis
+    playwright
+    sqlalchemy
+    pydantic
+    pydantic-ai
+    fastapi
+    celery
+    watchdog
+commands = pyright src/ tests/
+"""
