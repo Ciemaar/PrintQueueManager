@@ -9,6 +9,8 @@ The system is a Python-based backend that uses:
 - **FastAPI:** To build the core server and API endpoints.
 - **SQLAlchemy & PostgreSQL:** For robust structured data storage. The `PrintJob` model utilizes `JSONB` to store raw, unstructured data returned by local AI agents, allowing future-proofing for dynamic platform changes.
 - **HTMX + Jinja2:** To provide a responsive, reactive single-page dashboard without the overhead of heavy JavaScript frameworks.
+
+If you are new to HTMX, please read the [HTMX Tutorial](HTMX_TUTORIAL.md) for examples of how it is used in this codebase.
 - **Celery & Redis:** To execute asynchronous tasks in the background, like web scraping and syncing models from online sources.
 - **Watchdog:** A standalone process to monitor a local directory (`watched_folder/`) for 3D model files (`.stl`, `.3mf`) and insert them into the database.
 - **Pydantic AI & Ollama:** To power the "Source Specialist" agent. It extracts structured JSON data from raw HTML without requiring brittle CSS selectors.

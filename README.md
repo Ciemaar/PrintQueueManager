@@ -53,3 +53,4 @@ pip install -e ".[dev]"
 ```
 
 Refer to `docs/USER_GUIDE.md` for usage instructions and `docs/DEV_GUIDE.md` for further development steps.
+If you are new to HTMX, check out the [`docs/HTMX_TUTORIAL.md`](docs/HTMX_TUTORIAL.md) to understand how the frontend interacts with FastAPI.
