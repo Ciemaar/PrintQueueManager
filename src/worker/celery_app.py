@@ -20,7 +20,7 @@ celery_app.conf.update(
 
 @celery_app.on_after_configure.connect  # type: ignore
 def setup_periodic_tasks(sender: Any, **kwargs: Any) -> None:
-    """Schedule recurring sync tasks for various 3D model platforms."""
+    """Register all platform synchronization tasks to run automatically every 30 minutes."""
     sender.add_periodic_task(1800.0, sync_makerworld.s(), name="sync_makerworld_every_30_mins")
     sender.add_periodic_task(1800.0, sync_printables.s(), name="sync_printables_every_30_mins")
     sender.add_periodic_task(1800.0, sync_thingiverse.s(), name="sync_thingiverse_every_30_mins")
@@ -30,7 +30,12 @@ def setup_periodic_tasks(sender: Any, **kwargs: Any) -> None:
 
 @celery_app.task
 def sync_makerworld() -> List[dict[str, Any]]:
-    """Synchronize liked models from MakerWorld using an LLM scraper."""
+    """
+    Fetch the user's liked models from MakerWorld.
+
+    Uses Playwright and session cookies to access the private user page,
+    and leverages the local Pydantic AI agent to extract model attributes.
+    """
     print("Starting MakerWorld synchronization via Ollama agent...")
     time.sleep(2)
     result = run_scraper("makerworld", "https://makerworld.com/en/user/likes")
@@ -40,7 +45,12 @@ def sync_makerworld() -> List[dict[str, Any]]:
 
 @celery_app.task
 def sync_printables() -> List[dict[str, Any]]:
-    """Synchronize liked collections from Printables using an LLM scraper."""
+    """
+    Fetch the user's collections from Printables.
+
+    Uses Playwright and session cookies to access the private user page,
+    and leverages the local Pydantic AI agent to extract model attributes.
+    """
     print("Starting Printables synchronization via Ollama agent...")
     time.sleep(2)
     result = run_scraper("printables", "https://www.printables.com/user/collections")
@@ -50,7 +60,13 @@ def sync_printables() -> List[dict[str, Any]]:
 
 @celery_app.task
 def sync_thingiverse() -> List[dict[str, Any]]:
-    """Synchronize liked models from Thingiverse using the API, falling back to LLM."""
+    """
+    Fetch the user's liked models from Thingiverse.
+
+    Prioritizes querying the official Thingiverse REST API if a token is provided.
+    If the token is missing or the API returns nothing, falls back to using
+    Playwright and the local LLM agent to scrape the user's public collections page.
+    """
     print("Starting Thingiverse synchronization via Official API...")
     time.sleep(2)
     # Prefer API logic for structured Thingiverse data.
@@ -65,7 +81,12 @@ def sync_thingiverse() -> List[dict[str, Any]]:
 
 @celery_app.task
 def sync_cults3d() -> List[dict[str, Any]]:
-    """Synchronize liked collections from Cults3D using an LLM scraper."""
+    """
+    Fetch the user's collections from Cults3D.
+
+    Uses Playwright and session cookies to access the private user page,
+    and leverages the local Pydantic AI agent to extract model attributes.
+    """
     print("Starting Cults3D synchronization via Ollama agent...")
     time.sleep(2)
     result = run_scraper("cults3d", "https://cults3d.com/en/users/collections")
@@ -75,7 +96,12 @@ def sync_cults3d() -> List[dict[str, Any]]:
 
 @celery_app.task
 def sync_minihoarder() -> List[dict[str, Any]]:
-    """Synchronize library from Minihoarder using an LLM scraper."""
+    """
+    Fetch the user's purchased/downloaded library from Minihoarder.
+
+    Uses Playwright and session cookies to access the private user library,
+    and leverages the local Pydantic AI agent to extract model attributes.
+    """
     print("Starting Minihoarder synchronization via Ollama agent...")
     time.sleep(2)
     result = run_scraper("minihoarder", "https://www.minihoarder.com/library/")

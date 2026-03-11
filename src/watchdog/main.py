@@ -1,21 +1,28 @@
 """Watchdog service to monitor local directories for new 3D model files."""
 
+from typing import Any
 import os
 import time
-from typing import Any
+
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 from sqlalchemy.orm import Session
+
 from src.app.database import SessionLocal, engine
 from src.app.models import Base, PrintJob
 from src.app.config import settings
 
 
 class PrintQueueEventHandler(FileSystemEventHandler):
-    """Event handler for detecting new local 3D print files."""
+    """
+    Event handler that detects newly created files in a watched directory.
+
+    Specifically looks for `.stl` or `.3mf` files and inserts them into the
+    PostgreSQL tracking database so they appear on the local web dashboard.
+    """
 
     def on_created(self, event: Any) -> None:
-        """Triggered when a file or directory is created."""
+        """Trigger when a new object is created in the watched filesystem path."""
         if not event.is_directory:
             file_path = event.src_path
             filename = os.path.basename(file_path)
@@ -25,7 +32,13 @@ class PrintQueueEventHandler(FileSystemEventHandler):
                 self._add_to_queue(file_path, filename)
 
     def _add_to_queue(self, file_path: str, filename: str) -> None:
-        """Insert the newly discovered local file into the database queue."""
+        """
+        Insert the discovered local file into the PostgreSQL queue.
+
+        Ensures the file isn't already present by checking its exact file path
+        before inserting a new PrintJob record. Also calculates and stores the
+        file size in bytes in the flexible JSONB metadata column.
+        """
         db: Session = SessionLocal()
         try:
             # Check if file already exists
@@ -51,7 +64,13 @@ class PrintQueueEventHandler(FileSystemEventHandler):
 
 
 def main() -> None:
-    """Start the watchdog monitoring service."""
+    """
+    Start the continuous watchdog monitoring service.
+
+    Will initialize the database tables if they do not exist, create the
+    target watch directory if missing, and block the main thread indefinitely
+    while listening for OS filesystem events.
+    """
     # Initialize DB tables
     Base.metadata.create_all(bind=engine)
 

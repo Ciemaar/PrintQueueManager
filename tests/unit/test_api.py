@@ -19,7 +19,7 @@ with patch("src.app.database.engine", engine):
 
 @pytest.fixture(autouse=True)
 def setup_db():
-    """Set up and tear down the test database schema before/after each test."""
+    """Set up and tear down the test database schema before/after each test execution."""
     Base.metadata.create_all(bind=engine)
     yield
     Base.metadata.drop_all(bind=engine)
@@ -27,16 +27,25 @@ def setup_db():
 
 @patch("src.worker.thingiverse_api.settings")
 def test_fetch_thingiverse_no_token(mock_settings):
-    """Verify function returns empty list immediately if no token is provided."""
+    """
+    Ensure the API fetcher short-circuits and returns an empty list.
+
+    It should immediately return if no Thingiverse API token is present in the configuration.
+    """
     mock_settings.thingiverse_api_token = ""
     result = fetch_thingiverse_collections()
-    assert result == []
+    assert not result
 
 
 @patch("src.worker.thingiverse_api.httpx.get")
 @patch("src.worker.thingiverse_api.settings")
 def test_fetch_thingiverse_success(mock_settings, mock_get):
-    """Verify function correctly parses API response and saves to DB."""
+    """
+    Verify that a successful HTTP response is correctly mapped and inserted.
+
+    The JSON payload from the Thingiverse REST API should be inserted into the
+    local PostgreSQL database cleanly.
+    """
     mock_settings.thingiverse_api_token = "fake_token"
 
     mock_response = MagicMock()
@@ -54,7 +63,11 @@ def test_fetch_thingiverse_success(mock_settings, mock_get):
 @patch("src.worker.thingiverse_api.httpx.get")
 @patch("src.worker.thingiverse_api.settings")
 def test_fetch_thingiverse_existing_item(mock_settings, mock_get):
-    """Verify function ignores items already in the database."""
+    """
+    Ensure that executing the fetcher consecutively does not duplicate models.
+
+    It verifies that already existing target URLs are skipped during insert.
+    """
     mock_settings.thingiverse_api_token = "fake_token"
 
     mock_response = MagicMock()
@@ -66,13 +79,18 @@ def test_fetch_thingiverse_existing_item(mock_settings, mock_get):
     # Second call should ignore it and return nothing saved
     result2 = fetch_thingiverse_collections()
 
-    assert len(result2) == 0
+    assert not result2
 
 
 @patch("src.worker.thingiverse_api.httpx.get")
 @patch("src.worker.thingiverse_api.settings")
 def test_fetch_thingiverse_http_error(mock_settings, mock_get):
-    """Verify function handles HTTP errors gracefully."""
+    """
+    Verify that if the external Thingiverse API goes down or returns a 500 error.
+
+    The function handles the HTTPStatusError cleanly and returns an empty list
+    without crashing.
+    """
     mock_settings.thingiverse_api_token = "fake_token"
 
     mock_response = MagicMock()
@@ -83,13 +101,18 @@ def test_fetch_thingiverse_http_error(mock_settings, mock_get):
 
     result = fetch_thingiverse_collections()
 
-    assert result == []
+    assert not result
 
 
 @patch("src.worker.thingiverse_api.httpx.get")
 @patch("src.worker.thingiverse_api.settings")
 def test_fetch_thingiverse_db_error(mock_settings, mock_get):
-    """Verify function handles database errors gracefully."""
+    """
+    Ensure that a failure during the SQLAlchemy database commit phase triggers rollback.
+
+    A constraint violation or exception should trigger a proper session rollback
+    and return safely.
+    """
     mock_settings.thingiverse_api_token = "fake_token"
 
     mock_response = MagicMock()
@@ -103,5 +126,5 @@ def test_fetch_thingiverse_db_error(mock_settings, mock_get):
 
         result = fetch_thingiverse_collections()
 
-        assert result == []
+        assert not result
         mock_db.rollback.assert_called_once()
