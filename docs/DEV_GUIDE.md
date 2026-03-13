@@ -12,6 +12,8 @@ The system is a Python-based backend that uses:
 
 If you are new to HTMX, please read the [HTMX Tutorial](HTMX_TUTORIAL.md) for examples of how it is used in this codebase.
 
+If you are new to background tasks, please read the [Celery & Redis Tutorial](CELERY_REDIS_TUTORIAL.md) for an explanation of the asynchronous scraping architecture.
+
 - **Celery & Redis:** To execute asynchronous tasks in the background, like web scraping and syncing models from online sources.
 - **Watchdog:** A standalone process to monitor a local directory (`watched_folder/`) for 3D model files (`.stl`, `.3mf`) and insert them into the database.
 - **Pydantic AI & Ollama:** To power the "Source Specialist" agent. It extracts structured JSON data from raw HTML without requiring brittle CSS selectors.
