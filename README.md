@@ -35,7 +35,7 @@ A Local, Agentic 3D Print Queue Management System based on a local-first archite
 
 3. **Start the Application:**
    ```bash
-   docker-compose up --build
+   docker-compose up -d --build\n\n   For more detailed commands on stopping, viewing logs, and managing containers, see [`docs/DOCKER_GUIDE.md`](docs/DOCKER_GUIDE.md).
    ```
 
 4. **Access the Application:**
