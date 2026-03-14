@@ -12,6 +12,8 @@ The system is a Python-based backend that uses:
 
 If you are new to HTMX, please read the [HTMX Tutorial](HTMX_TUTORIAL.md) for examples of how it is used in this codebase.
 
+If you are editing the frontend HTML templates, read the [Styling Guide](STYLING_GUIDE.md) to understand how the classless Pico CSS framework works.
+
 If you are new to background tasks, please read the [Celery & Redis Tutorial](CELERY_REDIS_TUTORIAL.md) for an explanation of the asynchronous scraping architecture.
 
 - **Celery & Redis:** To execute asynchronous tasks in the background, like web scraping and syncing models from online sources.

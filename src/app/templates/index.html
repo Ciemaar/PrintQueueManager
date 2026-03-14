@@ -1,40 +1,78 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Local 3D Print Queue Manager</title>
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
     <style>
-        .status-PRINTED { text-decoration: line-through; color: #888; }
-        .status-SKIPPED { opacity: 0.6; }
+        .status-PRINTED { text-decoration: line-through; opacity: 0.7; }
+        .status-SKIPPED { opacity: 0.5; }
+
+        table img {
+            border-radius: 0.5rem;
+            object-fit: cover;
+            max-width: 80px;
+            max-height: 80px;
+        }
+
+        .no-img {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 80px;
+            height: 80px;
+            background-color: var(--pico-muted-border-color);
+            color: var(--pico-h1-color);
+            border-radius: 0.5rem;
+            font-size: 0.8rem;
+        }
+
+        .source-badge {
+            background-color: var(--pico-primary-background);
+            color: var(--pico-primary-inverse);
+            padding: 0.25rem 0.5rem;
+            border-radius: 1rem;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .actions-col {
+            min-width: 120px;
+        }
     </style>
 </head>
-<body class="bg-light">
-    <div class="container mt-5">
-        <h1 class="mb-4">Local 3D Print Queue Manager</h1>
-        <p class="lead">Aggregating models from Local, MakerWorld, Printables, and more.</p>
+<body>
+    <main class="container">
+        <header>
+            <hgroup>
+                <h1>Local 3D Print Queue Manager</h1>
+                <p>Aggregating models from Local, MakerWorld, Printables, and more.</p>
+            </hgroup>
+        </header>
 
-        <div class="table-responsive bg-white rounded shadow-sm p-4">
-            <table class="table table-hover align-middle">
-                <thead>
-                    <tr>
-                        <th scope="col">Thumbnail</th>
-                        <th scope="col">Title</th>
-                        <th scope="col">Source</th>
-                        <th scope="col">Status</th>
-                        <th scope="col">Notes</th>
-                        <th scope="col">Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="job-list">
-                    {% for job in jobs %}
-                        {% include 'job_row.html' %}
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
+        <article>
+            <figure>
+                <table role="grid">
+                    <thead>
+                        <tr>
+                            <th scope="col">Thumbnail</th>
+                            <th scope="col">Title</th>
+                            <th scope="col">Source</th>
+                            <th scope="col">Status</th>
+                            <th scope="col">Notes</th>
+                            <th scope="col" class="actions-col">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="job-list">
+                        {% for job in jobs %}
+                            {% include 'job_row.html' %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </figure>
+        </article>
+    </main>
 </body>
 </html>
