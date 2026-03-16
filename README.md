@@ -53,5 +53,6 @@ pip install -e ".[dev]"
 ```
 
 Refer to `docs/USER_GUIDE.md` for usage instructions and `docs/DEV_GUIDE.md` for further development steps.
+For a comprehensive look at how to run the system depending on your role (User, Operator, Developer), see the [`docs/RUN_BOOK.md`](docs/RUN_BOOK.md).
 If you are new to HTMX, check out the [`docs/HTMX_TUTORIAL.md`](docs/HTMX_TUTORIAL.md) to understand how the frontend interacts with FastAPI.
 If you are new to asynchronous queues, read the [`docs/CELERY_REDIS_TUTORIAL.md`](docs/CELERY_REDIS_TUTORIAL.md) to understand the background agentic scraping.
