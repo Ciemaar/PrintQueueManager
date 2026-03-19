@@ -20,12 +20,22 @@ celery_app.conf.update(
 
 @celery_app.on_after_configure.connect  # type: ignore
 def setup_periodic_tasks(sender: Any, **kwargs: Any) -> None:
-    """Register all platform synchronization tasks to run automatically every 30 minutes."""
-    sender.add_periodic_task(1800.0, sync_makerworld.s(), name="sync_makerworld_every_30_mins")
-    sender.add_periodic_task(1800.0, sync_printables.s(), name="sync_printables_every_30_mins")
-    sender.add_periodic_task(1800.0, sync_thingiverse.s(), name="sync_thingiverse_every_30_mins")
-    sender.add_periodic_task(1800.0, sync_cults3d.s(), name="sync_cults3d_every_30_mins")
-    sender.add_periodic_task(1800.0, sync_minihoarder.s(), name="sync_minihoarder_every_30_mins")
+    """Register all platform synchronization tasks to run automatically based on config."""
+    sender.add_periodic_task(
+        settings.makerworld_sync_interval, sync_makerworld.s(), name="sync_makerworld_periodic"
+    )
+    sender.add_periodic_task(
+        settings.printables_sync_interval, sync_printables.s(), name="sync_printables_periodic"
+    )
+    sender.add_periodic_task(
+        settings.thingiverse_sync_interval, sync_thingiverse.s(), name="sync_thingiverse_periodic"
+    )
+    sender.add_periodic_task(
+        settings.cults3d_sync_interval, sync_cults3d.s(), name="sync_cults3d_periodic"
+    )
+    sender.add_periodic_task(
+        settings.minihoarder_sync_interval, sync_minihoarder.s(), name="sync_minihoarder_periodic"
+    )
 
 
 @celery_app.task

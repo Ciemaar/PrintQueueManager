@@ -14,7 +14,7 @@ If we ran this process inside our FastAPI server, the server would hang and stop
 
 Our background architecture consists of three pieces:
 
-1. **The Producer (Celery Beat):** A scheduler that says, "Hey, it's been 30 minutes! Go fetch new models from MakerWorld."
+1. **The Producer (Celery Beat):** A scheduler that says, "Hey, it's been a week! Go fetch new models from MakerWorld."
 2. **The Broker (Redis):** A lightning-fast, in-memory database. Think of it as a waiting line (queue). When the Producer creates a task, it drops a message into Redis.
 3. **The Worker (Celery):** A separate Python process continuously watching Redis. When it sees a new message in the queue, it grabs the task and executes the heavy LLM Python logic without blocking the web server.
 
@@ -50,8 +50,8 @@ In `src/worker/celery_app.py`, we hook into the configuration phase to set up a 
 ```python
 @celery_app.on_after_configure.connect
 def setup_periodic_tasks(sender, **kwargs):
-    # Schedule the sync_makerworld task to run every 1800 seconds (30 minutes)
-    sender.add_periodic_task(1800.0, sync_makerworld.s(), name='sync_makerworld_every_30_mins')
+    # Schedule the sync_makerworld task to run every 1800 seconds (1 week)
+    sender.add_periodic_task(604800.0, sync_makerworld.s(), name='sync_makerworld_periodic')
 ```
 
 *Note the `.s()` on `sync_makerworld.s()`. This creates a "Signature"—a packaged up version of the task that Celery can send over the network to Redis.*
@@ -64,7 +64,7 @@ If you look at our `docker-compose.yml`, you will see three distinct services ma
 
 1. **`redis`**: Runs the official Redis database image.
 2. **`worker`**: Runs the command `celery -A src.worker.celery_app worker`. This process sits idle until tasks appear in Redis, then executes the LLM logic.
-3. **`beat`**: Runs the command `celery -A src.worker.celery_app beat`. This process simply drops the sync tasks into Redis every 30 minutes.
+3. **`beat`**: Runs the command `celery -A src.worker.celery_app beat`. This process simply drops the sync tasks into Redis every week.
 
 ### Triggering a Task Manually
 
