@@ -15,6 +15,7 @@ TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engin
 
 Base.metadata.create_all(bind=engine)
 
+
 def override_get_db():
     """Yield a database session connected to the local test database."""
     try:
@@ -23,8 +24,10 @@ def override_get_db():
     finally:
         db.close()
 
+
 app.dependency_overrides[get_db] = override_get_db
 client = TestClient(app)
+
 
 @pytest.fixture(autouse=True)
 def setup_db():
@@ -33,11 +36,13 @@ def setup_db():
     yield
     Base.metadata.drop_all(bind=engine)
 
+
 def test_read_main():
     """Verify the root index page renders correctly with the application title."""
     response = client.get("/")
     assert response.status_code == 200
     assert b"Local 3D Print Queue Manager" in response.content
+
 
 def test_delete_job():
     """Verify that posting to a delete route properly marks a job as DELETED in the database."""
@@ -53,8 +58,9 @@ def test_delete_job():
     db.expire_all()
     deleted_job = db.query(PrintJob).filter(PrintJob.id == job.id).first()
     assert deleted_job is not None
-    assert deleted_job.status == PrintStatus.DELETED # type: ignore
+    assert deleted_job.status == PrintStatus.DELETED  # type: ignore
     db.close()
+
 
 def test_update_status():
     """Verify that posting to the status route correctly updates the status text."""
@@ -72,8 +78,9 @@ def test_update_status():
     db.expire_all()
     updated_job = db.query(PrintJob).filter(PrintJob.id == job.id).first()
     assert updated_job is not None
-    assert updated_job.status == PrintStatus.PRINT_IN_PROGRESS # type: ignore
+    assert updated_job.status == PrintStatus.PRINT_IN_PROGRESS  # type: ignore
     db.close()
+
 
 def test_update_status_invalid():
     """Verify that posting an invalid status is ignored safely."""
@@ -89,8 +96,9 @@ def test_update_status_invalid():
     db.expire_all()
     updated_job = db.query(PrintJob).filter(PrintJob.id == job.id).first()
     assert updated_job is not None
-    assert updated_job.status == PrintStatus.TO_BE_PRINTED # type: ignore
+    assert updated_job.status == PrintStatus.TO_BE_PRINTED  # type: ignore
     db.close()
+
 
 def test_update_notes():
     """Verify that posting to the notes route correctly updates material and timing notes."""
@@ -101,14 +109,13 @@ def test_update_notes():
     db.refresh(job)
 
     response = client.post(
-        f"/jobs/{job.id}/notes",
-        data={"material_notes": "PLA", "timing_notes": "2 hrs"}
+        f"/jobs/{job.id}/notes", data={"material_notes": "PLA", "timing_notes": "2 hrs"}
     )
     assert response.status_code == 200
 
     db.expire_all()
     updated_job = db.query(PrintJob).filter(PrintJob.id == job.id).first()
     assert updated_job is not None
-    assert updated_job.material_notes == "PLA" # type: ignore
-    assert updated_job.timing_notes == "2 hrs" # type: ignore
+    assert updated_job.material_notes == "PLA"  # type: ignore
+    assert updated_job.timing_notes == "2 hrs"  # type: ignore
     db.close()

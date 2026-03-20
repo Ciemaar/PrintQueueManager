@@ -7,6 +7,7 @@ from sqlalchemy import Enum as SQLAlchemyEnum
 from datetime import datetime
 from src.app.database import Base
 
+
 class PrintStatus(str, Enum):
     """Enumeration of possible states for a PrintJob."""
 
@@ -16,6 +17,7 @@ class PrintStatus(str, Enum):
     PRINTED = "PRINTED"
     SKIPPED = "SKIPPED"
     DELETED = "DELETED"
+
 
 class PrintJob(Base):
     """Represents a 3D model scheduled for printing or tracked in the queue."""
