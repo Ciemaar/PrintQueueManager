@@ -1,4 +1,4 @@
-<tr id="job-{{ job.id }}" class="status-{{ job.status.replace(' ', '-') }}">
+<tr id="job-{{ job.id }}" class="status-{{ job.status.value.replace(' ', '-') }}">
     <td>
         {% if job.thumbnail_url %}
             <img src="{{ job.thumbnail_url }}" alt="Thumbnail">
@@ -21,11 +21,11 @@
     <td>
         <form hx-post="/jobs/{{ job.id }}/status" hx-target="#job-{{ job.id }}" hx-swap="outerHTML">
             <select name="status" aria-label="Status" onchange="this.form.requestSubmit()" style="margin-bottom: 0; min-width: 160px; padding: 0.25rem;">
-                <option value="TO BE PRINTED" {% if job.status == 'TO BE PRINTED' %}selected{% endif %}>TO BE PRINTED</option>
-                <option value="PRINT IN PROGRESS" {% if job.status == 'PRINT IN PROGRESS' %}selected{% endif %}>PRINT IN PROGRESS</option>
-                <option value="PRINT AGAIN" {% if job.status == 'PRINT AGAIN' %}selected{% endif %}>PRINT AGAIN</option>
-                <option value="PRINTED" {% if job.status == 'PRINTED' %}selected{% endif %}>PRINTED</option>
-                <option value="SKIPPED" {% if job.status == 'SKIPPED' %}selected{% endif %}>SKIPPED</option>
+                <option value="TO BE PRINTED" {% if job.status.value == 'TO BE PRINTED' %}selected{% endif %}>TO BE PRINTED</option>
+                <option value="PRINT IN PROGRESS" {% if job.status.value == 'PRINT IN PROGRESS' %}selected{% endif %}>PRINT IN PROGRESS</option>
+                <option value="PRINT AGAIN" {% if job.status.value == 'PRINT AGAIN' %}selected{% endif %}>PRINT AGAIN</option>
+                <option value="PRINTED" {% if job.status.value == 'PRINTED' %}selected{% endif %}>PRINTED</option>
+                <option value="SKIPPED" {% if job.status.value == 'SKIPPED' %}selected{% endif %}>SKIPPED</option>
             </select>
         </form>
     </td>

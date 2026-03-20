@@ -5,31 +5,27 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from src.app.database import get_db, Base, engine
-from src.app.models import PrintJob
+from src.app.models import PrintJob, PrintStatus
 
 app = FastAPI(title="Print Queue Manager")
-
 
 @app.on_event("startup")
 def startup_event():
     """Create database tables on application startup."""
     Base.metadata.create_all(bind=engine)
 
-
 templates = Jinja2Templates(directory="src/app/templates")
-
 
 @app.get("/", response_class=HTMLResponse)
 def index(request: Request, db: Session = Depends(get_db)) -> HTMLResponse:
     """Render the main dashboard by fetching all non-deleted PrintJobs from the database."""
     jobs = (
         db.query(PrintJob)
-        .filter(PrintJob.status != "DELETED")
+        .filter(PrintJob.status != PrintStatus.DELETED)
         .order_by(PrintJob.created_at.desc())
         .all()
     )
-    return templates.TemplateResponse("index.html", {"request": request, "jobs": jobs})  # type: ignore
-
+    return templates.TemplateResponse("index.html", {"request": request, "jobs": jobs}) # type: ignore
 
 @app.post("/jobs/{job_id}/delete", response_class=HTMLResponse)
 def delete_job(job_id: int, request: Request, db: Session = Depends(get_db)) -> HTMLResponse:
@@ -42,14 +38,16 @@ def delete_job(job_id: int, request: Request, db: Session = Depends(get_db)) -> 
     """
     job = db.query(PrintJob).filter(PrintJob.id == job_id).first()
     if job:
-        job.status = "DELETED"  # type: ignore
+        job.status = PrintStatus.DELETED # type: ignore
         db.commit()
     return HTMLResponse("")
 
-
 @app.post("/jobs/{job_id}/status", response_class=HTMLResponse)
 def update_status(
-    job_id: int, request: Request, status: str = Form(...), db: Session = Depends(get_db)
+    job_id: int,
+    request: Request,
+    status: str = Form(...),
+    db: Session = Depends(get_db)
 ) -> HTMLResponse:
     """
     Update the printing status of a specific job.
@@ -60,11 +58,14 @@ def update_status(
     """
     job = db.query(PrintJob).filter(PrintJob.id == job_id).first()
     if job:
-        job.status = status  # type: ignore
-        db.commit()
-        return templates.TemplateResponse("job_row.html", {"request": request, "job": job})  # type: ignore
+        try:
+            enum_status = PrintStatus(status)
+            job.status = enum_status # type: ignore
+            db.commit()
+        except ValueError:
+            pass # Invalid status submitted
+        return templates.TemplateResponse("job_row.html", {"request": request, "job": job}) # type: ignore
     return HTMLResponse("")
-
 
 @app.post("/jobs/{job_id}/notes", response_class=HTMLResponse)
 def update_notes(
@@ -72,7 +73,7 @@ def update_notes(
     request: Request,
     material_notes: str = Form(""),
     timing_notes: str = Form(""),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db)
 ) -> HTMLResponse:
     """
     Update the material and timing notes of a print job.
@@ -82,8 +83,8 @@ def update_notes(
     """
     job = db.query(PrintJob).filter(PrintJob.id == job_id).first()
     if job:
-        job.material_notes = material_notes  # type: ignore
-        job.timing_notes = timing_notes  # type: ignore
+        job.material_notes = material_notes # type: ignore
+        job.timing_notes = timing_notes # type: ignore
         db.commit()
         return HTMLResponse("Saved")
     return HTMLResponse("")
