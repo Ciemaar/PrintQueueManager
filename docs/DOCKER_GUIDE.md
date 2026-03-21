@@ -16,6 +16,46 @@ When you run Docker Compose, you are spinning up seven distinct "services" (cont
 
 ---
 
+## Configuration
+
+The system is configured via environment variables. The easiest way to configure these is by creating a `.env` file in the root of the repository.
+
+### Setting the Watched Folder in Docker
+
+If you are running the application in a Docker container using `docker-compose.yml`, you need to mount a directory from your actual host machine into the `watchdog` container so the application can see your local files.
+
+By default, the `docker-compose.yml` mounts a local `./watched_folder` (in the same directory as the `docker-compose.yml` file) to `/watched_folder` inside the container:
+
+```yaml
+  watchdog:
+    # ...
+    volumes:
+      - ./src:/app/src
+      - ./watched_folder:/watched_folder  # <--- HOST_PATH : CONTAINER_PATH
+    environment:
+      - WATCH_DIRECTORY=/watched_folder   # Tells the app to look here
+```
+
+**To use a different folder on your machine:**
+
+1.  Open `docker-compose.yml`.
+2.  Under the `watchdog` service, locate the `volumes` section.
+3.  Change `./watched_folder` to the absolute path of the directory you want to monitor on your actual machine (e.g., your Downloads or 3D Objects folder). **Leave the right side of the colon (`:/watched_folder`) as is.**
+
+**Example:**
+If your 3D models are stored in `C:\Users\Name\3D Objects` (Windows) or `/Users/Name/Downloads/3D` (Mac/Linux), update the volume line:
+
+```yaml
+    volumes:
+      - ./src:/app/src
+      # Change the left side to your machine's path
+      - /Users/Name/Downloads/3D:/watched_folder
+```
+
+The application inside the container will now watch your actual machine's folder for new `.stl` and `.3mf` files!
+
+---
+
 ## Basic Commands
 
 ### 1. Start the System

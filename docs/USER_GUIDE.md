@@ -6,6 +6,7 @@ Welcome to the **Local 3D Print Queue Manager**. The system allows you to organi
 
 1. **Viewing the Queue:** Navigate to `http://localhost:8000` to view your current list of 3D models.
 2. **Local Sync (Watchdog):** Any `.stl` or `.3mf` files placed inside the configured watched directory (`watched_folder/` by default) will automatically appear in your queue.
+   - **Configuration:** By default, the application watches a folder named `watched_folder` located in the root of the repository. You can change this behavior by adjusting the `WATCH_DIRECTORY` environment variable, or if you are running in Docker, by changing the host volume mount in your `docker-compose.yml`. See the [Docker Guide](DOCKER_GUIDE.md) for specifics on mounting your machine's directories (like a Downloads folder) so the container can watch it!
 3. **Change Status:** Use the dropdown menu in the "Status" column to categorize your print job. Options include `TO BE PRINTED`, `PRINT IN PROGRESS`, `PRINT AGAIN`, `PRINTED`, and `SKIPPED`. Setting a job to `PRINTED` will cross it out, and setting it to `SKIPPED` will dim it.
 4. **Deleting Items:** If you no longer plan on printing a model, click the **Delete** button. It will immediately be removed from your dashboard.
 5. **Notes:** You can add specifics about your print to the `Material Notes` (e.g. "PLA Blue") and `Timing Notes` (e.g. "2 hours") text fields. These save automatically when you finish typing.
