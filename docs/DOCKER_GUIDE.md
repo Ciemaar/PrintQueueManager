@@ -103,6 +103,6 @@ docker-compose down
 The first time you start the system, the Ollama server will be empty. You must pull the model that your `pydantic-ai` agent is expecting (`llama3.2` by default) into the running `ollama` container:
 
 ```bash
-docker exec -it print-queue-manager-ollama-1 ollama pull llama3.2
+docker-compose exec -it ollama ollama pull llama3.2
 ```
-*(Note: Your container name might differ slightly depending on your parent folder name. Use `docker ps` to find the exact name of the Ollama container).*
+*(Note: Using `docker-compose exec` allows you to target the service name directly, regardless of the generated container name).*
