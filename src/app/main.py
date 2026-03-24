@@ -66,7 +66,9 @@ def update_status(
             db.commit()
         except ValueError:
             pass  # Invalid status submitted
-        return templates.TemplateResponse(request=request, name="job_row.html", context={"job": job})  # type: ignore
+        return templates.TemplateResponse(
+            request=request, name="job_row.html", context={"job": job}
+        )  # type: ignore
     return HTMLResponse("")
 
 
