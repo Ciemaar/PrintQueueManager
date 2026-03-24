@@ -91,3 +91,36 @@ def update_notes(
         db.commit()
         return HTMLResponse("Saved")
     return HTMLResponse("")
+
+
+@app.post("/sync/{platform}", response_class=HTMLResponse)
+def trigger_sync(platform: str) -> HTMLResponse:
+    """Manually trigger a background Celery task to synchronize a specific platform."""
+    from src.worker.celery_app import (
+        sync_makerworld,
+        sync_printables,
+        sync_thingiverse,
+        sync_cults3d,
+        sync_minihoarder,
+    )
+
+    tasks = {
+        "makerworld": sync_makerworld,
+        "printables": sync_printables,
+        "thingiverse": sync_thingiverse,
+        "cults3d": sync_cults3d,
+        "minihoarder": sync_minihoarder,
+    }
+
+    task = tasks.get(platform.lower())
+    if task:
+        task.delay()
+        msg = f"Sync started for {platform.capitalize()}!"
+        return HTMLResponse(
+            f'<div class="sync-toast" style="color: var(--pico-primary); '
+            f'font-weight: bold; margin-bottom: 1rem;">{msg}</div>'
+        )
+    return HTMLResponse(
+        f'<div class="sync-toast" style="color: var(--pico-del-color); '
+        f'font-weight: bold; margin-bottom: 1rem;">Unknown platform: {platform}</div>'
+    )

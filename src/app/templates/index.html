@@ -50,6 +50,15 @@
                 <h1>Local 3D Print Queue Manager</h1>
                 <p>Aggregating models from Local, MakerWorld, Printables, and more.</p>
             </hgroup>
+
+            <section aria-label="Manual Sync Triggers" style="margin-top: 1.5rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <button class="outline secondary" hx-post="/sync/makerworld" hx-swap="innerHTML" hx-target="#sync-feedback">Sync MakerWorld</button>
+                <button class="outline secondary" hx-post="/sync/printables" hx-swap="innerHTML" hx-target="#sync-feedback">Sync Printables</button>
+                <button class="outline secondary" hx-post="/sync/thingiverse" hx-swap="innerHTML" hx-target="#sync-feedback">Sync Thingiverse</button>
+                <button class="outline secondary" hx-post="/sync/cults3d" hx-swap="innerHTML" hx-target="#sync-feedback">Sync Cults3D</button>
+                <button class="outline secondary" hx-post="/sync/minihoarder" hx-swap="innerHTML" hx-target="#sync-feedback">Sync Minihoarder</button>
+            </section>
+            <div id="sync-feedback" style="min-height: 2rem; margin-top: 0.5rem;"></div>
         </header>
 
         <article>
