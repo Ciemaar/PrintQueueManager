@@ -28,7 +28,7 @@ def index(request: Request, db: Session = Depends(get_db)) -> HTMLResponse:
         .order_by(PrintJob.created_at.desc())
         .all()
     )
-    return templates.TemplateResponse("index.html", {"request": request, "jobs": jobs})  # type: ignore
+    return templates.TemplateResponse(request=request, name="index.html", context={"jobs": jobs})  # type: ignore
 
 
 @app.post("/jobs/{job_id}/delete", response_class=HTMLResponse)
@@ -66,7 +66,7 @@ def update_status(
             db.commit()
         except ValueError:
             pass  # Invalid status submitted
-        return templates.TemplateResponse("job_row.html", {"request": request, "job": job})  # type: ignore
+        return templates.TemplateResponse(request=request, name="job_row.html", context={"job": job})  # type: ignore
     return HTMLResponse("")
 
 
