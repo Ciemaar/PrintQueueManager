@@ -41,7 +41,7 @@ def setup_periodic_tasks(sender: Any, **kwargs: Any) -> None:
     )
 
 
-@celery_app.task
+@celery_app.task(name="sync_makerworld")
 def sync_makerworld() -> List[dict[str, Any]]:
     """
     Fetch the user's liked models from MakerWorld.
@@ -56,7 +56,7 @@ def sync_makerworld() -> List[dict[str, Any]]:
     return result
 
 
-@celery_app.task
+@celery_app.task(name="sync_printables")
 def sync_printables() -> List[dict[str, Any]]:
     """
     Fetch the user's collections from Printables.
@@ -71,7 +71,7 @@ def sync_printables() -> List[dict[str, Any]]:
     return result
 
 
-@celery_app.task
+@celery_app.task(name="sync_thingiverse")
 def sync_thingiverse() -> List[dict[str, Any]]:
     """
     Fetch the user's liked models from Thingiverse.
@@ -92,7 +92,7 @@ def sync_thingiverse() -> List[dict[str, Any]]:
     return result
 
 
-@celery_app.task
+@celery_app.task(name="sync_cults3d")
 def sync_cults3d() -> List[dict[str, Any]]:
     """
     Fetch the user's collections from Cults3D.
@@ -107,7 +107,7 @@ def sync_cults3d() -> List[dict[str, Any]]:
     return result
 
 
-@celery_app.task
+@celery_app.task(name="sync_minihoarder")
 def sync_minihoarder() -> List[dict[str, Any]]:
     """
     Fetch the user's purchased/downloaded library from Minihoarder.
@@ -122,7 +122,7 @@ def sync_minihoarder() -> List[dict[str, Any]]:
     return result
 
 
-@celery_app.task
+@celery_app.task(name="sync_local")
 def sync_local() -> List[dict[str, Any]]:
     """
     Scan the local watched directory for models and import any missing files.
