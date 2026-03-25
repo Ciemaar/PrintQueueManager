@@ -104,6 +104,7 @@ def trigger_sync(platform: str) -> HTMLResponse:
         sync_thingiverse,
         sync_cults3d,
         sync_minihoarder,
+        sync_local,
     )
 
     tasks = {
@@ -112,6 +113,7 @@ def trigger_sync(platform: str) -> HTMLResponse:
         "thingiverse": sync_thingiverse,
         "cults3d": sync_cults3d,
         "minihoarder": sync_minihoarder,
+        "local": sync_local,
     }
 
     task = tasks.get(platform.lower())

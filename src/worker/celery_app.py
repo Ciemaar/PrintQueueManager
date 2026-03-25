@@ -5,6 +5,9 @@ from typing import List, Any
 from celery import Celery
 from src.app.config import settings
 from .llm_scraper import run_scraper
+import os
+from src.app.database import SessionLocal
+from src.app.models import PrintJob
 from .thingiverse_api import fetch_thingiverse_collections
 
 celery_app = Celery("printqueue", broker=settings.redis_url, backend=settings.redis_url)
@@ -117,3 +120,54 @@ def sync_minihoarder() -> List[dict[str, Any]]:
     result = run_scraper("minihoarder", "https://www.minihoarder.com/library/")
     print(f"Sync complete. Found {len(result)} models.")
     return result
+
+
+@celery_app.task
+def sync_local() -> List[dict[str, Any]]:
+    """
+    Scan the local watched directory for models and import any missing files.
+
+    This is useful for bulk-importing a pre-existing directory that was already
+    populated before the Watchdog service was running.
+    """
+    print(f"Scanning local directory for new models: {settings.watch_directory}")
+    path = settings.watch_directory
+    if not os.path.exists(path):
+        os.makedirs(path)
+
+    added_files = []
+    db = SessionLocal()
+    try:
+        for root, _, files in os.walk(path):
+            for filename in files:
+                if filename.lower().endswith((".stl", ".3mf")):
+                    file_path = os.path.join(root, filename)
+                    # Check if file already exists in DB
+                    existing_job = (
+                        db.query(PrintJob).filter(PrintJob.file_path == file_path).first()
+                    )
+                    if existing_job:
+                        continue
+
+                    # Insert new job for the local file
+                    new_job = PrintJob(
+                        title=filename,
+                        source="Local",
+                        file_path=file_path,
+                        metadata_json={"size_bytes": os.path.getsize(file_path)},
+                    )
+                    db.add(new_job)
+                    added_files.append({"title": filename, "file_path": file_path})
+
+        if added_files:
+            db.commit()
+            print(f"Added {len(added_files)} local files to print queue.")
+        else:
+            print("No new local files discovered.")
+    except Exception as e:
+        print(f"Error synchronizing local files: {e}")
+        db.rollback()
+    finally:
+        db.close()
+
+    return added_files

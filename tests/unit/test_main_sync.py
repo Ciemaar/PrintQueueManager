@@ -16,6 +16,15 @@ def test_trigger_sync_success(mock_delay):
     mock_delay.assert_called_once()
 
 
+@patch("src.worker.celery_app.sync_local.delay")
+def test_trigger_sync_local(mock_delay):
+    """Ensure that the local platform triggers the Celery task and returns a success message."""
+    response = client.post("/sync/local")
+    assert response.status_code == 200
+    assert "Sync started for Local!" in response.text
+    mock_delay.assert_called_once()
+
+
 def test_trigger_sync_unknown_platform():
     """Ensure that an invalid platform returns an error message and does not trigger a task."""
     response = client.post("/sync/unknown")

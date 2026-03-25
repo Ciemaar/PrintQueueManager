@@ -52,6 +52,7 @@
             </hgroup>
 
             <section aria-label="Manual Sync Triggers" style="margin-top: 1.5rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <button class="outline secondary" hx-post="/sync/local" hx-swap="innerHTML" hx-target="#sync-feedback">Sync Local</button>
                 <button class="outline secondary" hx-post="/sync/makerworld" hx-swap="innerHTML" hx-target="#sync-feedback">Sync MakerWorld</button>
                 <button class="outline secondary" hx-post="/sync/printables" hx-swap="innerHTML" hx-target="#sync-feedback">Sync Printables</button>
                 <button class="outline secondary" hx-post="/sync/thingiverse" hx-swap="innerHTML" hx-target="#sync-feedback">Sync Thingiverse</button>
