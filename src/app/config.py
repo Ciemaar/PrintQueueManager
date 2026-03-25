@@ -25,5 +25,8 @@ class Settings(BaseSettings):
     cults3d_sync_interval: float = 604800.0
     minihoarder_sync_interval: float = 604800.0
 
+    # Debugging
+    verbose: bool = False
+
 
 settings = Settings()

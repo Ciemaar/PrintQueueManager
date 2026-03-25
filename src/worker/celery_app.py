@@ -139,8 +139,13 @@ def sync_local() -> List[dict[str, Any]]:
     db = SessionLocal()
     try:
         for root, _, files in os.walk(path):
+            if settings.verbose:
+                print(f"[VERBOSE] Scanning directory: {root} containing {len(files)} files")
+
             for filename in files:
                 if filename.lower().endswith((".stl", ".3mf")):
+                    if settings.verbose:
+                        print(f"[VERBOSE] Discovered valid 3D file: {filename}")
                     file_path = os.path.join(root, filename)
                     # Check if file already exists in DB
                     existing_job = (

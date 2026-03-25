@@ -23,13 +23,23 @@ class PrintQueueEventHandler(FileSystemEventHandler):
 
     def on_created(self, event: Any) -> None:
         """Trigger when a new object is created in the watched filesystem path."""
+        if settings.verbose:
+            print(f"[VERBOSE] Watchdog event received: {event.event_type} on {event.src_path}")
+
         if not event.is_directory:
             file_path = event.src_path
             filename = os.path.basename(file_path)
 
-            if file_path.endswith((".stl", ".3mf")):
-                print(f"Detected new file: {filename}")
+            if file_path.lower().endswith((".stl", ".3mf")):
+                if settings.verbose:
+                    print(f"[VERBOSE] Detected valid 3D file: {filename}")
+                else:
+                    print(f"Detected new file: {filename}")
                 self._add_to_queue(file_path, filename)
+            elif settings.verbose:
+                print(f"[VERBOSE] Ignored non-3D file: {filename}")
+        elif settings.verbose:
+            print(f"[VERBOSE] Ignored directory creation: {event.src_path}")
 
     def _add_to_queue(self, file_path: str, filename: str) -> None:
         """
