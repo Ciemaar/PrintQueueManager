@@ -12,8 +12,14 @@ app = FastAPI(title="Print Queue Manager")
 
 @app.on_event("startup")
 def startup_event():
-    """Create database tables on application startup."""
+    """Create database tables on application startup and trigger local sync."""
     Base.metadata.create_all(bind=engine)
+    try:
+        from src.worker.celery_app import sync_local
+
+        sync_local.delay()
+    except Exception as e:
+        print(f"Failed to trigger initial sync_local task: {e}")
 
 
 templates = Jinja2Templates(directory="src/app/templates")

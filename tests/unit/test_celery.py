@@ -123,27 +123,20 @@ def test_sync_local(mock_session, mock_settings, tmp_path):
         # Since we mock the DB session, we can just intercept the filter call.
         pass
 
-    # A better approach to mock the DB finding only `existing.stl`:
-    # We'll patch the PrintJob model or the query directly.
-    # Let's just track how many times `add` is called.
+    # Mocking the new behavior in `sync_local` which queries the db
+    # to return an iterable of jobs to build a set.
+    class FakeJob:
+        def __init__(self, path):
+            self.file_path = str(path)
 
-    # Let's mock the `first()` method to return a MagicMock (exists) if "existing.stl"
-    # is in the path, and None (doesn't exist) otherwise.
-    # We have to inject this logic into the mocked query chain.
     class MockQuery:
-        def __init__(self, is_existing):
-            self.is_existing = is_existing
-
-        def first(self):
-            return MagicMock() if self.is_existing else None
+        def __iter__(self):
+            # Simulates the DB query returning a single known file
+            yield FakeJob(existing_file)
 
     class MockFilter:
-        def filter(self, condition):
-            # condition is a BinaryExpression like PrintJob.file_path == '/tmp/.../existing.stl'
-            # To actually catch the filename from the BinaryExpression, we inspect its right side.
-            # Since we pass `str(file_path)` to the query, `condition.right.value` holds the path.
-            is_existing = "existing.stl" in str(condition.right.value)
-            return MockQuery(is_existing)
+        def filter(self, *args, **kwargs):
+            return MockQuery()
 
     mock_db.query.return_value = MockFilter()
 

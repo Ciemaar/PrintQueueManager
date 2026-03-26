@@ -141,28 +141,27 @@ def sync_local() -> List[dict[str, Any]]:
         if settings.verbose:
             print(f"[VERBOSE] Scanning directory: {watch_path} recursively")
 
+        # Get a set of all currently known local file paths to avoid N queries
+        known_paths = {
+            job.file_path for job in db.query(PrintJob.file_path).filter(PrintJob.source == "Local")
+        }
+
         for file_path in watch_path.rglob("*"):
             if file_path.is_file() and file_path.suffix.lower() in {".stl", ".3mf"}:
-                filename = file_path.name
-                if settings.verbose:
-                    print(f"[VERBOSE] Discovered valid 3D file: {filename} at {file_path}")
-
-                # Check if file already exists in DB
-                existing_job = (
-                    db.query(PrintJob).filter(PrintJob.file_path == str(file_path)).first()
-                )
-                if existing_job:
+                if str(file_path) in known_paths:
                     continue
 
-                # Insert new job for the local file
+                if settings.verbose:
+                    print(f"[VERBOSE] Discovered new 3D file: {file_path.name} at {file_path}")
+
                 new_job = PrintJob(
-                    title=filename,
+                    title=file_path.name,
                     source="Local",
                     file_path=str(file_path),
                     metadata_json={"size_bytes": file_path.stat().st_size},
                 )
                 db.add(new_job)
-                added_files.append({"title": filename, "file_path": str(file_path)})
+                added_files.append({"title": file_path.name, "file_path": str(file_path)})
 
         if added_files:
             db.commit()
