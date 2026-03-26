@@ -51,10 +51,12 @@ services:
     command: celery -A src.worker.celery_app worker --loglevel=info
     volumes:
       - ./src:/app/src
+      - ./watched_folder:/watched_folder
     environment:
       - DATABASE_URL=postgresql://printqueue:password@db:5432/printqueue
       - REDIS_URL=redis://redis:6379/0
       - OLLAMA_HOST=http://ollama:11434
+      - WATCH_DIRECTORY=/watched_folder
     depends_on:
       db:
         condition: service_healthy
