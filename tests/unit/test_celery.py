@@ -80,17 +80,38 @@ def test_sync_minihoarder(mock_run_scraper):
     assert result == [{"title": "Test"}]
 
 
-@patch("src.worker.celery_app.os.path.getsize")
-@patch("src.worker.celery_app.os.walk")
+@patch("src.worker.celery_app.Path")
 @patch("src.worker.celery_app.SessionLocal")
-def test_sync_local(mock_session, mock_walk, mock_getsize):
+def test_sync_local(mock_session, mock_path_cls):
     """Verify the local directory scan properly identifies and inserts missing files."""
     mock_db = MagicMock()
     mock_session.return_value = mock_db
 
-    # Mock file discovery
-    mock_walk.return_value = [("/test/path", [], ["existing.stl", "new.3mf", "ignore.txt"])]
-    mock_getsize.return_value = 1024
+    # Mock file discovery via Path.rglob
+    mock_path_instance = MagicMock()
+    mock_path_cls.return_value = mock_path_instance
+    mock_path_instance.exists.return_value = True
+
+    # Setup 3 fake files
+    file1 = MagicMock()
+    file1.is_file.return_value = True
+    file1.suffix = ".stl"
+    file1.name = "existing.stl"
+    file1.__str__.return_value = "/test/path/existing.stl"
+
+    file2 = MagicMock()
+    file2.is_file.return_value = True
+    file2.suffix = ".3mf"
+    file2.name = "new.3mf"
+    file2.__str__.return_value = "/test/path/new.3mf"
+    file2.stat.return_value.st_size = 1024
+
+    file3 = MagicMock()
+    file3.is_file.return_value = True
+    file3.suffix = ".txt"
+    file3.name = "ignore.txt"
+
+    mock_path_instance.rglob.return_value = [file1, file2, file3]
 
     # Setup the query to return True for the existing file, False for the new file
     mock_db.query.return_value.filter.return_value.first.side_effect = [

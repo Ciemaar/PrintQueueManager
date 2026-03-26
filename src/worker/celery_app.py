@@ -5,7 +5,7 @@ from typing import List, Any
 from celery import Celery
 from src.app.config import settings
 from .llm_scraper import run_scraper
-import os
+from pathlib import Path
 from src.app.database import SessionLocal
 from src.app.models import PrintJob
 from .thingiverse_api import fetch_thingiverse_collections
@@ -131,38 +131,38 @@ def sync_local() -> List[dict[str, Any]]:
     populated before the Watchdog service was running.
     """
     print(f"Scanning local directory for new models: {settings.watch_directory}")
-    path = settings.watch_directory
-    if not os.path.exists(path):
-        os.makedirs(path)
+    watch_path = Path(settings.watch_directory)
+    if not watch_path.exists():
+        watch_path.mkdir(parents=True, exist_ok=True)
 
     added_files = []
     db = SessionLocal()
     try:
-        for root, _, files in os.walk(path):
-            if settings.verbose:
-                print(f"[VERBOSE] Scanning directory: {root} containing {len(files)} files")
+        if settings.verbose:
+            print(f"[VERBOSE] Scanning directory: {watch_path} recursively")
 
-            for filename in files:
-                if filename.lower().endswith((".stl", ".3mf")):
-                    if settings.verbose:
-                        print(f"[VERBOSE] Discovered valid 3D file: {filename}")
-                    file_path = os.path.join(root, filename)
-                    # Check if file already exists in DB
-                    existing_job = (
-                        db.query(PrintJob).filter(PrintJob.file_path == file_path).first()
-                    )
-                    if existing_job:
-                        continue
+        for file_path in watch_path.rglob("*"):
+            if file_path.is_file() and file_path.suffix.lower() in {".stl", ".3mf"}:
+                filename = file_path.name
+                if settings.verbose:
+                    print(f"[VERBOSE] Discovered valid 3D file: {filename} at {file_path}")
 
-                    # Insert new job for the local file
-                    new_job = PrintJob(
-                        title=filename,
-                        source="Local",
-                        file_path=file_path,
-                        metadata_json={"size_bytes": os.path.getsize(file_path)},
-                    )
-                    db.add(new_job)
-                    added_files.append({"title": filename, "file_path": file_path})
+                # Check if file already exists in DB
+                existing_job = (
+                    db.query(PrintJob).filter(PrintJob.file_path == str(file_path)).first()
+                )
+                if existing_job:
+                    continue
+
+                # Insert new job for the local file
+                new_job = PrintJob(
+                    title=filename,
+                    source="Local",
+                    file_path=str(file_path),
+                    metadata_json={"size_bytes": file_path.stat().st_size},
+                )
+                db.add(new_job)
+                added_files.append({"title": filename, "file_path": str(file_path)})
 
         if added_files:
             db.commit()
