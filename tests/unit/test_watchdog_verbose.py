@@ -2,6 +2,7 @@ from unittest.mock import MagicMock, patch
 from src.watchdog.main import PrintQueueEventHandler
 from src.app.config import settings
 
+
 def test_on_created_verbose_logging_valid_file(capsys):
     """Test verbose logging for a valid 3D file."""
     # Ensure verbose is ON for this test
@@ -15,7 +16,7 @@ def test_on_created_verbose_logging_valid_file(capsys):
         mock_event.event_type = "created"
         mock_event.src_path = "/test/model.STL"  # Note the capital STL
 
-        with patch.object(handler, '_add_to_queue'):
+        with patch.object(handler, "_add_to_queue"):
             handler.on_created(mock_event)
 
             captured = capsys.readouterr()
@@ -37,7 +38,7 @@ def test_on_created_verbose_logging_invalid_file(capsys):
         mock_event.event_type = "created"
         mock_event.src_path = "/test/document.txt"
 
-        with patch.object(handler, '_add_to_queue') as mock_add:
+        with patch.object(handler, "_add_to_queue") as mock_add:
             handler.on_created(mock_event)
 
             captured = capsys.readouterr()
