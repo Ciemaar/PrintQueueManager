@@ -80,50 +80,83 @@ def test_sync_minihoarder(mock_run_scraper):
     assert result == [{"title": "Test"}]
 
 
-@patch("src.worker.celery_app.Path")
+@patch("src.worker.celery_app.settings")
 @patch("src.worker.celery_app.SessionLocal")
-def test_sync_local(mock_session, mock_path_cls):
+def test_sync_local(mock_session, mock_settings, tmp_path):
     """Verify the local directory scan properly identifies and inserts missing files."""
+    # Point settings.watch_directory to the temporary py.test directory
+    mock_settings.watch_directory = str(tmp_path)
+    mock_settings.verbose = False
+
     mock_db = MagicMock()
     mock_session.return_value = mock_db
 
-    # Mock file discovery via Path.rglob
-    mock_path_instance = MagicMock()
-    mock_path_cls.return_value = mock_path_instance
-    mock_path_instance.exists.return_value = True
+    # Create physical files inside the temp directory
+    existing_file = tmp_path / "existing.stl"
+    existing_file.write_text("dummy stl content")
 
-    # Setup 3 fake files
-    file1 = MagicMock()
-    file1.is_file.return_value = True
-    file1.suffix = ".stl"
-    file1.name = "existing.stl"
-    file1.__str__.return_value = "/test/path/existing.stl"
+    new_file = tmp_path / "new.3mf"
+    new_file.write_text("dummy 3mf content")
 
-    file2 = MagicMock()
-    file2.is_file.return_value = True
-    file2.suffix = ".3mf"
-    file2.name = "new.3mf"
-    file2.__str__.return_value = "/test/path/new.3mf"
-    file2.stat.return_value.st_size = 1024
+    ignored_file = tmp_path / "ignore.txt"
+    ignored_file.write_text("this should be ignored")
 
-    file3 = MagicMock()
-    file3.is_file.return_value = True
-    file3.suffix = ".txt"
-    file3.name = "ignore.txt"
+    # We also create a nested subdirectory to test recursive rglob
+    nested_dir = tmp_path / "nested"
+    nested_dir.mkdir()
+    nested_file = nested_dir / "nested_new.STL"
+    nested_file.write_text("dummy nested content")
 
-    mock_path_instance.rglob.return_value = [file1, file2, file3]
+    # Define what the mock DB query `.first()` returns.
+    # It will be called once per valid file (.stl or .3mf) discovered.
+    # We will simulate that "existing.stl" is already in the database,
+    # but the others are not.
+    def mock_db_check():
+        # The sqlalchemy filter expression is passed down, we can inspect
+        # the call args if we wanted to be perfectly precise, but simulating
+        # based on call order is easiest here. We know rglob order isn't guaranteed,
+        # so we inspect the mock's call history.
+        pass
 
-    # Setup the query to return True for the existing file, False for the new file
-    mock_db.query.return_value.filter.return_value.first.side_effect = [
-        MagicMock(),  # First file "existing.stl" found
-        None,  # Second file "new.3mf" not found
-    ]
+    def side_effect(*args, **kwargs):
+        # We need to know which file path is being queried to return the right result.
+        # Since we mock the DB session, we can just intercept the filter call.
+        pass
+
+    # A better approach to mock the DB finding only `existing.stl`:
+    # We'll patch the PrintJob model or the query directly.
+    # Let's just track how many times `add` is called.
+
+    # Let's mock the `first()` method to return a MagicMock (exists) if "existing.stl"
+    # is in the path, and None (doesn't exist) otherwise.
+    # We have to inject this logic into the mocked query chain.
+    class MockQuery:
+        def __init__(self, is_existing):
+            self.is_existing = is_existing
+
+        def first(self):
+            return MagicMock() if self.is_existing else None
+
+    class MockFilter:
+        def filter(self, condition):
+            # condition is a BinaryExpression like PrintJob.file_path == '/tmp/.../existing.stl'
+            # To actually catch the filename from the BinaryExpression, we inspect its right side.
+            # Since we pass `str(file_path)` to the query, `condition.right.value` holds the path.
+            is_existing = "existing.stl" in str(condition.right.value)
+            return MockQuery(is_existing)
+
+    mock_db.query.return_value = MockFilter()
 
     result = sync_local()
 
-    # Only "new.3mf" should be added to the queue
-    assert len(result) == 1
-    assert result[0]["title"] == "new.3mf"
-    assert mock_db.add.call_count == 1
+    # The function should have found "new.3mf" and "nested_new.STL"
+    assert len(result) == 2
+    titles = [r["title"] for r in result]
+    assert "new.3mf" in titles
+    assert "nested_new.STL" in titles
+    assert "existing.stl" not in titles
+
+    # The database `add` should be called twice
+    assert mock_db.add.call_count == 2
     mock_db.commit.assert_called_once()
     mock_db.close.assert_called_once()
