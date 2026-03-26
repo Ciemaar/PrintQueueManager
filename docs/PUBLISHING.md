@@ -23,6 +23,7 @@ python -m build
 ```
 
 This will create a `dist/` directory containing two files:
+
 - `print_queue_manager-0.1.0.tar.gz`
 - `print_queue_manager-0.1.0-py3-none-any.whl`
 

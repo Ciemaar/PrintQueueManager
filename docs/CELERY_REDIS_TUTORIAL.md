@@ -54,7 +54,7 @@ def setup_periodic_tasks(sender, **kwargs):
     sender.add_periodic_task(604800.0, sync_makerworld.s(), name='sync_makerworld_periodic')
 ```
 
-*Note the `.s()` on `sync_makerworld.s()`. This creates a "Signature"—a packaged up version of the task that Celery can send over the network to Redis.*
+_Note the `.s()` on `sync_makerworld.s()`. This creates a "Signature"—a packaged up version of the task that Celery can send over the network to Redis._
 
 ---
 

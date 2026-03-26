@@ -47,6 +47,7 @@ tox -e ruff,pyright
 ## Integrating a New 3D Platform
 
 To integrate a new 3D Model Platform:
+
 1. Open `src/worker/llm_scraper.py`.
 2. Modify `run_scraper` or create a new wrapper specifically for your new site. Ensure that the Agent uses an appropriate Local LLM system prompt to parse the specific page HTML.
 3. In `src/worker/celery_app.py`, define a new Celery task (`@celery_app.task`) to fetch the target HTML and execute the LLM scraper, then set up Celery beat scheduling to call your function periodically.

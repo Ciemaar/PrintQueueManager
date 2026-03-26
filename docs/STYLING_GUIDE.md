@@ -37,10 +37,10 @@ If you need to make specific tweaks, you can override Pico's CSS Variables in th
 
 ```css
 .source-badge {
-    background-color: var(--pico-primary-background);
-    color: var(--pico-primary-inverse);
-    padding: 0.25rem 0.5rem;
-    border-radius: 1rem;
+  background-color: var(--pico-primary-background);
+  color: var(--pico-primary-inverse);
+  padding: 0.25rem 0.5rem;
+  border-radius: 1rem;
 }
 ```
 

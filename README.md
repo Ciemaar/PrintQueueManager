@@ -20,12 +20,14 @@ A Local, Agentic 3D Print Queue Management System based on a local-first archite
 ### Instructions
 
 1. **Clone the repository:**
+
    ```bash
    git clone <repository_url>
    cd print-queue-manager
    ```
 
 2. **Pull Required LLM Models (Ollama):**
+
    ```bash
    # Ollama starts automatically in the Docker Compose, but you need to pull the model you intend to use.
    docker-compose up -d ollama
@@ -34,6 +36,7 @@ A Local, Agentic 3D Print Queue Management System based on a local-first archite
    ```
 
 3. **Start the Application:**
+
    ```bash
    docker-compose up -d --build\n\n   For more detailed commands on stopping, viewing logs, and managing containers, see [`docs/DOCKER_GUIDE.md`](docs/DOCKER_GUIDE.md).
    ```
@@ -44,6 +47,7 @@ A Local, Agentic 3D Print Queue Management System based on a local-first archite
 ### Local Development Installation
 
 If you prefer to run it outside Docker:
+
 ```bash
 python -m venv venv
 source venv/bin/activate
