@@ -147,7 +147,12 @@ def sync_local() -> List[dict[str, Any]]:
         }
 
         for file_path in watch_path.rglob("*"):
-            if file_path.is_file() and file_path.suffix.lower() in {".stl", ".3mf"}:
+            if settings.verbose:
+                print(f"Checking {file_path=}")
+            if (file_path.is_file() or file_path.is_symlink()) and file_path.suffix.lower() in {
+                ".stl",
+                ".3mf",
+            }:
                 if str(file_path) in known_paths:
                     continue
 
