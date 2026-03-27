@@ -107,6 +107,14 @@ def test_sync_local(mock_session, mock_settings, tmp_path):
     nested_file = nested_dir / "nested_new.STL"
     nested_file.write_text("dummy nested content")
 
+    # Create a valid symlink to new.3mf
+    valid_symlink = tmp_path / "valid_link.3mf"
+    valid_symlink.symlink_to(new_file)
+
+    # Create a broken symlink
+    broken_symlink = tmp_path / "broken_link.stl"
+    broken_symlink.symlink_to(tmp_path / "does_not_exist.stl")
+
     # Define what the mock DB query `.first()` returns.
     # It will be called once per valid file (.stl or .3mf) discovered.
     # We will simulate that "existing.stl" is already in the database,
@@ -142,14 +150,16 @@ def test_sync_local(mock_session, mock_settings, tmp_path):
 
     result = sync_local()
 
-    # The function should have found "new.3mf" and "nested_new.STL"
-    assert len(result) == 2
+    # The function should have found "new.3mf", "nested_new.STL", and "valid_link.3mf"
+    assert len(result) == 3
     titles = [r["title"] for r in result]
     assert "new.3mf" in titles
     assert "nested_new.STL" in titles
+    assert "valid_link.3mf" in titles
     assert "existing.stl" not in titles
+    assert "broken_link.stl" not in titles
 
-    # The database `add` should be called twice
-    assert mock_db.add.call_count == 2
+    # The database `add` should be called three times
+    assert mock_db.add.call_count == 3
     mock_db.commit.assert_called_once()
     mock_db.close.assert_called_once()
