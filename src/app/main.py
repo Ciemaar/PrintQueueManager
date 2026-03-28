@@ -5,6 +5,7 @@ import logging
 from fastapi import FastAPI, Request, Depends, Form
 from fastapi.responses import HTMLResponse
 from src.app.logging_config import setup_logging
+from datetime import datetime
 from fastapi.templating import Jinja2Templates
 
 from sqlalchemy.orm import Session
@@ -40,15 +41,81 @@ templates = Jinja2Templates(directory="src/app/templates")
 
 
 @app.get("/", response_class=HTMLResponse)
-def index(request: Request, db: Session = Depends(get_db)) -> HTMLResponse:
-    """Render the main dashboard by fetching all non-deleted PrintJobs from the database."""
-    jobs = (
-        db.query(PrintJob)
-        .filter(PrintJob.status != PrintStatus.DELETED)
-        .order_by(PrintJob.created_at.desc())
-        .all()
-    )
-    return templates.TemplateResponse(request=request, name="index.html", context={"jobs": jobs})  # type: ignore
+def index(
+    request: Request, show_printed: bool = False, db: Session = Depends(get_db)
+) -> HTMLResponse:
+    """Render the main dashboard by fetching non-deleted PrintJobs from the database."""
+    query = db.query(PrintJob)
+
+    if show_printed:
+        query = query.filter(PrintJob.status.notin_([PrintStatus.SKIPPED, PrintStatus.DELETED]))
+    else:
+        query = query.filter(
+            PrintJob.status.notin_([PrintStatus.PRINTED, PrintStatus.SKIPPED, PrintStatus.DELETED])
+        )
+
+    jobs = query.order_by(PrintJob.created_at.desc()).all()
+
+    if request.headers.get("hx-request") == "true":
+        return templates.TemplateResponse(
+            request=request, name="job_list.html", context={"jobs": jobs}
+        )  # type: ignore
+
+    return templates.TemplateResponse(
+        request=request, name="index.html", context={"jobs": jobs, "show_printed": show_printed}
+    )  # type: ignore
+
+
+@app.get("/deleted", response_class=HTMLResponse)
+def deleted_jobs(
+    request: Request,
+    show_printed: bool = False,
+    show_skipped: bool = False,
+    show_deleted: bool = False,
+    db: Session = Depends(get_db),
+) -> HTMLResponse:
+    """Render the deleted jobs view, filtered by type."""
+    # If this is the initial page load (not an HTMX request), default to showing everything
+    is_htmx = request.headers.get("hx-request") == "true"
+    if not is_htmx and not request.query_params:
+        show_printed = True
+        show_skipped = True
+        show_deleted = True
+
+    query = db.query(PrintJob)
+
+    status_filters = []
+    if show_printed:
+        status_filters.append(PrintStatus.PRINTED)
+    if show_skipped:
+        status_filters.append(PrintStatus.SKIPPED)
+    if show_deleted:
+        status_filters.append(PrintStatus.DELETED)
+
+    if not status_filters:
+        jobs = []
+    else:
+        jobs = (
+            query.filter(PrintJob.status.in_(status_filters))
+            .order_by(PrintJob.deleted_at.desc().nullslast())
+            .all()
+        )
+
+    if request.headers.get("hx-request") == "true":
+        return templates.TemplateResponse(
+            request=request, name="deleted_job_list.html", context={"jobs": jobs}
+        )  # type: ignore
+
+    return templates.TemplateResponse(
+        request=request,
+        name="deleted_jobs.html",
+        context={
+            "jobs": jobs,
+            "show_printed": show_printed,
+            "show_skipped": show_skipped,
+            "show_deleted": show_deleted,
+        },
+    )  # type: ignore
 
 
 @app.post("/jobs/{job_id}/delete", response_class=HTMLResponse)
@@ -63,6 +130,28 @@ def delete_job(job_id: int, request: Request, db: Session = Depends(get_db)) -> 
     job = db.query(PrintJob).filter(PrintJob.id == job_id).first()
     if job:
         job.status = PrintStatus.DELETED  # type: ignore
+        job.deleted_at = datetime.utcnow()  # type: ignore
+        db.commit()
+    return HTMLResponse("")
+
+
+@app.post("/jobs/{job_id}/undelete", response_class=HTMLResponse)
+def undelete_job(job_id: int, request: Request, db: Session = Depends(get_db)) -> HTMLResponse:
+    """
+    Restore a deleted job.
+
+    If it was PRINTED, it becomes PRINT AGAIN.
+    Otherwise (SKIPPED or DELETED), it becomes TO BE PRINTED.
+    Returns an empty string to remove it from the deleted jobs view via HTMX.
+    """
+    job = db.query(PrintJob).filter(PrintJob.id == job_id).first()
+    if job:
+        if job.status == PrintStatus.PRINTED:
+            job.status = PrintStatus.PRINT_AGAIN  # type: ignore
+        elif job.status in [PrintStatus.SKIPPED, PrintStatus.DELETED]:
+            job.status = PrintStatus.TO_BE_PRINTED  # type: ignore
+
+        job.deleted_at = None  # type: ignore
         db.commit()
     return HTMLResponse("")
 
@@ -83,6 +172,11 @@ def update_status(
         try:
             enum_status = PrintStatus(status)
             job.status = enum_status  # type: ignore
+            if enum_status in [PrintStatus.PRINTED, PrintStatus.SKIPPED, PrintStatus.DELETED]:
+                if not job.deleted_at:
+                    job.deleted_at = datetime.utcnow()  # type: ignore
+            else:
+                job.deleted_at = None  # type: ignore
             db.commit()
         except ValueError:
             pass  # Invalid status submitted
