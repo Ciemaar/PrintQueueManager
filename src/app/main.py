@@ -12,6 +12,8 @@ from sqlalchemy.orm import Session
 from src.app.database import Base, engine, get_db
 from src.app.logging_config import setup_logging
 from src.app.models import PrintJob, PrintStatus
+from src.app.database import get_db, Base, engine
+from src.app.models import PrintJob, PrintStatus, ServiceConfig
 from src.worker.celery_app import (
     sync_cults3d,
     sync_local,
@@ -255,4 +257,86 @@ def trigger_sync(platform: str) -> HTMLResponse:
     return HTMLResponse(
         f'<div class="sync-toast" style="color: var(--pico-del-color); '
         f'font-weight: bold; margin-bottom: 1rem;">Unknown platform: {platform}</div>'
+    )
+
+
+@app.get("/settings", response_class=HTMLResponse)
+def settings_page(request: Request, db: Session = Depends(get_db)) -> HTMLResponse:
+    """Render the configuration page for managing service settings."""
+    service_defs = {
+        "makerworld": {
+            "display_name": "MakerWorld",
+            "instructions": "Go to MakerWorld and log in. Open Developer Tools (F12), navigate to Application > Cookies, and find the cookie named <code>session</code> or similar authentication token. Copy its value. Set the target to your likes page or a specific collection.",
+            "example_url": "https://makerworld.com/en/user/likes",
+            "credential_placeholder": "Paste session cookie here",
+        },
+        "printables": {
+            "display_name": "Printables",
+            "instructions": "Log in to Printables. Open Developer Tools, find the session cookie in Application > Cookies for <code>.printables.com</code>. Copy the value.",
+            "example_url": "https://www.printables.com/user/collections",
+            "credential_placeholder": "Paste session cookie here",
+        },
+        "thingiverse": {
+            "display_name": "Thingiverse",
+            "instructions": "Log in to Thingiverse and generate a Bearer API token, or use the Developer Tools to find your session token.",
+            "example_url": "https://www.thingiverse.com/user/collections",
+            "credential_placeholder": "Paste API token or session cookie",
+        },
+        "cults3d": {
+            "display_name": "Cults3D",
+            "instructions": "Log in to Cults3D. Open Developer Tools and locate the session cookie.",
+            "example_url": "https://cults3d.com/en/users/collections",
+            "credential_placeholder": "Paste session cookie here",
+        },
+        "minihoarder": {
+            "display_name": "Minihoarder",
+            "instructions": "Log in to Minihoarder. Open Developer Tools and locate your session cookie for your library.",
+            "example_url": "https://www.minihoarder.com/library/",
+            "credential_placeholder": "Paste session cookie here",
+        },
+    }
+
+    services = {}
+    for name, details in service_defs.items():
+        config = db.query(ServiceConfig).filter(ServiceConfig.service_name == name).first()
+        if not config:
+            config = ServiceConfig(
+                service_name=name, enabled=0, credential="", target_url=details["example_url"]
+            )
+        details["config"] = config
+        services[name] = details
+
+    return templates.TemplateResponse(
+        request=request, name="settings.html", context={"services": services}
+    )  # type: ignore
+
+
+@app.post("/settings/update", response_class=HTMLResponse)
+def update_settings(
+    request: Request,
+    service_name: str = Form(...),
+    enabled: int = Form(0),
+    target_url: str = Form(""),
+    credential: str = Form(""),
+    db: Session = Depends(get_db),
+) -> HTMLResponse:
+    """Update configuration settings for a specific service."""
+    config = db.query(ServiceConfig).filter(ServiceConfig.service_name == service_name).first()
+    if not config:
+        config = ServiceConfig(service_name=service_name)
+        db.add(config)
+
+    config.enabled = enabled  # type: ignore
+    config.target_url = target_url  # type: ignore
+
+    # Update credential only if a new value is provided,
+    # otherwise keep the existing one to support the masked input UI.
+    if credential:
+        config.credential = credential  # type: ignore
+
+    db.commit()
+
+    return HTMLResponse(
+        f'<div class="sync-toast" style="color: var(--pico-primary); '
+        f'font-weight: bold; margin-bottom: 1rem; padding: 0.5rem; background: var(--pico-primary-background); border-radius: 0.25rem;">Settings saved for {service_name.capitalize()}!</div>'
     )

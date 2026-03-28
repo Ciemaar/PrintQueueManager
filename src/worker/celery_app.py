@@ -13,6 +13,7 @@ from src.app.logging_config import setup_logging
 from src.app.models import PrintJob
 
 from .llm_scraper import run_scraper
+from src.app.models import PrintJob, ServiceConfig
 from .thingiverse_api import fetch_thingiverse_collections
 
 setup_logging()
@@ -49,6 +50,17 @@ def setup_periodic_tasks(sender: Any, **kwargs: Any) -> None:
     )
 
 
+def _get_service_config(service_name: str) -> tuple[bool, str, str]:
+    db = SessionLocal()
+    try:
+        config = db.query(ServiceConfig).filter(ServiceConfig.service_name == service_name).first()
+        if not config or not config.enabled:
+            return False, "", ""
+        return True, config.target_url or "", config.credential or ""
+    finally:
+        db.close()
+
+
 @celery_app.task(name="sync_makerworld")
 def sync_makerworld() -> List[dict[str, Any]]:
     """
@@ -57,9 +69,17 @@ def sync_makerworld() -> List[dict[str, Any]]:
     Uses Playwright and session cookies to access the private user page,
     and leverages the local Pydantic AI agent to extract model attributes.
     """
-    logger.info("Starting MakerWorld synchronization via Ollama agent...")
+    enabled, url, credential = _get_service_config("makerworld")
+    if not enabled:
+        logger.info("MakerWorld synchronization disabled or not configured. Skipping.")
+        return []
+
+    if not url:
+        url = "https://makerworld.com/en/user/likes"
+
+    logger.info(f"Starting MakerWorld synchronization via Ollama agent at {url}...")
     time.sleep(2)
-    result = run_scraper("makerworld", "https://makerworld.com/en/user/likes")
+    result = run_scraper("makerworld", url, credential)
     logger.info(f"Sync complete. Found {len(result)} models.")
     return result
 
@@ -72,9 +92,17 @@ def sync_printables() -> List[dict[str, Any]]:
     Uses Playwright and session cookies to access the private user page,
     and leverages the local Pydantic AI agent to extract model attributes.
     """
-    logger.info("Starting Printables synchronization via Ollama agent...")
+    enabled, url, credential = _get_service_config("printables")
+    if not enabled:
+        logger.info("Printables synchronization disabled or not configured. Skipping.")
+        return []
+
+    if not url:
+        url = "https://www.printables.com/user/collections"
+
+    logger.info(f"Starting Printables synchronization via Ollama agent at {url}...")
     time.sleep(2)
-    result = run_scraper("printables", "https://www.printables.com/user/collections")
+    result = run_scraper("printables", url, credential)
     logger.info(f"Sync complete. Found {len(result)} models.")
     return result
 
@@ -88,14 +116,22 @@ def sync_thingiverse() -> List[dict[str, Any]]:
     If the token is missing or the API returns nothing, falls back to using
     Playwright and the local LLM agent to scrape the user's public collections page.
     """
+    enabled, url, credential = _get_service_config("thingiverse")
+    if not enabled:
+        logger.info("Thingiverse synchronization disabled or not configured. Skipping.")
+        return []
+
+    if not url:
+        url = "https://www.thingiverse.com/user/collections"
+
     logger.info("Starting Thingiverse synchronization via Official API...")
     time.sleep(2)
     # Prefer API logic for structured Thingiverse data.
     # If a token isn't provided, `fetch_thingiverse_collections` simply returns `[]`.
-    result = fetch_thingiverse_collections()
+    result = fetch_thingiverse_collections(credential)
     if not result:
-        logger.info("Fallback to Ollama agent for Thingiverse...")
-        result = run_scraper("thingiverse", "https://www.thingiverse.com/user/collections")
+        logger.info(f"Fallback to Ollama agent for Thingiverse at {url}...")
+        result = run_scraper("thingiverse", url, credential)
     logger.info(f"Sync complete. Found {len(result)} models.")
     return result
 
@@ -108,9 +144,17 @@ def sync_cults3d() -> List[dict[str, Any]]:
     Uses Playwright and session cookies to access the private user page,
     and leverages the local Pydantic AI agent to extract model attributes.
     """
-    logger.info("Starting Cults3D synchronization via Ollama agent...")
+    enabled, url, credential = _get_service_config("cults3d")
+    if not enabled:
+        logger.info("Cults3D synchronization disabled or not configured. Skipping.")
+        return []
+
+    if not url:
+        url = "https://cults3d.com/en/users/collections"
+
+    logger.info(f"Starting Cults3D synchronization via Ollama agent at {url}...")
     time.sleep(2)
-    result = run_scraper("cults3d", "https://cults3d.com/en/users/collections")
+    result = run_scraper("cults3d", url, credential)
     logger.info(f"Sync complete. Found {len(result)} models.")
     return result
 
@@ -123,9 +167,17 @@ def sync_minihoarder() -> List[dict[str, Any]]:
     Uses Playwright and session cookies to access the private user library,
     and leverages the local Pydantic AI agent to extract model attributes.
     """
-    logger.info("Starting Minihoarder synchronization via Ollama agent...")
+    enabled, url, credential = _get_service_config("minihoarder")
+    if not enabled:
+        logger.info("Minihoarder synchronization disabled or not configured. Skipping.")
+        return []
+
+    if not url:
+        url = "https://www.minihoarder.com/library/"
+
+    logger.info(f"Starting Minihoarder synchronization via Ollama agent at {url}...")
     time.sleep(2)
-    result = run_scraper("minihoarder", "https://www.minihoarder.com/library/")
+    result = run_scraper("minihoarder", url, credential)
     logger.info(f"Sync complete. Found {len(result)} models.")
     return result
 

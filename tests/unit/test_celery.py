@@ -20,64 +20,94 @@ def test_setup_periodic_tasks():
     assert sender_mock.add_periodic_task.call_count == 5
 
 
+@patch("src.worker.celery_app._get_service_config")
 @patch("src.worker.celery_app.run_scraper")
-def test_sync_makerworld(mock_run_scraper):
+def test_sync_makerworld(mock_run_scraper, mock_get_config):
     """Verify that the MakerWorld task triggers the scraper with the correct target."""
+    mock_get_config.return_value = (True, "https://makerworld.com/en/user/likes", "fake_cookie")
     mock_run_scraper.return_value = [{"title": "Test"}]
     result = sync_makerworld()
-    mock_run_scraper.assert_called_once_with("makerworld", "https://makerworld.com/en/user/likes")
-    assert result == [{"title": "Test"}]
-
-
-@patch("src.worker.celery_app.run_scraper")
-def test_sync_printables(mock_run_scraper):
-    """Verify that the Printables task triggers the scraper with the correct target."""
-    mock_run_scraper.return_value = [{"title": "Test"}]
-    result = sync_printables()
     mock_run_scraper.assert_called_once_with(
-        "printables", "https://www.printables.com/user/collections"
+        "makerworld", "https://makerworld.com/en/user/likes", "fake_cookie"
     )
     assert result == [{"title": "Test"}]
 
 
+@patch("src.worker.celery_app._get_service_config")
+@patch("src.worker.celery_app.run_scraper")
+def test_sync_printables(mock_run_scraper, mock_get_config):
+    """Verify that the Printables task triggers the scraper with the correct target."""
+    mock_get_config.return_value = (
+        True,
+        "https://www.printables.com/user/collections",
+        "fake_cookie",
+    )
+    mock_run_scraper.return_value = [{"title": "Test"}]
+    result = sync_printables()
+    mock_run_scraper.assert_called_once_with(
+        "printables", "https://www.printables.com/user/collections", "fake_cookie"
+    )
+    assert result == [{"title": "Test"}]
+
+
+@patch("src.worker.celery_app._get_service_config")
 @patch("src.worker.celery_app.fetch_thingiverse_collections")
-def test_sync_thingiverse_api_success(mock_fetch_api):
+def test_sync_thingiverse_api_success(mock_fetch_api, mock_get_config):
     """Verify that the Thingiverse task prefers the API over scraping if data is returned."""
+    mock_get_config.return_value = (
+        True,
+        "https://www.thingiverse.com/user/collections",
+        "fake_token",
+    )
     mock_fetch_api.return_value = [{"title": "Test from API"}]
     result = sync_thingiverse()
     mock_fetch_api.assert_called_once()
     assert result == [{"title": "Test from API"}]
 
 
+@patch("src.worker.celery_app._get_service_config")
 @patch("src.worker.celery_app.run_scraper")
 @patch("src.worker.celery_app.fetch_thingiverse_collections")
-def test_sync_thingiverse_api_fallback(mock_fetch_api, mock_run_scraper):
+def test_sync_thingiverse_api_fallback(mock_fetch_api, mock_run_scraper, mock_get_config):
     """Verify that the Thingiverse task falls back to the scraper if the API returns no data."""
+    mock_get_config.return_value = (
+        True,
+        "https://www.thingiverse.com/user/collections",
+        "fake_token",
+    )
     mock_fetch_api.return_value = []
     mock_run_scraper.return_value = [{"title": "Test from Scraper"}]
     result = sync_thingiverse()
     mock_fetch_api.assert_called_once()
     mock_run_scraper.assert_called_once_with(
-        "thingiverse", "https://www.thingiverse.com/user/collections"
+        "thingiverse", "https://www.thingiverse.com/user/collections", "fake_token"
     )
     assert result == [{"title": "Test from Scraper"}]
 
 
+@patch("src.worker.celery_app._get_service_config")
 @patch("src.worker.celery_app.run_scraper")
-def test_sync_cults3d(mock_run_scraper):
+def test_sync_cults3d(mock_run_scraper, mock_get_config):
     """Verify that the Cults3D task triggers the scraper with the correct target."""
+    mock_get_config.return_value = (True, "https://cults3d.com/en/users/collections", "fake_cookie")
     mock_run_scraper.return_value = [{"title": "Test"}]
     result = sync_cults3d()
-    mock_run_scraper.assert_called_once_with("cults3d", "https://cults3d.com/en/users/collections")
+    mock_run_scraper.assert_called_once_with(
+        "cults3d", "https://cults3d.com/en/users/collections", "fake_cookie"
+    )
     assert result == [{"title": "Test"}]
 
 
+@patch("src.worker.celery_app._get_service_config")
 @patch("src.worker.celery_app.run_scraper")
-def test_sync_minihoarder(mock_run_scraper):
+def test_sync_minihoarder(mock_run_scraper, mock_get_config):
     """Verify that the Minihoarder task triggers the scraper with the correct target."""
+    mock_get_config.return_value = (True, "https://www.minihoarder.com/library/", "fake_cookie")
     mock_run_scraper.return_value = [{"title": "Test"}]
     result = sync_minihoarder()
-    mock_run_scraper.assert_called_once_with("minihoarder", "https://www.minihoarder.com/library/")
+    mock_run_scraper.assert_called_once_with(
+        "minihoarder", "https://www.minihoarder.com/library/", "fake_cookie"
+    )
     assert result == [{"title": "Test"}]
 
 

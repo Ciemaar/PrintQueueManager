@@ -42,7 +42,6 @@ def test_get_page_html_no_cookie(mock_settings):
 @patch("src.worker.llm_scraper.settings")
 def test_get_page_html_with_cookie(mock_settings, mock_sync_playwright):
     """Verify playwright is launched when cookie is present."""
-    mock_settings.makerworld_cookie = "fake_session_token"
 
     mock_p = MagicMock()
     mock_browser = MagicMock()
@@ -55,7 +54,7 @@ def test_get_page_html_with_cookie(mock_settings, mock_sync_playwright):
     mock_context.new_page.return_value = mock_page
     mock_page.content.return_value = "<html>Live Page</html>"
 
-    html = get_page_html("makerworld", "http://test.com")
+    html = get_page_html("makerworld", "http://test.com", "fake_session_token")
 
     assert html == "<html>Live Page</html>"
     mock_context.add_cookies.assert_called_once()
@@ -66,13 +65,12 @@ def test_get_page_html_with_cookie(mock_settings, mock_sync_playwright):
 @patch("src.worker.llm_scraper.settings")
 def test_get_page_html_playwright_error(mock_settings, mock_sync_playwright):
     """Verify playwright errors return empty string."""
-    mock_settings.makerworld_cookie = "fake_session_token"
 
     mock_p = MagicMock()
     mock_sync_playwright.return_value.__enter__.return_value = mock_p
     mock_p.chromium.launch.side_effect = Exception("Playwright crash")
 
-    html = get_page_html("makerworld", "http://test.com")
+    html = get_page_html("makerworld", "http://test.com", "fake_session_token")
     assert html == ""
 
 

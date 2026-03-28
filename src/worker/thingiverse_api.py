@@ -14,14 +14,13 @@ from .llm_scraper import ExtractedModelInfo
 logger = logging.getLogger(__name__)
 
 
-def fetch_thingiverse_collections() -> List[dict[str, Any]]:
+def fetch_thingiverse_collections(token: str = "") -> List[dict[str, Any]]:
     """
     Fetch liked or collected models from the official Thingiverse REST API.
 
     Bypasses the LLM agentic scraper entirely for perfect structured data.
     Returns an empty list if no token is configured.
     """
-    token = settings.thingiverse_api_token
     if not token:
         logger.info("No Thingiverse API Token found. Skipping Thingiverse API sync.")
         return []

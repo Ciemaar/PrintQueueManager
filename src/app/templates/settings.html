@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - Print Queue Manager</title>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <style>
+        .service-card { margin-bottom: 2rem; }
+        .service-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .instructions {
+            font-size: 0.9em;
+            color: var(--pico-muted-color);
+            margin-bottom: 1rem;
+            background-color: var(--pico-card-background-color);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid var(--pico-muted-border-color);
+        }
+        .instructions code {
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <main class="container">
+        <header>
+            <nav>
+                <ul>
+                    <li><strong><a href="/" class="secondary">Print Queue Manager</a></strong></li>
+                </ul>
+                <ul>
+                    <li><a href="/" class="secondary">Dashboard</a></li>
+                    <li><a href="/settings" class="primary">Settings</a></li>
+                </ul>
+            </nav>
+            <hgroup>
+                <h1>Service Configuration</h1>
+                <p>Configure credentials and target collections for each platform.</p>
+            </hgroup>
+        </header>
+
+        <div id="save-feedback" style="margin-bottom: 1rem;"></div>
+
+        {% for service_name, details in services.items() %}
+            <article class="service-card">
+                <form hx-post="/settings/update" hx-target="#save-feedback" hx-swap="innerHTML">
+                    <input type="hidden" name="service_name" value="{{ service_name }}">
+                    <div class="service-header">
+                        <h2>{{ details.display_name }}</h2>
+                        <label>
+                            <input type="checkbox" name="enabled" role="switch" value="1" {% if details.config.enabled %}checked{% endif %}>
+                            Enabled
+                        </label>
+                    </div>
+
+                    <div class="instructions">
+                        {{ details.instructions | safe }}
+                    </div>
+
+                    <div class="grid">
+                        <div>
+                            <label for="{{ service_name }}_target_url">Target URL / Collection</label>
+                            <input type="text" id="{{ service_name }}_target_url" name="target_url" value="{{ details.config.target_url or '' }}" placeholder="e.g. {{ details.example_url }}" required>
+                        </div>
+                        <div>
+                            <label for="{{ service_name }}_credential">Credential / Cookie</label>
+                            <input type="password" id="{{ service_name }}_credential" name="credential" placeholder="{% if details.config.credential %}******** (Leave empty to keep current){% else %}{{ details.credential_placeholder }}{% endif %}">
+                        </div>
+                    </div>
+
+                    <button type="submit">Save {{ details.display_name }} Settings</button>
+                </form>
+            </article>
+        {% endfor %}
+    </main>
+</body>
+</html>
