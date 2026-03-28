@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     """Application settings, loaded from environment variables."""
 
     database_url: str = "postgresql://printqueue:password@localhost:5432/printqueue"
-    redis_url: str = "redis://localhost:6379/0"
+    temporal_target: str = "localhost:7233"
     ollama_host: str = "http://localhost:11434"
     watch_directory: str = "./watched_folder"
 
