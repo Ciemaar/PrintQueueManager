@@ -2,6 +2,34 @@
 
 The `docker-compose.yml` file is the easiest way to launch the entire Print Queue Manager stack. It orchestrates the databases, the AI inference server, and the various Python application components automatically.
 
+## Prerequisites: Docker Compose V2
+
+This project uses modern Docker Compose V2 (`docker compose` instead of the legacy `docker-compose` binary) to utilize BuildKit by default and avoid deprecation warnings. Ensure you have the `docker-compose-plugin` installed.
+
+If your system's package manager does not provide it out of the box, you may need to add the official Docker repository for your Linux distribution and install it explicitly:
+
+```bash
+# Example for Ubuntu/Debian:
+# 1. Add Docker's official GPG key:
+sudo apt-get update
+sudo apt-get install ca-certificates curl
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+
+# 2. Add the repository to Apt sources:
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+sudo apt-get update
+
+# 3. Install the Docker Compose plugin:
+sudo apt-get install docker-compose-plugin
+```
+
+Verify the installation by running `docker compose version` (it should output a version starting with `v2.x`).
+
 ## The Services
 
 When you run Docker Compose, you are spinning up seven distinct "services" (containers):
