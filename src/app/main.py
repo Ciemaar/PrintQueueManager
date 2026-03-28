@@ -266,31 +266,47 @@ def settings_page(request: Request, db: Session = Depends(get_db)) -> HTMLRespon
     service_defs = {
         "makerworld": {
             "display_name": "MakerWorld",
-            "instructions": "Go to MakerWorld and log in. Open Developer Tools (F12), navigate to Application > Cookies, and find the cookie named <code>session</code> or similar authentication token. Copy its value. Set the target to your likes page or a specific collection.",
+            "instructions": (
+                "Go to MakerWorld and log in. Open Developer Tools (F12), navigate to "
+                "Application > Cookies, and find the cookie named <code>session</code> "
+                "or similar authentication token. Copy its value. Set the target to "
+                "your likes page or a specific collection."
+            ),
             "example_url": "https://makerworld.com/en/user/likes",
             "credential_placeholder": "Paste session cookie here",
         },
         "printables": {
             "display_name": "Printables",
-            "instructions": "Log in to Printables. Open Developer Tools, find the session cookie in Application > Cookies for <code>.printables.com</code>. Copy the value.",
+            "instructions": (
+                "Log in to Printables. Open Developer Tools, find the session cookie in "
+                "Application > Cookies for <code>.printables.com</code>. Copy the value."
+            ),
             "example_url": "https://www.printables.com/user/collections",
             "credential_placeholder": "Paste session cookie here",
         },
         "thingiverse": {
             "display_name": "Thingiverse",
-            "instructions": "Log in to Thingiverse and generate a Bearer API token, or use the Developer Tools to find your session token.",
+            "instructions": (
+                "Log in to Thingiverse and generate a Bearer API token, "
+                "or use the Developer Tools to find your session token."
+            ),
             "example_url": "https://www.thingiverse.com/user/collections",
             "credential_placeholder": "Paste API token or session cookie",
         },
         "cults3d": {
             "display_name": "Cults3D",
-            "instructions": "Log in to Cults3D. Open Developer Tools and locate the session cookie.",
+            "instructions": (
+                "Log in to Cults3D. Open Developer Tools and locate the session cookie."
+            ),
             "example_url": "https://cults3d.com/en/users/collections",
             "credential_placeholder": "Paste session cookie here",
         },
         "minihoarder": {
             "display_name": "Minihoarder",
-            "instructions": "Log in to Minihoarder. Open Developer Tools and locate your session cookie for your library.",
+            "instructions": (
+                "Log in to Minihoarder. Open Developer Tools and locate "
+                "your session cookie for your library."
+            ),
             "example_url": "https://www.minihoarder.com/library/",
             "credential_placeholder": "Paste session cookie here",
         },
@@ -338,5 +354,7 @@ def update_settings(
 
     return HTMLResponse(
         f'<div class="sync-toast" style="color: var(--pico-primary); '
-        f'font-weight: bold; margin-bottom: 1rem; padding: 0.5rem; background: var(--pico-primary-background); border-radius: 0.25rem;">Settings saved for {service_name.capitalize()}!</div>'
+        f"font-weight: bold; margin-bottom: 1rem; padding: 0.5rem; "
+        f'background: var(--pico-primary-background); border-radius: 0.25rem;">'
+        f"Settings saved for {service_name.capitalize()}!</div>"
     )

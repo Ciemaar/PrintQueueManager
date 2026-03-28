@@ -44,7 +44,6 @@ def test_fetch_thingiverse_success(mock_get):
     The JSON payload from the Thingiverse REST API should be inserted into the
     local PostgreSQL database cleanly.
     """
-
     mock_response = MagicMock()
     mock_response.json.return_value = [
         {"id": 123, "name": "API Vase", "thumbnail": "img.jpg", "creator": {"name": "Bob"}}
@@ -64,7 +63,6 @@ def test_fetch_thingiverse_existing_item(mock_get):
 
     It verifies that already existing target URLs are skipped during insert.
     """
-
     mock_response = MagicMock()
     mock_response.json.return_value = [{"id": 123, "name": "API Vase"}]
     mock_get.return_value = mock_response
@@ -85,7 +83,6 @@ def test_fetch_thingiverse_http_error(mock_get):
     The function handles the HTTPStatusError cleanly and returns an empty list
     without crashing.
     """
-
     mock_response = MagicMock()
     # Ensure line breaks to respect length limit
     err = httpx.HTTPStatusError("Error", request=MagicMock(), response=MagicMock(status_code=500))
@@ -105,7 +102,6 @@ def test_fetch_thingiverse_db_error(mock_get):
     A constraint violation or exception should trigger a proper session rollback
     and return safely.
     """
-
     mock_response = MagicMock()
     mock_response.json.return_value = [{"id": 123, "name": "API Vase"}]
     mock_get.return_value = mock_response

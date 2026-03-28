@@ -54,9 +54,11 @@ def _get_service_config(service_name: str) -> tuple[bool, str, str]:
     db = SessionLocal()
     try:
         config = db.query(ServiceConfig).filter(ServiceConfig.service_name == service_name).first()
-        if not config or not config.enabled:
+        if not config or getattr(config, "enabled", 0) == 0:
             return False, "", ""
-        return True, config.target_url or "", config.credential or ""
+        target_url = getattr(config, "target_url", "") or ""
+        credential = getattr(config, "credential", "") or ""
+        return True, str(target_url), str(credential)
     finally:
         db.close()
 

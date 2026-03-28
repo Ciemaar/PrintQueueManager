@@ -42,7 +42,6 @@ def test_get_page_html_no_cookie(mock_settings):
 @patch("src.worker.llm_scraper.settings")
 def test_get_page_html_with_cookie(mock_settings, mock_sync_playwright):
     """Verify playwright is launched when cookie is present."""
-
     mock_p = MagicMock()
     mock_browser = MagicMock()
     mock_context = MagicMock()
@@ -65,7 +64,6 @@ def test_get_page_html_with_cookie(mock_settings, mock_sync_playwright):
 @patch("src.worker.llm_scraper.settings")
 def test_get_page_html_playwright_error(mock_settings, mock_sync_playwright):
     """Verify playwright errors return empty string."""
-
     mock_p = MagicMock()
     mock_sync_playwright.return_value.__enter__.return_value = mock_p
     mock_p.chromium.launch.side_effect = Exception("Playwright crash")

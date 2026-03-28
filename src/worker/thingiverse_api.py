@@ -8,7 +8,7 @@ import httpx
 from src.app.config import settings
 from src.app.database import SessionLocal, engine
 from src.app.models import Base, PrintJob
-
+from src.app.config import settings
 from .llm_scraper import ExtractedModelInfo
 
 logger = logging.getLogger(__name__)
