@@ -150,7 +150,7 @@ def test_sync_local(mock_session, mock_settings, tmp_path):
 
     result = sync_local()
 
-    # The function should have found "new.3mf", "nested_new.STL", "valid_link.3mf", and "broken_link.stl"
+    # The function should find "new.3mf", "nested_new.STL", "valid_link.3mf", and "broken_link.stl"
     assert len(result) == 4
     titles = [r["title"] for r in result]
     assert "new.3mf" in titles
@@ -160,7 +160,9 @@ def test_sync_local(mock_session, mock_settings, tmp_path):
     assert "existing.stl" not in titles
 
     # Check that the broken symlink is correctly identified in its metadata
-    broken_job_call = next(call for call in mock_db.add.call_args_list if call[0][0].title == "broken_link.stl")
+    broken_job_call = next(
+        call for call in mock_db.add.call_args_list if call[0][0].title == "broken_link.stl"
+    )
     assert broken_job_call[0][0].metadata_json.get("is_broken_symlink") is True
     assert broken_job_call[0][0].metadata_json.get("size_bytes") == 0
 

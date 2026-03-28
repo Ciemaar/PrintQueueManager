@@ -13,7 +13,7 @@ Navigate your web browser to the configured host (e.g., `http://localhost:8000`)
 
 **Managing Jobs:**
 
-- **Add Local Files:** Simply drag-and-drop or save your `.stl` or `.3mf` files into the designated `watched_folder` directory on your computer or NAS. They will automatically appear on the dashboard in seconds.
+- **Add Local Files:** Simply drag-and-drop or save your `.stl` or `.3mf` files into the designated `watched_folder` directory on your computer or NAS. They will automatically appear on the dashboard in seconds. Symlinks are supported but they must point to files that exist and are accessible from within the container context. Broken symlinks will be flagged as such in the system.
 - **Change Status:** Use the dropdown in the 'Status' column to select between `TO BE PRINTED`, `PRINT IN PROGRESS`, `PRINT AGAIN`, `PRINTED`, and `SKIPPED`.
 - **Take Notes:** Add information about which filament you want to use in the `Material` box, or how long the slice says it takes in the `Timing` box. Changes are saved the moment you click away.
 - **Remove Jobs:** Click the red `Delete` button to permanently mark a job as removed from the active queue.
@@ -38,7 +38,7 @@ docker-compose up -d --build
 The background worker requires a local LLM to parse raw HTML from unsupported websites. Once the system is running, you must download the `llama3.2` model into the Ollama container:
 
 ```bash
-docker exec -it print-queue-manager-ollama-1 ollama pull llama3.2
+docker-compose exec ollama ollama pull llama3.2
 ```
 
 **Monitoring and Logs:**
@@ -84,6 +84,7 @@ We recommend developing locally on your host machine while pointing to the Docke
    ```
 
 **Running Components Locally:**
+Ensure you stop any conflicting Docker containers (e.g., `docker-compose stop worker web watchdog`) if you intend to run those components locally, otherwise you may face port conflicts or double-processing of events.
 The project uses a unified CLI to launch components individually if you don't want to use Docker for the Python code:
 
 - **Start Web Server:** `printqueue web` (or `uvicorn src.app.main:app --reload`)

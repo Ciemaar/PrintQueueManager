@@ -57,24 +57,31 @@ def get_page_html(source: str, url: str) -> str:
     elif source == "minihoarder":
         cookie_str = settings.minihoarder_cookie
         domain = "www.minihoarder.com"
+    else:
+        cookie_str = ""
+        domain = ""
 
     # If no cookie is provided for authentication, the mocked HTML is returned for safety
     if not cookie_str:
-        print(f"No authentication cookie found for {source}. Falling back to mock data.")
-        return f"""
-        <html><body>
-        <div class="model-card">
-            <img src="https://example.com/thumb1.jpg" />
-            <a href="https://{source}.example.com/model/123">Cool Vase</a>
-            <span class="author">By PrintMaster</span>
-        </div>
-        <div class="model-card">
-            <img src="https://example.com/thumb2.jpg" />
-            <a href="https://{source}.example.com/model/456">Desk Organizer</a>
-            <span class="author">By OrganizerPro</span>
-        </div>
-        </body></html>
-        """
+        print(f"No authentication cookie found for {source}.")
+        if getattr(settings, "demo_mode", False):
+            print("Falling back to mock data.")
+            return f"""
+            <html><body>
+            <div class="model-card">
+                <img src="https://example.com/thumb1.jpg" />
+                <a href="https://{source}.example.com/model/123">Cool Vase</a>
+                <span class="author">By PrintMaster</span>
+            </div>
+            <div class="model-card">
+                <img src="https://example.com/thumb2.jpg" />
+                <a href="https://{source}.example.com/model/456">Desk Organizer</a>
+                <span class="author">By OrganizerPro</span>
+            </div>
+            </body></html>
+            """
+        else:
+            return ""
 
     try:
         with sync_playwright() as p:

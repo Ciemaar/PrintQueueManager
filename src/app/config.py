@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     printables_cookie: str = ""
     cults3d_cookie: str = ""
     minihoarder_cookie: str = ""
+    demo_mode: bool = False
 
     # Synchronization Intervals (in seconds, defaulting to 1 week = 604800 seconds)
     makerworld_sync_interval: float = 604800.0

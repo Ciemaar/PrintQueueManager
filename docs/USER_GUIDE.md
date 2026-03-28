@@ -22,3 +22,7 @@ In the background, a Celery worker routinely queries these websites. The web pag
 ### Important Note on Agent Dependencies
 
 Ensure that you have pulled the required Ollama model prior to use, as the agent defaults to `llama3.2`. If you experience blank images or unpopulated titles, verify that your Ollama server is accessible and the LLM is installed.
+
+### Fallback to Mock Data
+
+If the system encounters an error while trying to fetch data from cloud platforms (e.g., if the website is down, the API rate limit is reached, or the LLM server is inaccessible), the system will gracefully fallback to generating mock data. This ensures your queue remains functional and you can still test the UI and basic workflows even without active internet or LLM access. You will see placeholder titles and images in this scenario.

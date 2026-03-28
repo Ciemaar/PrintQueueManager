@@ -6,6 +6,14 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from src.app.database import get_db, Base, engine
 from src.app.models import PrintJob, PrintStatus
+from src.worker.celery_app import (
+    sync_thingiverse,
+    sync_makerworld,
+    sync_printables,
+    sync_cults3d,
+    sync_minihoarder,
+    sync_local,
+)
 
 app = FastAPI(title="Print Queue Manager")
 
@@ -15,8 +23,6 @@ def startup_event():
     """Create database tables on application startup and trigger local sync."""
     Base.metadata.create_all(bind=engine)
     try:
-        from src.worker.celery_app import sync_local
-
         sync_local.delay()
     except Exception as e:
         print(f"Failed to trigger initial sync_local task: {e}")
@@ -104,15 +110,6 @@ def update_notes(
 @app.post("/sync/{platform}", response_class=HTMLResponse)
 def trigger_sync(platform: str) -> HTMLResponse:
     """Manually trigger a background Celery task to synchronize a specific platform."""
-    from src.worker.celery_app import (
-        sync_makerworld,
-        sync_printables,
-        sync_thingiverse,
-        sync_cults3d,
-        sync_minihoarder,
-        sync_local,
-    )
-
     tasks = {
         "makerworld": sync_makerworld,
         "printables": sync_printables,
