@@ -5,6 +5,7 @@ import sys
 import uvicorn
 
 from src.watchdog.main import main as watchdog_main
+from src.worker.main import main as worker_main
 
 
 def start_web() -> None:
@@ -19,6 +20,12 @@ def start_watchdog() -> None:
     watchdog_main()
 
 
+def start_worker() -> None:
+    """Launch the Temporal worker process."""
+    print("Starting Print Queue Manager Temporal Worker...")
+    worker_main()
+
+
 def main() -> None:
     """Parse command line arguments and route to the correct service runner."""
     parser = argparse.ArgumentParser(description="Print Queue Manager CLI")
@@ -26,6 +33,7 @@ def main() -> None:
 
     subparsers.add_parser("web", help="Start the FastAPI web server")
     subparsers.add_parser("watchdog", help="Start the local directory watchdog")
+    subparsers.add_parser("worker", help="Start the Temporal worker")
 
     args = parser.parse_args()
 
@@ -33,6 +41,8 @@ def main() -> None:
         start_web()
     elif args.command == "watchdog":
         start_watchdog()
+    elif args.command == "worker":
+        start_worker()
     else:
         parser.print_help()
         sys.exit(1)

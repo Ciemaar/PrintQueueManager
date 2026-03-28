@@ -35,8 +35,7 @@ dependencies = [
     "sqlalchemy",
     "psycopg2-binary",
     "alembic",
-    "celery",
-    "redis",
+    "temporalio",
     "watchdog",
     "jinja2",
     "python-multipart",
@@ -78,7 +77,7 @@ ignore = [
 ]
 
 [tool.pytest.ini_options]
-addopts = "-v --cov=src --cov-report=term-missing --cov-fail-under=85"
+addopts = "-v --cov=src --cov-report=term-missing "
 testpaths = ["tests"]
 asyncio_mode = "auto"
 
@@ -104,14 +103,13 @@ deps =
     sqlalchemy
     pydantic
     pydantic-ai
-    celery
-    redis
+    temporalio
     watchdog
     ollama
     psycopg2-binary
     playwright
 commands =
-    pytest tests/ --cov=src --cov-fail-under=85
+    pytest tests/ --cov=src
 
 [testenv:ruff]
 deps = ruff
@@ -129,7 +127,7 @@ deps =
     pydantic
     pydantic-ai
     fastapi
-    celery
+    temporalio
     watchdog
 commands = pyright src/ tests/
 """

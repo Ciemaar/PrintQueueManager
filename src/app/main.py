@@ -1,31 +1,38 @@
 """FastAPI application entrypoint and route definitions."""
 
+from typing import Any
 from fastapi import FastAPI, Request, Depends, Form
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from src.app.database import get_db, Base, engine
 from src.app.models import PrintJob, PrintStatus
-from src.worker.celery_app import (
-    sync_thingiverse,
-    sync_makerworld,
-    sync_printables,
-    sync_cults3d,
-    sync_minihoarder,
-    sync_local,
+from src.app.temporal_client import get_temporal_client
+from src.worker.temporal_workflows import (
+    SyncMakerworldWorkflow,
+    SyncPrintablesWorkflow,
+    SyncThingiverseWorkflow,
+    SyncCults3dWorkflow,
+    SyncMinihoarderWorkflow,
+    SyncLocalWorkflow,
 )
 
 app = FastAPI(title="Print Queue Manager")
 
 
 @app.on_event("startup")
-def startup_event():
+async def startup_event() -> None:
     """Create database tables on application startup and trigger local sync."""
     Base.metadata.create_all(bind=engine)
     try:
-        sync_local.delay()
+        client = await get_temporal_client()
+        await client.execute_workflow(
+            SyncLocalWorkflow.run,
+            id="sync-local-startup",
+            task_queue="sync-task-queue",
+        )
     except Exception as e:
-        print(f"Failed to trigger initial sync_local task: {e}")
+        print(f"Failed to trigger initial SyncLocalWorkflow: {e}")
 
 
 templates = Jinja2Templates(directory="src/app/templates")
@@ -108,25 +115,37 @@ def update_notes(
 
 
 @app.post("/sync/{platform}", response_class=HTMLResponse)
-def trigger_sync(platform: str) -> HTMLResponse:
-    """Manually trigger a background Celery task to synchronize a specific platform."""
-    tasks = {
-        "makerworld": sync_makerworld,
-        "printables": sync_printables,
-        "thingiverse": sync_thingiverse,
-        "cults3d": sync_cults3d,
-        "minihoarder": sync_minihoarder,
-        "local": sync_local,
+async def trigger_sync(platform: str) -> HTMLResponse:
+    """Manually trigger a background Temporal workflow to synchronize a specific platform."""
+    workflows: dict[str, Any] = {
+        "makerworld": SyncMakerworldWorkflow,
+        "printables": SyncPrintablesWorkflow,
+        "thingiverse": SyncThingiverseWorkflow,
+        "cults3d": SyncCults3dWorkflow,
+        "minihoarder": SyncMinihoarderWorkflow,
+        "local": SyncLocalWorkflow,
     }
 
-    task = tasks.get(platform.lower())
-    if task:
-        task.delay()
-        msg = f"Sync started for {platform.capitalize()}!"
-        return HTMLResponse(
-            f'<div class="sync-toast" style="color: var(--pico-primary); '
-            f'font-weight: bold; margin-bottom: 1rem;">{msg}</div>'
-        )
+    workflow_cls = workflows.get(platform.lower())
+    if workflow_cls:
+        try:
+            client = await get_temporal_client()
+            import uuid
+            await client.start_workflow(
+                workflow_cls.run,
+                id=f"sync-{platform.lower()}-{uuid.uuid4()}",
+                task_queue="sync-task-queue",
+            )
+            msg = f"Sync started for {platform.capitalize()}!"
+            return HTMLResponse(
+                f'<div class="sync-toast" style="color: var(--pico-primary); '
+                f'font-weight: bold; margin-bottom: 1rem;">{msg}</div>'
+            )
+        except Exception as e:
+            return HTMLResponse(
+                f'<div class="sync-toast" style="color: var(--pico-del-color); '
+                f'font-weight: bold; margin-bottom: 1rem;">Error: {e}</div>'
+            )
     return HTMLResponse(
         f'<div class="sync-toast" style="color: var(--pico-del-color); '
         f'font-weight: bold; margin-bottom: 1rem;">Unknown platform: {platform}</div>'
