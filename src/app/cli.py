@@ -1,8 +1,7 @@
 """Command-line interface entry point for launching the Print Queue Manager services."""
 
-import argparse
+import click
 import logging
-import sys
 import uvicorn
 
 from src.app.logging_config import setup_logging
@@ -12,36 +11,29 @@ from src.watchdog.main import main as watchdog_main
 logger = logging.getLogger(__name__)
 
 
+@click.group()
+def cli() -> None:
+    """Print Queue Manager CLI."""
+    setup_logging()
+
+
+@cli.command("web")
 def start_web() -> None:
-    """Launch the FastAPI web server using uvicorn."""
+    """Start the FastAPI web server."""
     logger.info("Starting Print Queue Manager Web Server on http://0.0.0.0:8000")
     uvicorn.run("src.app.main:app", host="0.0.0.0", port=8000, reload=False)
 
 
+@cli.command("watchdog")
 def start_watchdog() -> None:
-    """Launch the watchdog folder monitoring process."""
+    """Start the local directory watchdog."""
     logger.info("Starting Print Queue Manager Watchdog Service...")
     watchdog_main()
 
 
 def main() -> None:
-    """Parse command line arguments and route to the correct service runner."""
-    setup_logging()
-    parser = argparse.ArgumentParser(description="Print Queue Manager CLI")
-    subparsers = parser.add_subparsers(dest="command", help="Available commands")
-
-    subparsers.add_parser("web", help="Start the FastAPI web server")
-    subparsers.add_parser("watchdog", help="Start the local directory watchdog")
-
-    args = parser.parse_args()
-
-    if args.command == "web":
-        start_web()
-    elif args.command == "watchdog":
-        start_watchdog()
-    else:
-        parser.print_help()
-        sys.exit(1)
+    """Entry point for the CLI."""
+    cli()
 
 
 if __name__ == "__main__":
