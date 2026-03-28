@@ -22,7 +22,7 @@ If you are new to background tasks, please read the [Celery & Redis Tutorial](CE
 
 ## Setup Development Environment
 
-Ensure you have Python 3.10+ and a local PostgreSQL + Redis instance running. We recommend using `docker-compose` to spin up your databases and then running your web/worker/watchdog locally via virtual environment. (See the [Docker Compose Guide](DOCKER_GUIDE.md) for detailed container instructions.)
+Ensure you have Python 3.10+ and a local PostgreSQL + Redis instance running. We recommend using `docker compose` to spin up your databases and then running your web/worker/watchdog locally via virtual environment. (See the [Docker Compose Guide](DOCKER_GUIDE.md) for detailed container instructions.)
 
 ```bash
 # Set up a virtual environment (e.g. pyenv, virtualenv, uv)
