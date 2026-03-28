@@ -1,7 +1,6 @@
 """Test module for the Temporal Worker main entrypoint."""
 
 import pytest
-import asyncio
 from unittest.mock import patch, AsyncMock, MagicMock
 from src.worker.main import run_worker, setup_schedules, main
 from temporalio.client import Client
