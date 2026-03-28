@@ -146,9 +146,9 @@ def undelete_job(job_id: int, request: Request, db: Session = Depends(get_db)) -
     """
     job = db.query(PrintJob).filter(PrintJob.id == job_id).first()
     if job:
-        if job.status == PrintStatus.PRINTED:
+        if job.status is PrintStatus.PRINTED or getattr(job, "status") == PrintStatus.PRINTED:
             job.status = PrintStatus.PRINT_AGAIN  # type: ignore
-        elif job.status in [PrintStatus.SKIPPED, PrintStatus.DELETED]:
+        elif getattr(job, "status") in [PrintStatus.SKIPPED, PrintStatus.DELETED]:
             job.status = PrintStatus.TO_BE_PRINTED  # type: ignore
 
         job.deleted_at = None  # type: ignore
@@ -173,7 +173,7 @@ def update_status(
             enum_status = PrintStatus(status)
             job.status = enum_status  # type: ignore
             if enum_status in [PrintStatus.PRINTED, PrintStatus.SKIPPED, PrintStatus.DELETED]:
-                if not job.deleted_at:
+                if job.deleted_at is None:
                     job.deleted_at = datetime.utcnow()  # type: ignore
             else:
                 job.deleted_at = None  # type: ignore
