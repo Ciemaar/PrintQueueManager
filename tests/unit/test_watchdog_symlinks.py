@@ -28,7 +28,7 @@ def test_on_created_symlink_valid(capsys, tmp_path):
 
             captured = capsys.readouterr()
             assert "[VERBOSE] Detected valid 3D file: link.stl" in captured.out
-            mock_add.assert_called_once_with(str(symlink_file), "link.stl")
+            mock_add.assert_called_once_with(str(symlink_file), "link.stl", False)
     finally:
         settings.verbose = original_verbose
 
@@ -52,7 +52,7 @@ def test_on_created_symlink_broken(capsys, tmp_path):
             handler.on_created(mock_event)
 
             captured = capsys.readouterr()
-            assert "[VERBOSE] Ignored broken symlink:" in captured.out
-            mock_add.assert_not_called()
+            assert "[VERBOSE] Detected broken symlink: broken.stl" in captured.out
+            mock_add.assert_called_once_with(str(broken_symlink), "broken.stl", True)
     finally:
         settings.verbose = original_verbose

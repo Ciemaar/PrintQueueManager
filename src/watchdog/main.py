@@ -31,22 +31,20 @@ class PrintQueueEventHandler(FileSystemEventHandler):
             filename = os.path.basename(file_path)
 
             if file_path.lower().endswith((".stl", ".3mf")):
-                if os.path.islink(file_path) and not os.path.exists(file_path):
-                    if settings.verbose:
-                        print(f"[VERBOSE] Ignored broken symlink: {file_path}")
-                    return
+                is_broken_symlink = os.path.islink(file_path) and not os.path.exists(file_path)
 
                 if settings.verbose:
-                    print(f"[VERBOSE] Detected valid 3D file: {filename}")
+                    status_log = "broken symlink" if is_broken_symlink else "valid 3D file"
+                    print(f"[VERBOSE] Detected {status_log}: {filename}")
                 else:
                     print(f"Detected new file: {filename}")
-                self._add_to_queue(file_path, filename)
+                self._add_to_queue(file_path, filename, is_broken_symlink)
             elif settings.verbose:
                 print(f"[VERBOSE] Ignored non-3D file: {filename}")
         elif settings.verbose:
             print(f"[VERBOSE] Ignored directory creation: {event.src_path}")
 
-    def _add_to_queue(self, file_path: str, filename: str) -> None:
+    def _add_to_queue(self, file_path: str, filename: str, is_broken_symlink: bool = False) -> None:
         """
         Insert the discovered local file into the PostgreSQL queue.
 
@@ -62,11 +60,16 @@ class PrintQueueEventHandler(FileSystemEventHandler):
                 print(f"File {filename} is already in the queue.")
                 return
 
+            file_size = 0 if is_broken_symlink else os.path.getsize(file_path)
+            metadata = {"size_bytes": file_size}
+            if is_broken_symlink:
+                metadata["is_broken_symlink"] = True
+
             new_job = PrintJob(
                 title=filename,
                 source="Local",
                 file_path=file_path,
-                metadata_json={"size_bytes": os.path.getsize(file_path)},
+                metadata_json=metadata,
             )
             db.add(new_job)
             db.commit()

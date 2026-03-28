@@ -151,23 +151,26 @@ def sync_local() -> List[dict[str, Any]]:
                 ".stl",
                 ".3mf",
             }:
-                # Ensure the symlink actually points to a real file before adding
-                if file_path.is_symlink() and not file_path.exists():
-                    if settings.verbose:
-                        print(f"[VERBOSE] Ignored broken symlink: {file_path}")
-                    continue
-
                 if str(file_path) in known_paths:
                     continue
 
+                is_broken_symlink = file_path.is_symlink() and not file_path.exists()
+
                 if settings.verbose:
-                    print(f"[VERBOSE] Discovered new 3D file: {file_path.name} at {file_path}")
+                    status_log = "broken symlink" if is_broken_symlink else "new 3D file"
+                    print(f"[VERBOSE] Discovered {status_log}: {file_path.name} at {file_path}")
+
+                # If the symlink is broken, we cannot stat() it directly.
+                file_size = 0 if is_broken_symlink else file_path.stat().st_size
+                metadata = {"size_bytes": file_size}
+                if is_broken_symlink:
+                    metadata["is_broken_symlink"] = True
 
                 new_job = PrintJob(
                     title=file_path.name,
                     source="Local",
                     file_path=str(file_path),
-                    metadata_json={"size_bytes": file_path.stat().st_size},
+                    metadata_json=metadata,
                 )
                 db.add(new_job)
                 added_files.append({"title": file_path.name, "file_path": str(file_path)})

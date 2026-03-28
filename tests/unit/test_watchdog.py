@@ -16,7 +16,7 @@ def test_on_created_file_detected():
     handler.on_created(mock_event)
 
     handler._add_to_queue.assert_called_once_with(  # pylint: disable=protected-access
-        "/fake/path/test_model.stl", "test_model.stl"
+        "/fake/path/test_model.stl", "test_model.stl", False
     )
 
 

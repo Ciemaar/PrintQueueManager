@@ -150,16 +150,21 @@ def test_sync_local(mock_session, mock_settings, tmp_path):
 
     result = sync_local()
 
-    # The function should have found "new.3mf", "nested_new.STL", and "valid_link.3mf"
-    assert len(result) == 3
+    # The function should have found "new.3mf", "nested_new.STL", "valid_link.3mf", and "broken_link.stl"
+    assert len(result) == 4
     titles = [r["title"] for r in result]
     assert "new.3mf" in titles
     assert "nested_new.STL" in titles
     assert "valid_link.3mf" in titles
+    assert "broken_link.stl" in titles
     assert "existing.stl" not in titles
-    assert "broken_link.stl" not in titles
 
-    # The database `add` should be called three times
-    assert mock_db.add.call_count == 3
+    # Check that the broken symlink is correctly identified in its metadata
+    broken_job_call = next(call for call in mock_db.add.call_args_list if call[0][0].title == "broken_link.stl")
+    assert broken_job_call[0][0].metadata_json.get("is_broken_symlink") is True
+    assert broken_job_call[0][0].metadata_json.get("size_bytes") == 0
+
+    # The database `add` should be called four times
+    assert mock_db.add.call_count == 4
     mock_db.commit.assert_called_once()
     mock_db.close.assert_called_once()
