@@ -15,6 +15,7 @@ from src.worker.temporal_workflows import (
     sync_local,
 )
 
+
 def test_workflows_exist():
     """Verify that all expected workflows exist."""
     assert SyncMakerworldWorkflow
@@ -23,6 +24,7 @@ def test_workflows_exist():
     assert SyncCults3dWorkflow
     assert SyncMinihoarderWorkflow
     assert SyncLocalWorkflow
+
 
 def test_activities_exist():
     """Verify that all expected activities exist."""

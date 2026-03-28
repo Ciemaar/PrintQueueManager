@@ -5,6 +5,7 @@ from src.app.config import settings
 
 _temporal_client: Client | None = None
 
+
 async def get_temporal_client() -> Client:
     """Get or initialize the Temporal client."""
     global _temporal_client

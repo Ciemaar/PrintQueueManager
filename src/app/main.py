@@ -131,6 +131,7 @@ async def trigger_sync(platform: str) -> HTMLResponse:
         try:
             client = await get_temporal_client()
             import uuid
+
             await client.start_workflow(
                 workflow_cls.run,
                 id=f"sync-{platform.lower()}-{uuid.uuid4()}",

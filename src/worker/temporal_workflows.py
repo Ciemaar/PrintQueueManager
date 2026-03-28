@@ -13,6 +13,7 @@ from src.app.models import PrintJob
 from .llm_scraper import run_scraper
 from .thingiverse_api import fetch_thingiverse_collections
 
+
 @activity.defn
 async def sync_makerworld() -> List[dict[str, Any]]:
     """Fetch the user's liked models from MakerWorld."""
@@ -22,6 +23,7 @@ async def sync_makerworld() -> List[dict[str, Any]]:
     print(f"Sync complete. Found {len(result)} models.")
     return result
 
+
 @activity.defn
 async def sync_printables() -> List[dict[str, Any]]:
     """Fetch the user's collections from Printables."""
@@ -30,6 +32,7 @@ async def sync_printables() -> List[dict[str, Any]]:
     result = run_scraper("printables", "https://www.printables.com/user/collections")
     print(f"Sync complete. Found {len(result)} models.")
     return result
+
 
 @activity.defn
 async def sync_thingiverse() -> List[dict[str, Any]]:
@@ -43,6 +46,7 @@ async def sync_thingiverse() -> List[dict[str, Any]]:
     print(f"Sync complete. Found {len(result)} models.")
     return result
 
+
 @activity.defn
 async def sync_cults3d() -> List[dict[str, Any]]:
     """Fetch the user's collections from Cults3D."""
@@ -52,6 +56,7 @@ async def sync_cults3d() -> List[dict[str, Any]]:
     print(f"Sync complete. Found {len(result)} models.")
     return result
 
+
 @activity.defn
 async def sync_minihoarder() -> List[dict[str, Any]]:
     """Fetch the user's purchased/downloaded library from Minihoarder."""
@@ -60,6 +65,7 @@ async def sync_minihoarder() -> List[dict[str, Any]]:
     result = run_scraper("minihoarder", "https://www.minihoarder.com/library/")
     print(f"Sync complete. Found {len(result)} models.")
     return result
+
 
 @activity.defn
 async def sync_local() -> List[dict[str, Any]]:
@@ -129,9 +135,9 @@ class SyncMakerworldWorkflow:
     async def run(self) -> List[dict[str, Any]]:
         """Run the workflow."""
         return await workflow.execute_activity(
-            sync_makerworld,
-            start_to_close_timeout=timedelta(minutes=10)
+            sync_makerworld, start_to_close_timeout=timedelta(minutes=10)
         )
+
 
 @workflow.defn
 class SyncPrintablesWorkflow:
@@ -141,9 +147,9 @@ class SyncPrintablesWorkflow:
     async def run(self) -> List[dict[str, Any]]:
         """Run the workflow."""
         return await workflow.execute_activity(
-            sync_printables,
-            start_to_close_timeout=timedelta(minutes=10)
+            sync_printables, start_to_close_timeout=timedelta(minutes=10)
         )
+
 
 @workflow.defn
 class SyncThingiverseWorkflow:
@@ -153,9 +159,9 @@ class SyncThingiverseWorkflow:
     async def run(self) -> List[dict[str, Any]]:
         """Run the workflow."""
         return await workflow.execute_activity(
-            sync_thingiverse,
-            start_to_close_timeout=timedelta(minutes=10)
+            sync_thingiverse, start_to_close_timeout=timedelta(minutes=10)
         )
+
 
 @workflow.defn
 class SyncCults3dWorkflow:
@@ -165,9 +171,9 @@ class SyncCults3dWorkflow:
     async def run(self) -> List[dict[str, Any]]:
         """Run the workflow."""
         return await workflow.execute_activity(
-            sync_cults3d,
-            start_to_close_timeout=timedelta(minutes=10)
+            sync_cults3d, start_to_close_timeout=timedelta(minutes=10)
         )
+
 
 @workflow.defn
 class SyncMinihoarderWorkflow:
@@ -177,9 +183,9 @@ class SyncMinihoarderWorkflow:
     async def run(self) -> List[dict[str, Any]]:
         """Run the workflow."""
         return await workflow.execute_activity(
-            sync_minihoarder,
-            start_to_close_timeout=timedelta(minutes=10)
+            sync_minihoarder, start_to_close_timeout=timedelta(minutes=10)
         )
+
 
 @workflow.defn
 class SyncLocalWorkflow:
@@ -189,6 +195,5 @@ class SyncLocalWorkflow:
     async def run(self) -> List[dict[str, Any]]:
         """Run the workflow."""
         return await workflow.execute_activity(
-            sync_local,
-            start_to_close_timeout=timedelta(minutes=10)
+            sync_local, start_to_close_timeout=timedelta(minutes=10)
         )
