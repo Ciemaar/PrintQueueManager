@@ -58,6 +58,7 @@ def test_main_invalid():
             main()
         assert e.value.code == 2
 
+
 def test_main_no_args():
     """Ensure main exits with 1 on no command."""
     with patch.object(sys, "argv", ["printqueue"]):
