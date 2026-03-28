@@ -1,0 +1,135 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "print-queue-manager"
+version = "0.1.0"
+description = "A Local, Agentic 3D Print Queue Management System"
+authors = [
+    { name = "Developer", email = "dev@example.com" }
+]
+readme = "README.md"
+license = { text = "MIT" }
+keywords = ["3d printing", "queue", "manager", "stl", "makerworld", "printables", "htmx", "fastapi"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Web Environment",
+    "Framework :: FastAPI",
+    "Intended Audience :: Manufacturing",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Printing",
+]
+dependencies = [
+    "fastapi",
+    "uvicorn",
+    "pydantic",
+    "pydantic-settings",
+    "pydantic-ai",
+    "sqlalchemy",
+    "psycopg2-binary",
+    "alembic",
+    "celery",
+    "redis",
+    "watchdog",
+    "jinja2",
+    "python-multipart",
+    "requests",
+    "httpx",
+    "ollama",
+    "playwright"
+]
+requires-python = ">=3.10"
+
+[project.scripts]
+printqueue = "src.app.cli:main"
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+    "pytest-cov",
+    "hypothesis",
+    "tox",
+    "ruff",
+    "pyright"
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = [
+    "E",  # pycodestyle errors
+    "F",  # pyflakes
+    "D",  # pydocstyle
+]
+ignore = [
+    "D104", # Allow tests without docstrings for brevity
+    "D100", # Missing module docstring
+    "D211", "D212", "D203" # Styling rules conflicts
+]
+
+[tool.pytest.ini_options]
+addopts = "-v --cov=src --cov-report=term-missing --cov-fail-under=85"
+testpaths = ["tests"]
+asyncio_mode = "auto"
+
+[tool.pyright]
+include = ["src", "tests"]
+pythonVersion = "3.10"
+typeCheckingMode = "basic"
+
+[tool.tox]
+legacy_tox_ini = """
+[tox]
+envlist = py310, ruff, pyright
+isolated_build = True
+
+[testenv]
+deps =
+    pytest
+    pytest-asyncio
+    pytest-cov
+    hypothesis
+    fastapi
+    httpx
+    sqlalchemy
+    pydantic
+    pydantic-ai
+    celery
+    redis
+    watchdog
+    ollama
+    psycopg2-binary
+    playwright
+commands =
+    pytest tests/ --cov=src --cov-fail-under=85
+
+[testenv:ruff]
+deps = ruff
+commands =
+    ruff check src/ tests/
+    ruff format --check src/ tests/
+
+[testenv:pyright]
+deps =
+    pyright
+    pytest
+    hypothesis
+    playwright
+    sqlalchemy
+    pydantic
+    pydantic-ai
+    fastapi
+    celery
+    watchdog
+commands = pyright src/ tests/
+"""
