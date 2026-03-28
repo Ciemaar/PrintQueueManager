@@ -96,22 +96,7 @@ isolated_build = True
 
 [testenv]
 runner = uv-venv-lock-runner
-deps =
-    pytest
-    pytest-asyncio
-    pytest-cov
-    hypothesis
-    fastapi
-    httpx
-    sqlalchemy
-    pydantic
-    pydantic-ai
-    celery
-    redis
-    watchdog
-    ollama
-    psycopg2-binary
-    playwright
+extras = dev
 commands =
     pytest tests/ --cov=src --cov-fail-under=85
 
@@ -124,17 +109,9 @@ commands =
 
 [testenv:pyright]
 allowlist_externals = pyright
+extras = dev
 deps =
     pyright
-    pytest
-    hypothesis
-    playwright
-    sqlalchemy
-    pydantic
-    pydantic-ai
-    fastapi
-    celery
-    watchdog
 commands = pyright src/ tests/
 """
 
