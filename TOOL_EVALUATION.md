@@ -32,10 +32,23 @@ This document outlines the evaluation of modern Python tooling for the PrintQueu
 
 **Current:** `pip` + `tox`
 **Alternatives:** `uv`, `poetry`, `hatch`, `nox`
-**Decision:** **Introduce `uv` to speed up CI/CD, keep `tox` for orchestration.**
 
-- _Reasoning:_ `uv` (by Astral, makers of Ruff) is a drop-in replacement for `pip` that resolves and installs dependencies 10-100x faster. We can use `tox-uv` to make our Tox runs instantaneous.
-- _Action:_ Update GitHub actions to use `uv pip install` if desired, or simply document `uv` usage for local developers.
+**Evaluation of Alternatives:**
+- `pip`: The default standard. Reliable but notoriously slow at resolving dependencies and lacks built-in lockfile or project management capabilities out of the box (requires `pip-tools` or `venv` orchestration).
+- `poetry`: Excellent for dependency management and publishing. However, dependency resolution can be slow on larger projects, and its custom lockfile format isn't universally standard.
+- `hatch`: A great modern build backend and environment manager, but it delegates dependency resolution to `pip` internally, meaning it doesn't gain the speed advantages of Rust-based tools.
+- `nox`: A modern alternative to `tox` that uses Python scripts instead of INI files. While powerful, we are sticking to `tox` due to its simplicity and the availability of `tox-uv`.
+- `uv`: An incredibly fast, Rust-based Python package and project manager by Astral. It can act as a drop-in replacement for `pip`, but also supports full project management via `uv sync` and a strict `uv.lock` file.
+
+**Decision:** **Migrate entirely to `uv` and adopt `uv sync`. Keep `tox` for multi-environment orchestration using `tox-uv`.**
+
+- _Pros of `uv sync`:_
+  - **Speed:** Dependency resolution and installation are 10-100x faster than `pip`.
+  - **Reproducibility:** `uv sync` reads from `uv.lock`, guaranteeing exact dependency versions across environments, Docker builds, and CI pipelines.
+  - **Simplicity:** Eliminates the need to manually manage virtual environments (`python -m venv` and `source venv/bin/activate`). `uv run` handles execution automatically.
+- _Cons of `uv sync`:_
+  - **Developer Onboarding:** Requires developers to install a new tool (`uv`) rather than relying on Python's built-in `pip` and `venv`.
+- _Action:_ Adopt `uv.lock`, update Docker multi-stage builds to utilize Astral's caching recommendations, update CI pipelines to use `astral-sh/setup-uv`, and adopt `tox-uv` to make our Tox runs instantaneous.
 
 ## Documentation
 
@@ -52,3 +65,5 @@ This document outlines the evaluation of modern Python tooling for the PrintQueu
 - Removed `pylint` and `mypy`.
 - Added `pyright`.
 - Configured `ruff format`.
+- Migrated environment management from `pip` to `uv sync` + `uv.lock`.
+- Integrated `tox-uv` for fast test execution.

@@ -57,6 +57,7 @@ dev = [
     "pytest-cov",
     "hypothesis",
     "tox",
+    "tox-uv",
     "ruff",
     "pyright"
 ]
@@ -94,6 +95,7 @@ envlist = py310, ruff, pyright
 isolated_build = True
 
 [testenv]
+runner = uv-venv-lock-runner
 deps =
     pytest
     pytest-asyncio
@@ -114,12 +116,14 @@ commands =
     pytest tests/ --cov=src --cov-fail-under=85
 
 [testenv:ruff]
+allowlist_externals = ruff
 deps = ruff
 commands =
     ruff check src/ tests/
     ruff format --check src/ tests/
 
 [testenv:pyright]
+allowlist_externals = pyright
 deps =
     pyright
     pytest
@@ -133,3 +137,8 @@ deps =
     watchdog
 commands = pyright src/ tests/
 """
+
+[dependency-groups]
+dev = [
+    "pyright>=1.1.408",
+]

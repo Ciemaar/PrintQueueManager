@@ -22,26 +22,29 @@ If you are new to background tasks, please read the [Celery & Redis Tutorial](CE
 
 ## Setup Development Environment
 
-Ensure you have Python 3.10+ and a local PostgreSQL + Redis instance running. We recommend using `docker-compose` to spin up your databases and then running your web/worker/watchdog locally via virtual environment. (See the [Docker Compose Guide](DOCKER_GUIDE.md) for detailed container instructions.)
+Ensure you have Python 3.10+ and a local PostgreSQL + Redis instance running. We recommend using `docker-compose` to spin up your databases and then running your web/worker/watchdog locally using [uv](https://docs.astral.sh/uv/) for incredibly fast dependency management. (See the [Docker Compose Guide](DOCKER_GUIDE.md) for detailed container instructions.)
 
 ```bash
-# Set up a virtual environment (e.g. pyenv, virtualenv, uv)
-python3 -m venv venv
-source venv/bin/activate
-pip install -e ".[dev]"
+# Install uv if you haven't already (https://docs.astral.sh/uv/getting-started/installation/)
+# This command automatically creates a managed environment and installs all dependencies and dev tools
+uv sync --all-extras --dev
+
+# Run any python script using uv run:
+uv run pytest tests/
+uv run uvicorn src.app.main:app --reload
 ```
 
 ## Running Static Analysis & Tests
 
-We rely on `tox` for automation. Running `tox` will check the code quality across the entire project.
+We rely on `tox` for automation. Running `tox` will check the code quality across the entire project. Using `uv run` ensures tests run in your isolated `uv` environment.
 
-- `tox -e pyright`: Runs Pyright type checking.
-- `tox -e ruff`: Runs Ruff linter and formatter.
-- `pytest tests/`: Runs unit and integration tests with `hypothesis` for property-based generation and testing of schema components.
+- `uv run tox -e pyright`: Runs Pyright type checking.
+- `uv run tox -e ruff`: Runs Ruff linter and formatter.
+- `uv run pytest tests/`: Runs unit and integration tests with `hypothesis` for property-based generation and testing of schema components.
 
 ```bash
 # Run all static analysis
-tox -e ruff,pyright
+uv run tox -e ruff,pyright
 ```
 
 ## Integrating a New 3D Platform
