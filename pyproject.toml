@@ -44,7 +44,8 @@ dependencies = [
     "requests",
     "httpx",
     "ollama",
-    "playwright"
+    "playwright",
+    "watchfiles"
 ]
 requires-python = ">=3.10"
 
@@ -111,6 +112,7 @@ deps =
     ollama
     psycopg2-binary
     playwright
+    watchfiles
 commands =
     pytest tests/ --cov=src --cov-fail-under=85
 
@@ -126,6 +128,7 @@ deps =
     pytest
     hypothesis
     playwright
+    watchfiles
     sqlalchemy
     pydantic
     pydantic-ai
