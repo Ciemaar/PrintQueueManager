@@ -114,6 +114,16 @@ allowlist_externals = pyright
 extras = dev
 deps =
     pyright
+    pytest
+    hypothesis
+    playwright
+    watchfiles
+    sqlalchemy
+    pydantic
+    pydantic-ai
+    fastapi
+    celery
+    watchdog
 commands = pyright src/ tests/
 """
 

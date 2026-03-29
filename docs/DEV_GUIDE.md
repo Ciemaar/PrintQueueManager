@@ -22,7 +22,7 @@ If you are new to background tasks, please read the [Celery & Redis Tutorial](CE
 
 ## Setup Development Environment
 
-Ensure you have Python 3.10+ and a local PostgreSQL + Redis instance running. We recommend using `docker-compose` to spin up your databases and then running your web/worker/watchdog locally using [uv](https://docs.astral.sh/uv/) for incredibly fast dependency management. (See the [Docker Compose Guide](DOCKER_GUIDE.md) for detailed container instructions.)
+Ensure you have Python 3.10+ and a local PostgreSQL + Redis instance running. We recommend using `docker compose` to spin up your databases and then running your web/worker/watchdog locally using [uv](https://docs.astral.sh/uv/) for incredibly fast dependency management. (See the [Docker Compose Guide](DOCKER_GUIDE.md) for detailed container instructions.)
 
 ```bash
 # Install uv if you haven't already (https://docs.astral.sh/uv/getting-started/installation/)
