@@ -21,14 +21,11 @@ Welcome! If you are an AI assistant working on this repository, please read thes
 Before submitting any code, you MUST run the following static analysis tools and tests to verify your changes:
 
 ```bash
-# Set PYTHONPATH for tests
-export PYTHONPATH=src
-
 # Run tests
-pytest tests/
+poe test
 
 # Run static analysis
-tox -e ruff,pyright
+poe check
 ```
 
 All new features and API routes should include property-based tests using `pytest` and `hypothesis` when appropriate.

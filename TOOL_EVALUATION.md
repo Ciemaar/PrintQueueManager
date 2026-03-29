@@ -18,7 +18,7 @@ This document outlines the evaluation of modern Python tooling for the PrintQueu
 **Decision:** **Migrate to `pyright`.**
 
 - _Reasoning:_ `mypy` is the classic standard, but `pyright` (maintained by Microsoft) is significantly faster, handles complex generic inference better, and integrates perfectly with `pydantic` (which this project relies on heavily for agentic extraction).
-- _Action:_ Remove `mypy` from dependencies and CI, configure `pyproject.toml` for `pyright`, and update the `tox.ini`.
+- _Action:_ Remove `mypy` from dependencies and CI, and configure `pyproject.toml` for `pyright`.
 
 ## Testing
 
@@ -31,11 +31,11 @@ This document outlines the evaluation of modern Python tooling for the PrintQueu
 ## Environment Management & Automation
 
 **Current:** `pip` + `tox`
-**Alternatives:** `uv`, `poetry`, `hatch`, `nox`
-**Decision:** **Introduce `uv` to speed up CI/CD, keep `tox` for orchestration.**
+**Alternatives:** `uv`, `poetry`, `poethepoet`, `hatch`, `nox`
+**Decision:** **Introduce `poethepoet` for task orchestration, keep `pip`/`uv` for environment management.**
 
-- _Reasoning:_ `uv` (by Astral, makers of Ruff) is a drop-in replacement for `pip` that resolves and installs dependencies 10-100x faster. We can use `tox-uv` to make our Tox runs instantaneous.
-- _Action:_ Update GitHub actions to use `uv pip install` if desired, or simply document `uv` usage for local developers.
+- _Reasoning:_ `poethepoet` is a modern, faster task runner that defines tasks directly in `pyproject.toml` and allows complex composition of tasks. It replaces the need for `tox` and avoids duplicate configuration files. `uv` can be documented to speed up installations.
+- _Action:_ Replace `tox` with `poethepoet` across CI and developer environments.
 
 ## Documentation
 

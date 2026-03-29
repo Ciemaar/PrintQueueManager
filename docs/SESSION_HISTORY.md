@@ -43,8 +43,8 @@ The user provided PR reviews modifying the data model and UI:
 ## 5. Tool Evaluation, Python 3.13, and CI Automation
 
 - **Python 3.13**: Updated the Docker infrastructure and linter target configurations to utilize Python 3.13 features.
-- **Tool Evaluation**: Evaluated modern Python toolchains, resulting in the adoption of **Ruff** (for all linting and formatting, replacing Pylint) and **Pyright** (replacing Mypy for faster, tighter Pydantic validation). Documented in `TOOL_EVALUATION.md`.
-- **Centralization**: Merged `tox.ini` into `pyproject.toml` to consolidate configuration files.
+- **Tool Evaluation**: Evaluated modern Python toolchains, resulting in the adoption of **Ruff** (for all linting and formatting, replacing Pylint), **Pyright** (replacing Mypy for faster, tighter Pydantic validation), and **Poe the Poet** (replacing Tox for task running). Documented in `TOOL_EVALUATION.md`.
+- **Centralization**: Merged task definitions into `pyproject.toml` using `poethepoet` to consolidate configuration files.
 - **Docstrings**: Enforced the Ruff pydocstyle (`D`) ruleset to ensure no method, class, or module lacked a meaningful description. Rewrote placeholder docstrings to be highly descriptive.
 - **GitHub Actions CI & Coverage**: Created a workflow to test code on pushes and PRs, ensuring a minimum code coverage threshold of 85%. Expanded test suites utilizing `unittest.mock` to raise coverage above 90%.
 

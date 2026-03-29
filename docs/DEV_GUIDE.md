@@ -33,15 +33,15 @@ pip install -e ".[dev]"
 
 ## Running Static Analysis & Tests
 
-We rely on `tox` for automation. Running `tox` will check the code quality across the entire project.
+We rely on `poethepoet` for automation. Running `poe check` will check the code quality across the entire project.
 
-- `tox -e pyright`: Runs Pyright type checking.
-- `tox -e ruff`: Runs Ruff linter and formatter.
-- `pytest tests/`: Runs unit and integration tests with `hypothesis` for property-based generation and testing of schema components.
+- `poe pyright`: Runs Pyright type checking.
+- `poe ruff`: Runs Ruff linter and formatter.
+- `poe test`: Runs unit and integration tests with `hypothesis` for property-based generation and testing of schema components.
 
 ```bash
 # Run all static analysis
-tox -e ruff,pyright
+poe check
 ```
 
 ## Integrating a New 3D Platform
