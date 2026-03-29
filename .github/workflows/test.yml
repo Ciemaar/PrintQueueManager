@@ -21,6 +21,8 @@ jobs:
       with:
         python-version: "3.14"
         enable-cache: true
+    - name: Verify uv.lock is up-to-date
+      run: uv lock --locked
     - name: Install dependencies
       run: |
         uv sync --all-extras --dev

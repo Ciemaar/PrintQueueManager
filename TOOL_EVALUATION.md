@@ -34,6 +34,7 @@ This document outlines the evaluation of modern Python tooling for the PrintQueu
 **Alternatives:** `uv`, `poetry`, `hatch`, `nox`
 
 **Evaluation of Alternatives:**
+
 - `pip`: The default standard. Reliable but notoriously slow at resolving dependencies and lacks built-in lockfile or project management capabilities out of the box (requires `pip-tools` or `venv` orchestration).
 - `poetry`: Excellent for dependency management and publishing. However, dependency resolution can be slow on larger projects, and its custom lockfile format isn't universally standard.
 - `hatch`: A great modern build backend and environment manager, but it delegates dependency resolution to `pip` internally, meaning it doesn't gain the speed advantages of Rust-based tools.
