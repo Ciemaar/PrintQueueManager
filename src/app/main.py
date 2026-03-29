@@ -5,17 +5,21 @@ from fastapi.responses import HTMLResponse
 from src.app.logging_config import setup_logging
 from datetime import datetime
 from datetime import datetime
+
+from fastapi import Depends, FastAPI, Form, Request
+from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-from src.app.database import get_db, Base, engine
+
+from src.app.database import Base, engine, get_db
 from src.app.models import PrintJob, PrintStatus
 from src.worker.celery_app import (
-    sync_thingiverse,
-    sync_makerworld,
-    sync_printables,
     sync_cults3d,
-    sync_minihoarder,
     sync_local,
+    sync_makerworld,
+    sync_minihoarder,
+    sync_printables,
+    sync_thingiverse,
 )
 
 app = FastAPI(title="Print Queue Manager")
@@ -29,10 +33,11 @@ def startup_event():
 
     # Run Alembic migrations programmatically
     try:
+        import alembic.command
         import alembic.config
 
-        alembicArgs = ["--raiseerr", "upgrade", "head"]
-        alembic.config.main(argv=alembicArgs)
+        alembic_cfg = alembic.config.Config("alembic.ini")
+        alembic.command.upgrade(alembic_cfg, "head")
     except Exception as e:
         print(f"Failed to run database migrations: {e}")
 

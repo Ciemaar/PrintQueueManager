@@ -1,15 +1,15 @@
 """LLM-based web scraper for extracting 3D model metadata from unstructured HTML."""
 
 import os
-from pydantic import BaseModel, Field
-from typing import List, Optional, Any
-from pydantic_ai import Agent
+from typing import Any, List, Optional
 
 from playwright.sync_api import sync_playwright
+from pydantic import BaseModel, Field
+from pydantic_ai import Agent
 
+from src.app.config import settings
 from src.app.database import SessionLocal, engine
 from src.app.models import Base, PrintJob
-from src.app.config import settings
 
 
 class ExtractedModelInfo(BaseModel):
