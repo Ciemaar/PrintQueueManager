@@ -33,10 +33,18 @@ def startup_event():
 
     # Run Alembic migrations programmatically
     try:
+        import os
+
         import alembic.command
         import alembic.config
 
-        alembic_cfg = alembic.config.Config("alembic.ini")
+        project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+        alembic_ini_path = os.path.join(project_root, "alembic.ini")
+        alembic_dir = os.path.join(project_root, "alembic")
+
+        alembic_cfg = alembic.config.Config(alembic_ini_path)
+        alembic_cfg.set_main_option("script_location", alembic_dir)
+
         alembic.command.upgrade(alembic_cfg, "head")
     except Exception as e:
         print(f"Failed to run database migrations: {e}")
