@@ -48,7 +48,7 @@ services:
 
   worker:
     build: .
-    command: watchfiles --filter default 'celery -A src.worker.celery_app worker --loglevel=info' ./src
+    command: celery -A src.worker.celery_app worker --loglevel=info
     volumes:
       - ./src:/app/src
       - ./watched_folder:/watched_folder
@@ -65,7 +65,7 @@ services:
 
   beat:
     build: .
-    command: watchfiles --filter default 'celery -A src.worker.celery_app beat --loglevel=info' ./src
+    command: celery -A src.worker.celery_app beat --loglevel=info
     volumes:
       - ./src:/app/src
     environment:
@@ -80,7 +80,7 @@ services:
 
   watchdog:
     build: .
-    command: watchfiles --filter default 'python -m src.watchdog.main' ./src
+    command: python -m src.watchdog.main
     volumes:
       - ./src:/app/src
       - ./watched_folder:/watched_folder

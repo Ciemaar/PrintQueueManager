@@ -1,6 +1,5 @@
 """LLM-based web scraper for extracting 3D model metadata from unstructured HTML."""
 
-import logging
 import os
 from typing import Any, List, Optional
 
@@ -11,8 +10,6 @@ from pydantic_ai import Agent
 from src.app.config import settings
 from src.app.database import SessionLocal, engine
 from src.app.models import Base, PrintJob
-
-logger = logging.getLogger(__name__)
 
 
 class ExtractedModelInfo(BaseModel):
@@ -60,9 +57,9 @@ def get_page_html(source: str, url: str, credential: str = "") -> str:
 
     # If no cookie is provided for authentication, the mocked HTML is returned for safety
     if not cookie_str:
-        logger.info(f"No authentication cookie found for {source}.")
+        print(f"No authentication cookie found for {source}.")
         if getattr(settings, "demo_mode", False):
-            logger.info("Falling back to mock data.")
+            print("Falling back to mock data.")
             return f"""
             <html><body>
             <div class="model-card">
@@ -104,7 +101,7 @@ def get_page_html(source: str, url: str, credential: str = "") -> str:
             browser.close()
             return content
     except Exception as e:
-        logger.error(f"Failed to fetch {url} using Playwright: {e}")
+        print(f"Failed to fetch {url} using Playwright: {e}")
         return ""
 
 
@@ -118,13 +115,13 @@ def run_scraper(source: str, url: str, credential: str = "") -> List[dict[str, A
     if not html_content:
         return []
 
-    logger.info(f"Agentic extraction starting for {source}...")
+    print(f"Agentic extraction starting for {source}...")
 
     try:
         result = scraper_agent.run_sync(html_content)
         data = result.data.models  # type: ignore
     except Exception as e:
-        logger.error(f"Error communicating with Ollama: {e}. Returning fallback mock data.")
+        print(f"Error communicating with Ollama: {e}. Returning fallback mock data.")
         data = [
             ExtractedModelInfo(
                 title=f"Mock Vase from {source}",
@@ -158,7 +155,7 @@ def run_scraper(source: str, url: str, credential: str = "") -> List[dict[str, A
                 saved_items.append(model.model_dump())
         db.commit()
     except Exception as e:
-        logger.error(f"Database error saving models: {e}")
+        print(f"Database error saving models: {e}")
         db.rollback()
     finally:
         db.close()
@@ -167,6 +164,6 @@ def run_scraper(source: str, url: str, credential: str = "") -> List[dict[str, A
 
 
 if __name__ == "__main__":
-    logger.info("Testing scraping manually...")
+    print("Testing scraping manually...")
     run_scraper("Test Source", "https://test.example.com")
-    logger.info("Test complete.")
+    print("Test complete.")

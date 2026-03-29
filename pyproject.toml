@@ -44,8 +44,7 @@ dependencies = [
     "requests",
     "httpx",
     "ollama",
-    "playwright",
-    "watchfiles"
+    "playwright"
 ]
 requires-python = ">=3.10"
 

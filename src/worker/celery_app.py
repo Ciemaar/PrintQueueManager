@@ -1,6 +1,5 @@
 """Celery worker configuration and scheduled tasks for external data sync."""
 
-import logging
 import time
 from pathlib import Path
 from typing import Any, List
@@ -15,9 +14,6 @@ from src.app.models import PrintJob
 from .llm_scraper import run_scraper
 from src.app.models import PrintJob, ServiceConfig
 from .thingiverse_api import fetch_thingiverse_collections
-
-setup_logging()
-logger = logging.getLogger(__name__)
 
 celery_app = Celery("printqueue", broker=settings.redis_url, backend=settings.redis_url)
 
@@ -73,16 +69,16 @@ def sync_makerworld() -> List[dict[str, Any]]:
     """
     enabled, url, credential = _get_service_config("makerworld")
     if not enabled:
-        logger.info("MakerWorld synchronization disabled or not configured. Skipping.")
+        print("MakerWorld synchronization disabled or not configured. Skipping.")
         return []
 
     if not url:
         url = "https://makerworld.com/en/user/likes"
 
-    logger.info(f"Starting MakerWorld synchronization via Ollama agent at {url}...")
+    print(f"Starting MakerWorld synchronization via Ollama agent at {url}...")
     time.sleep(2)
     result = run_scraper("makerworld", url, credential)
-    logger.info(f"Sync complete. Found {len(result)} models.")
+    print(f"Sync complete. Found {len(result)} models.")
     return result
 
 
@@ -96,16 +92,16 @@ def sync_printables() -> List[dict[str, Any]]:
     """
     enabled, url, credential = _get_service_config("printables")
     if not enabled:
-        logger.info("Printables synchronization disabled or not configured. Skipping.")
+        print("Printables synchronization disabled or not configured. Skipping.")
         return []
 
     if not url:
         url = "https://www.printables.com/user/collections"
 
-    logger.info(f"Starting Printables synchronization via Ollama agent at {url}...")
+    print(f"Starting Printables synchronization via Ollama agent at {url}...")
     time.sleep(2)
     result = run_scraper("printables", url, credential)
-    logger.info(f"Sync complete. Found {len(result)} models.")
+    print(f"Sync complete. Found {len(result)} models.")
     return result
 
 
@@ -120,13 +116,13 @@ def sync_thingiverse() -> List[dict[str, Any]]:
     """
     enabled, url, credential = _get_service_config("thingiverse")
     if not enabled:
-        logger.info("Thingiverse synchronization disabled or not configured. Skipping.")
+        print("Thingiverse synchronization disabled or not configured. Skipping.")
         return []
 
     if not url:
         url = "https://www.thingiverse.com/user/collections"
 
-    logger.info("Starting Thingiverse synchronization via Official API...")
+    print("Starting Thingiverse synchronization via Official API...")
     time.sleep(2)
     # Prefer API logic for structured Thingiverse data.
     # If a token isn't provided, `fetch_thingiverse_collections` simply returns `[]`.
@@ -134,7 +130,7 @@ def sync_thingiverse() -> List[dict[str, Any]]:
     if not result:
         logger.info(f"Fallback to Ollama agent for Thingiverse at {url}...")
         result = run_scraper("thingiverse", url, credential)
-    logger.info(f"Sync complete. Found {len(result)} models.")
+    print(f"Sync complete. Found {len(result)} models.")
     return result
 
 
@@ -148,13 +144,13 @@ def sync_cults3d() -> List[dict[str, Any]]:
     """
     enabled, url, credential = _get_service_config("cults3d")
     if not enabled:
-        logger.info("Cults3D synchronization disabled or not configured. Skipping.")
+        print("Cults3D synchronization disabled or not configured. Skipping.")
         return []
 
     if not url:
         url = "https://cults3d.com/en/users/collections"
 
-    logger.info(f"Starting Cults3D synchronization via Ollama agent at {url}...")
+    print(f"Starting Cults3D synchronization via Ollama agent at {url}...")
     time.sleep(2)
     result = run_scraper("cults3d", url, credential)
     logger.info(f"Sync complete. Found {len(result)} models.")
@@ -171,16 +167,16 @@ def sync_minihoarder() -> List[dict[str, Any]]:
     """
     enabled, url, credential = _get_service_config("minihoarder")
     if not enabled:
-        logger.info("Minihoarder synchronization disabled or not configured. Skipping.")
+        print("Minihoarder synchronization disabled or not configured. Skipping.")
         return []
 
     if not url:
         url = "https://www.minihoarder.com/library/"
 
-    logger.info(f"Starting Minihoarder synchronization via Ollama agent at {url}...")
+    print(f"Starting Minihoarder synchronization via Ollama agent at {url}...")
     time.sleep(2)
     result = run_scraper("minihoarder", url, credential)
-    logger.info(f"Sync complete. Found {len(result)} models.")
+    print(f"Sync complete. Found {len(result)} models.")
     return result
 
 
@@ -192,7 +188,7 @@ def sync_local() -> List[dict[str, Any]]:
     This is useful for bulk-importing a pre-existing directory that was already
     populated before the Watchdog service was running.
     """
-    logger.info(f"Scanning local directory for new models: {settings.watch_directory}")
+    print(f"Scanning local directory for new models: {settings.watch_directory}")
     watch_path = Path(settings.watch_directory)
     if not watch_path.exists():
         watch_path.mkdir(parents=True, exist_ok=True)
@@ -200,7 +196,8 @@ def sync_local() -> List[dict[str, Any]]:
     added_files = []
     db = SessionLocal()
     try:
-        logger.debug(f"Scanning directory: {watch_path} recursively")
+        if settings.verbose:
+            print(f"[VERBOSE] Scanning directory: {watch_path} recursively")
 
         # Get a set of all currently known local file paths to avoid N queries
         known_paths = {
@@ -217,8 +214,9 @@ def sync_local() -> List[dict[str, Any]]:
 
                 is_broken_symlink = file_path.is_symlink() and not file_path.exists()
 
-                status_log = "broken symlink" if is_broken_symlink else "new 3D file"
-                logger.debug(f"Discovered {status_log}: {file_path.name} at {file_path}")
+                if settings.verbose:
+                    status_log = "broken symlink" if is_broken_symlink else "new 3D file"
+                    print(f"[VERBOSE] Discovered {status_log}: {file_path.name} at {file_path}")
 
                 # If the symlink is broken, we cannot stat() it directly.
                 file_size = 0 if is_broken_symlink else file_path.stat().st_size
@@ -237,11 +235,11 @@ def sync_local() -> List[dict[str, Any]]:
 
         if added_files:
             db.commit()
-            logger.info(f"Added {len(added_files)} local files to print queue.")
+            print(f"Added {len(added_files)} local files to print queue.")
         else:
-            logger.info("No new local files discovered.")
+            print("No new local files discovered.")
     except Exception as e:
-        logger.error(f"Error synchronizing local files: {e}")
+        print(f"Error synchronizing local files: {e}")
         db.rollback()
     finally:
         db.close()

@@ -14,7 +14,7 @@ A Local, Agentic 3D Print Queue Management System based on a local-first archite
 ### Prerequisites
 
 - Docker and Docker Compose
-- Python 3.10+ (tested on 3.14)
+- Python 3.10+
 - An internet connection for the first run (to pull models).
 
 ### Instructions
@@ -30,15 +30,15 @@ A Local, Agentic 3D Print Queue Management System based on a local-first archite
 
    ```bash
    # Ollama starts automatically in the Docker Compose, but you need to pull the model you intend to use.
-   docker compose up -d ollama
+   docker-compose up -d ollama
    # Wait a few seconds for ollama to start, then pull llama3.2 (or your preferred model):
-   docker compose exec -it ollama ollama pull llama3.2
+   docker exec -it print-queue-manager_ollama_1 ollama pull llama3.2
    ```
 
 3. **Start the Application:**
 
    ```bash
-   docker compose up -d --build\n\n   For more detailed commands on stopping, viewing logs, and managing containers, see [`docs/DOCKER_GUIDE.md`](docs/DOCKER_GUIDE.md).
+   docker-compose up -d --build\n\n   For more detailed commands on stopping, viewing logs, and managing containers, see [`docs/DOCKER_GUIDE.md`](docs/DOCKER_GUIDE.md).
    ```
 
 4. **Access the Application:**

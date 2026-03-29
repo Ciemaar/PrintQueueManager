@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 from datetime import datetime
 
 from fastapi import Depends, FastAPI, Form, Request
+from fastapi import FastAPI, Request, Depends, Form
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
@@ -55,7 +56,7 @@ async def lifespan(app: FastAPI):
     try:
         sync_local.delay()
     except Exception as e:
-        logger.error(f"Failed to trigger initial sync_local task: {e}")
+        print(f"Failed to trigger initial sync_local task: {e}")
 
     yield
 
