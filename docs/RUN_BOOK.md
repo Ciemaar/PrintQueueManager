@@ -94,12 +94,10 @@ The project uses a unified CLI to launch components individually if you don't wa
 _(Ensure `DATABASE_URL` and `REDIS_URL` are set as environment variables to point to your local development containers!)_
 
 **Testing and Static Analysis:**
-Before committing code, verify it against the project's strict rules using `tox`. This will run the `ruff` linter/formatter, the `pyright` type-checker, and the `pytest` suite with coverage.
+Before committing code, verify it against the project's strict rules using `poethepoet`. This will run the `ruff` linter/formatter, the `pyright` type-checker, and the `pytest` suite with coverage.
 
 ```bash
-export PYTHONPATH=src
-tox -e ruff,pyright
-pytest tests/ --cov=src --cov-fail-under=85
+poe check
 ```
 
 _(For detailed architectural decisions regarding HTMX and Pyright, see `DEV_GUIDE.md` and `HTMX_TUTORIAL.md`)_.

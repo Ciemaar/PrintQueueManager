@@ -58,7 +58,7 @@ dev = [
     "pytest-asyncio",
     "pytest-cov",
     "hypothesis",
-    "tox",
+    "poethepoet",
     "ruff",
     "pyright"
 ]
@@ -89,51 +89,20 @@ include = ["src", "tests"]
 pythonVersion = "3.14"
 typeCheckingMode = "basic"
 
-[tool.tox]
-legacy_tox_ini = """
-[tox]
-envlist = py314, ruff, pyright
-isolated_build = True
+[tool.poe.tasks]
+test = { cmd = "pytest tests/ --cov=src --cov-fail-under=85", env = { PYTHONPATH = "." } }
+pyright = "pyright src/ tests/"
 
-[testenv]
-deps =
-    pytest
-    pytest-asyncio
-    pytest-cov
-    hypothesis
-    fastapi
-    httpx
-    sqlalchemy
-    pydantic
-    pydantic-ai
-    celery
-    redis
-    watchdog
-    ollama
-    psycopg2-binary
-    playwright
-    watchfiles
-commands =
-    pytest tests/ --cov=src --cov-fail-under=85
+[tool.poe.tasks.ruff_check]
+cmd = "ruff check src/ tests/"
 
-[testenv:ruff]
-deps = ruff
-commands =
-    ruff check src/ tests/
-    ruff format --check src/ tests/
+[tool.poe.tasks.ruff_format]
+cmd = "ruff format --check src/ tests/"
 
-[testenv:pyright]
-deps =
-    pyright
-    pytest
-    hypothesis
-    playwright
-    watchfiles
-    sqlalchemy
-    pydantic
-    pydantic-ai
-    fastapi
-    celery
-    watchdog
-commands = pyright src/ tests/
-"""
+[tool.poe.tasks.ruff]
+sequence = ["ruff_check", "ruff_format"]
+ignore_fail = false
+
+[tool.poe.tasks.check]
+sequence = ["ruff", "pyright", "test"]
+ignore_fail = false
