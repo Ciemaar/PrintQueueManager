@@ -141,10 +141,10 @@ def test_update_settings_new_config():
         "/settings/update",
         data={
             "service_name": "makerworld",
-            "enabled": 1,
+            "enabled": "1",
             "target_url": "http://my-target.com",
             "credential": "test_session_cookie",
-        }
+        },
     )
     assert response.status_code == 200
     assert b"Settings saved for Makerworld!" in response.content
@@ -161,10 +161,7 @@ def test_update_settings_existing_config_no_credential():
     """Verify that posting updates an existing DB record and preserves credential if empty."""
     db = TestingSessionLocal()
     existing = ServiceConfig(
-        service_name="makerworld",
-        enabled=0,
-        target_url="old_url",
-        credential="old_credential"
+        service_name="makerworld", enabled=0, target_url="old_url", credential="old_credential"
     )
     db.add(existing)
     db.commit()
@@ -173,10 +170,10 @@ def test_update_settings_existing_config_no_credential():
         "/settings/update",
         data={
             "service_name": "makerworld",
-            "enabled": 1,
+            "enabled": "1",
             "target_url": "new_url",
             "credential": "",
-        }
+        },
     )
     assert response.status_code == 200
 

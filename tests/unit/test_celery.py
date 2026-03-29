@@ -75,6 +75,7 @@ def test_sync_makerworld(mock_run_scraper, mock_get_config):
     )
     assert result == [{"title": "Test"}]
 
+
 @patch("src.worker.celery_app._get_service_config")
 def test_sync_makerworld_disabled(mock_get_config):
     """Verify that the MakerWorld task exits early if disabled."""
