@@ -2444,6 +2444,7 @@ dependencies = [
     { name = "sqlalchemy" },
     { name = "uvicorn" },
     { name = "watchdog" },
+    { name = "watchfiles" },
 ]
 
 [package.optional-dependencies]
@@ -2490,6 +2491,7 @@ requires-dist = [
     { name = "tox-uv", marker = "extra == 'dev'" },
     { name = "uvicorn" },
     { name = "watchdog" },
+    { name = "watchfiles" },
 ]
 provides-extras = ["dev"]
 

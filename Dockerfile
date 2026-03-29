@@ -23,5 +23,12 @@ RUN uv sync --frozen --no-install-project --no-dev
 COPY ./src /app/src/
 RUN uv sync --frozen --no-dev
 
+RUN useradd -m appuser \
+    && mkdir -p /watched_folder \
+    && chown -R appuser:appuser /app \
+    && chown -R appuser:appuser /watched_folder
+
+USER appuser
+
 # Use uv to run the application natively in the container
 CMD ["uv", "run", "uvicorn", "src.app.main:app", "--host", "0.0.0.0", "--port", "8000"]
