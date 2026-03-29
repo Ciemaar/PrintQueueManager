@@ -126,25 +126,23 @@ def test_reorder_job():
     updated_job3 = db.query(PrintJob).filter(PrintJob.id == job3.id).first()
     assert updated_job3 is not None
     # (1.0 + 2.0) / 2.0 = 1.5
-    assert updated_job3.user_priority == 1.5
+    assert getattr(updated_job3, "user_priority") == 1.5
 
     # Move job2 to top (above job1)
-    response = client.post(
-        f"/jobs/{job2.id}/reorder", data={"above_id": "", "below_id": str(job1.id)}
-    )
+    response = client.post(f"/jobs/{job2.id}/reorder", data={"below_id": str(job1.id)})
     assert response.status_code == 200
     db.expire_all()
     updated_job2 = db.query(PrintJob).filter(PrintJob.id == job2.id).first()
-    assert updated_job2.user_priority == 0.0  # 1.0 - 1.0
+    assert updated_job2 is not None
+    assert getattr(updated_job2, "user_priority") == 0.0  # 1.0 - 1.0
 
     # Move job1 to bottom (below job3 which is now 1.5)
-    response = client.post(
-        f"/jobs/{job1.id}/reorder", data={"above_id": str(job3.id), "below_id": ""}
-    )
+    response = client.post(f"/jobs/{job1.id}/reorder", data={"above_id": str(job3.id)})
     assert response.status_code == 200
     db.expire_all()
     updated_job1 = db.query(PrintJob).filter(PrintJob.id == job1.id).first()
-    assert updated_job1.user_priority == 2.5  # 1.5 + 1.0
+    assert updated_job1 is not None
+    assert getattr(updated_job1, "user_priority") == 2.5  # 1.5 + 1.0
 
     # Non-existent job
     response = client.post("/jobs/999/reorder", data={"above_id": str(job1.id)})

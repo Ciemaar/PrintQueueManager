@@ -223,7 +223,7 @@ def normalize_priorities() -> None:
 
         # Reassign sequential float priorities
         for index, job in enumerate(jobs, start=1):
-            job.user_priority = float(index)
+            setattr(job, "user_priority", float(index))
 
         db.commit()
         logger.info(f"Successfully normalized priorities for {len(jobs)} active jobs.")
