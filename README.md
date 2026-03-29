@@ -14,7 +14,7 @@ A Local, Agentic 3D Print Queue Management System based on a local-first archite
 ### Prerequisites
 
 - Docker and Docker Compose
-- Python 3.10+ (tested on 3.14)
+- Python 3.10+
 - An internet connection for the first run (to pull models).
 
 ### Instructions

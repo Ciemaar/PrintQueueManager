@@ -24,7 +24,6 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
-    "Programming Language :: Python :: 3.14",
     "Topic :: Printing",
 ]
 dependencies = [
@@ -44,8 +43,7 @@ dependencies = [
     "requests",
     "httpx",
     "ollama",
-    "playwright",
-    "watchfiles"
+    "playwright"
 ]
 requires-python = ">=3.10"
 
@@ -65,7 +63,7 @@ dev = [
 
 [tool.ruff]
 line-length = 100
-target-version = "py314"
+target-version = "py313"
 
 [tool.ruff.lint]
 select = [
@@ -86,13 +84,13 @@ asyncio_mode = "auto"
 
 [tool.pyright]
 include = ["src", "tests"]
-pythonVersion = "3.14"
+pythonVersion = "3.10"
 typeCheckingMode = "basic"
 
 [tool.tox]
 legacy_tox_ini = """
 [tox]
-envlist = py314, ruff, pyright
+envlist = py310, ruff, pyright
 isolated_build = True
 
 [testenv]
@@ -112,7 +110,6 @@ deps =
     ollama
     psycopg2-binary
     playwright
-    watchfiles
 commands =
     pytest tests/ --cov=src --cov-fail-under=85
 
@@ -128,7 +125,6 @@ deps =
     pytest
     hypothesis
     playwright
-    watchfiles
     sqlalchemy
     pydantic
     pydantic-ai

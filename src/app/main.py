@@ -1,13 +1,11 @@
 """FastAPI application entrypoint and route definitions."""
 
-import logging
-
 from fastapi import FastAPI, Request, Depends, Form
 from fastapi.responses import HTMLResponse
 from src.app.logging_config import setup_logging
 from datetime import datetime
+from datetime import datetime
 from fastapi.templating import Jinja2Templates
-
 from sqlalchemy.orm import Session
 from src.app.database import get_db, Base, engine
 from src.app.models import PrintJob, PrintStatus
@@ -20,21 +18,29 @@ from src.worker.celery_app import (
     sync_local,
 )
 
-logger = logging.getLogger(__name__)
-
-setup_logging()
-
 app = FastAPI(title="Print Queue Manager")
 
 
+import subprocess
+
 @app.on_event("startup")
 def startup_event():
-    """Create database tables on application startup and trigger local sync."""
+    """Create database tables on application startup, run migrations, and trigger local sync."""
+    # Base.metadata.create_all handles creating new tables if they don't exist
     Base.metadata.create_all(bind=engine)
+
+    # Run Alembic migrations programmatically
+    try:
+        import alembic.config
+        alembicArgs = ["--raiseerr", "upgrade", "head"]
+        alembic.config.main(argv=alembicArgs)
+    except Exception as e:
+        print(f"Failed to run database migrations: {e}")
+
     try:
         sync_local.delay()
     except Exception as e:
-        logger.error(f"Failed to trigger initial sync_local task: {e}")
+        print(f"Failed to trigger initial sync_local task: {e}")
 
 
 templates = Jinja2Templates(directory="src/app/templates")
