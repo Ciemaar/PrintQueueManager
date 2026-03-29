@@ -2,7 +2,10 @@
 
 from unittest.mock import MagicMock, patch
 
+from unittest.mock import patch, MagicMock
+from src.app.models import ServiceConfig
 from src.worker.celery_app import (
+    _get_service_config,
     setup_periodic_tasks,
     sync_cults3d,
     sync_local,
@@ -20,6 +23,46 @@ def test_setup_periodic_tasks():
     assert sender_mock.add_periodic_task.call_count == 5
 
 
+@patch("src.worker.celery_app.SessionLocal")
+def test_get_service_config_disabled(mock_session):
+    """Verify _get_service_config returns False if config is missing or disabled."""
+    mock_db = MagicMock()
+    mock_session.return_value = mock_db
+
+    # Case 1: No config found
+    mock_db.query.return_value.filter.return_value.first.return_value = None
+    enabled, url, cred = _get_service_config("missing_service")
+    assert enabled is False
+    assert url == ""
+    assert cred == ""
+
+    # Case 2: Config exists but is disabled
+    disabled_config = MagicMock(spec=ServiceConfig)
+    disabled_config.enabled = 0
+    mock_db.query.return_value.filter.return_value.first.return_value = disabled_config
+    enabled, url, cred = _get_service_config("disabled_service")
+    assert enabled is False
+
+
+@patch("src.worker.celery_app.SessionLocal")
+def test_get_service_config_enabled(mock_session):
+    """Verify _get_service_config returns correctly parsed properties when enabled."""
+    mock_db = MagicMock()
+    mock_session.return_value = mock_db
+
+    enabled_config = MagicMock(spec=ServiceConfig)
+    enabled_config.enabled = 1
+    enabled_config.target_url = "http://target"
+    enabled_config.credential = "secret"
+
+    mock_db.query.return_value.filter.return_value.first.return_value = enabled_config
+    enabled, url, cred = _get_service_config("active_service")
+
+    assert enabled is True
+    assert url == "http://target"
+    assert cred == "secret"
+
+
 @patch("src.worker.celery_app._get_service_config")
 @patch("src.worker.celery_app.run_scraper")
 def test_sync_makerworld(mock_run_scraper, mock_get_config):
@@ -31,6 +74,13 @@ def test_sync_makerworld(mock_run_scraper, mock_get_config):
         "makerworld", "https://makerworld.com/en/user/likes", "fake_cookie"
     )
     assert result == [{"title": "Test"}]
+
+@patch("src.worker.celery_app._get_service_config")
+def test_sync_makerworld_disabled(mock_get_config):
+    """Verify that the MakerWorld task exits early if disabled."""
+    mock_get_config.return_value = (False, "", "")
+    result = sync_makerworld()
+    assert result == []
 
 
 @patch("src.worker.celery_app._get_service_config")
@@ -48,6 +98,14 @@ def test_sync_printables(mock_run_scraper, mock_get_config):
         "printables", "https://www.printables.com/user/collections", "fake_cookie"
     )
     assert result == [{"title": "Test"}]
+
+
+@patch("src.worker.celery_app._get_service_config")
+def test_sync_printables_disabled(mock_get_config):
+    """Verify that the Printables task exits early if disabled."""
+    mock_get_config.return_value = (False, "", "")
+    result = sync_printables()
+    assert result == []
 
 
 @patch("src.worker.celery_app._get_service_config")
@@ -86,6 +144,14 @@ def test_sync_thingiverse_api_fallback(mock_fetch_api, mock_run_scraper, mock_ge
 
 
 @patch("src.worker.celery_app._get_service_config")
+def test_sync_thingiverse_disabled(mock_get_config):
+    """Verify that the Thingiverse task exits early if disabled."""
+    mock_get_config.return_value = (False, "", "")
+    result = sync_thingiverse()
+    assert result == []
+
+
+@patch("src.worker.celery_app._get_service_config")
 @patch("src.worker.celery_app.run_scraper")
 def test_sync_cults3d(mock_run_scraper, mock_get_config):
     """Verify that the Cults3D task triggers the scraper with the correct target."""
@@ -109,6 +175,22 @@ def test_sync_minihoarder(mock_run_scraper, mock_get_config):
         "minihoarder", "https://www.minihoarder.com/library/", "fake_cookie"
     )
     assert result == [{"title": "Test"}]
+
+
+@patch("src.worker.celery_app._get_service_config")
+def test_sync_cults3d_disabled(mock_get_config):
+    """Verify that the Cults3D task exits early if disabled."""
+    mock_get_config.return_value = (False, "", "")
+    result = sync_cults3d()
+    assert result == []
+
+
+@patch("src.worker.celery_app._get_service_config")
+def test_sync_minihoarder_disabled(mock_get_config):
+    """Verify that the Minihoarder task exits early if disabled."""
+    mock_get_config.return_value = (False, "", "")
+    result = sync_minihoarder()
+    assert result == []
 
 
 @patch("src.worker.celery_app.settings")

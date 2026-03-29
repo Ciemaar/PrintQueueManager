@@ -10,6 +10,7 @@ from sqlalchemy.orm import sessionmaker
 from src.app.database import Base, get_db
 from src.app.main import app
 from src.app.models import PrintJob, PrintStatus
+from src.app.models import PrintJob, PrintStatus, ServiceConfig
 
 # Test database
 SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
@@ -121,6 +122,69 @@ def test_update_notes():
     assert updated_job is not None
     assert updated_job.material_notes == "PLA"  # type: ignore
     assert updated_job.timing_notes == "2 hrs"  # type: ignore
+    db.close()
+
+
+def test_settings_page_get():
+    """Verify that the settings configuration page renders successfully."""
+    response = client.get("/settings")
+    assert response.status_code == 200
+    assert b"Service Configuration" in response.content
+    assert b"MakerWorld" in response.content
+
+
+def test_update_settings_new_config():
+    """Verify that posting valid configuration creates a new DB record if missing."""
+    db = TestingSessionLocal()
+
+    response = client.post(
+        "/settings/update",
+        data={
+            "service_name": "makerworld",
+            "enabled": 1,
+            "target_url": "http://my-target.com",
+            "credential": "test_session_cookie",
+        }
+    )
+    assert response.status_code == 200
+    assert b"Settings saved for Makerworld!" in response.content
+
+    config = db.query(ServiceConfig).filter(ServiceConfig.service_name == "makerworld").first()
+    assert config is not None
+    assert getattr(config, "enabled") == 1
+    assert getattr(config, "target_url") == "http://my-target.com"
+    assert getattr(config, "credential") == "test_session_cookie"
+    db.close()
+
+
+def test_update_settings_existing_config_no_credential():
+    """Verify that posting updates an existing DB record and preserves credential if empty."""
+    db = TestingSessionLocal()
+    existing = ServiceConfig(
+        service_name="makerworld",
+        enabled=0,
+        target_url="old_url",
+        credential="old_credential"
+    )
+    db.add(existing)
+    db.commit()
+
+    response = client.post(
+        "/settings/update",
+        data={
+            "service_name": "makerworld",
+            "enabled": 1,
+            "target_url": "new_url",
+            "credential": "",
+        }
+    )
+    assert response.status_code == 200
+
+    db.expire_all()
+    config = db.query(ServiceConfig).filter(ServiceConfig.service_name == "makerworld").first()
+    assert getattr(config, "enabled") == 1
+    assert getattr(config, "target_url") == "new_url"
+    assert getattr(config, "credential") == "old_credential"
     db.close()
 
 
