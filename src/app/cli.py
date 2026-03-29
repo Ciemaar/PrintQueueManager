@@ -12,28 +12,23 @@ logger = logging.getLogger(__name__)
 
 
 @click.group()
-def cli() -> None:
+def main() -> None:
     """Print Queue Manager CLI."""
     setup_logging()
 
 
-@cli.command("web")
+@main.command("web")
 def start_web() -> None:
     """Start the FastAPI web server."""
     logger.info("Starting Print Queue Manager Web Server on http://0.0.0.0:8000")
     uvicorn.run("src.app.main:app", host="0.0.0.0", port=8000, reload=False)
 
 
-@cli.command("watchdog")
+@main.command("watchdog")
 def start_watchdog() -> None:
     """Start the local directory watchdog."""
     logger.info("Starting Print Queue Manager Watchdog Service...")
     watchdog_main()
-
-
-def main() -> None:
-    """Entry point for the CLI."""
-    cli()
 
 
 if __name__ == "__main__":
