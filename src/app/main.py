@@ -3,6 +3,7 @@
 import logging
 from contextlib import asynccontextmanager
 from datetime import datetime
+from typing import Optional
 
 from fastapi import Depends, FastAPI, Form, Request
 from fastapi.responses import HTMLResponse
@@ -77,7 +78,7 @@ def index(
             PrintJob.status.notin_([PrintStatus.PRINTED, PrintStatus.SKIPPED, PrintStatus.DELETED])
         )
 
-    jobs = query.order_by(PrintJob.created_at.desc()).all()
+    jobs = query.order_by(PrintJob.user_priority.asc(), PrintJob.updated_at.desc()).all()
 
     if request.headers.get("hx-request") == "true":
         return templates.TemplateResponse(
@@ -139,6 +140,52 @@ def deleted_jobs(
             "show_deleted": show_deleted,
         },
     )  # type: ignore
+
+
+@app.post("/jobs/{job_id}/reorder", response_class=HTMLResponse)
+def reorder_job(
+    job_id: int,
+    request: Request,
+    above_id: Optional[int] = Form(None),
+    below_id: Optional[int] = Form(None),
+    db: Session = Depends(get_db),
+) -> HTMLResponse:
+    """
+    Update the priority of a specific job via drag-and-drop.
+
+    Accepts the IDs of the jobs above and below the new position to calculate
+    a new user_priority float value.
+    """
+    job = db.query(PrintJob).filter(PrintJob.id == job_id).first()
+    if not job:
+        return HTMLResponse(status_code=404)
+
+    if above_id and below_id:
+        above_job = db.query(PrintJob).filter(PrintJob.id == above_id).first()
+        below_job = db.query(PrintJob).filter(PrintJob.id == below_id).first()
+
+        if above_job and below_job:
+            job.user_priority = (above_job.user_priority + below_job.user_priority) / 2.0  # type: ignore
+        elif above_job:
+            job.user_priority = above_job.user_priority + 1.0  # type: ignore
+        elif below_job:
+            job.user_priority = below_job.user_priority - 1.0  # type: ignore
+
+    elif above_id:
+        above_job = db.query(PrintJob).filter(PrintJob.id == above_id).first()
+        if above_job:
+            job.user_priority = above_job.user_priority + 1.0  # type: ignore
+
+    elif below_id:
+        below_job = db.query(PrintJob).filter(PrintJob.id == below_id).first()
+        if below_job:
+            job.user_priority = below_job.user_priority - 1.0  # type: ignore
+
+    # Note: If both are None, this is either a single-item list or an error.
+    # The job remains at its current priority.
+
+    db.commit()
+    return HTMLResponse("")
 
 
 @app.post("/jobs/{job_id}/delete", response_class=HTMLResponse)

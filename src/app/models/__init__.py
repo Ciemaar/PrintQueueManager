@@ -4,6 +4,8 @@ from datetime import datetime
 from enum import Enum
 
 from sqlalchemy import Column, DateTime, Integer, String
+from sqlalchemy import Column, Integer, String, DateTime, Float
+from sqlalchemy.types import JSON
 from sqlalchemy import Enum as SQLAlchemyEnum
 from sqlalchemy.types import JSON
 
@@ -41,6 +43,9 @@ class PrintJob(Base):
     # Notes
     material_notes = Column(String, nullable=True)
     timing_notes = Column(String, nullable=True)
+
+    # User-defined ordering via drag-and-drop
+    user_priority = Column(Float, default=0.0)
 
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
