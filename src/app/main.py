@@ -30,6 +30,7 @@ def startup_event():
     # Run Alembic migrations programmatically
     try:
         import alembic.config
+
         alembicArgs = ["--raiseerr", "upgrade", "head"]
         alembic.config.main(argv=alembicArgs)
     except Exception as e:
