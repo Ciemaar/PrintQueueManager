@@ -21,8 +21,8 @@ def test_on_created_verbose_logging_valid_file(caplog):
             with patch.object(handler, "_add_to_queue"):
                 handler.on_created(mock_event)
 
-                assert "[VERBOSE] Watchdog event received" in caplog.text
-                assert "[VERBOSE] Detected valid 3D file: model.STL" in caplog.text
+                assert "Watchdog event received" in caplog.text
+                assert "Detected valid 3D file: model.STL" in caplog.text
     finally:
         settings.verbose = original_verbose
 
@@ -43,7 +43,7 @@ def test_on_created_verbose_logging_invalid_file(caplog):
             with patch.object(handler, "_add_to_queue") as mock_add:
                 handler.on_created(mock_event)
 
-                assert "[VERBOSE] Ignored non-3D file: document.txt" in caplog.text
+                assert "Ignored non-3D file: document.txt" in caplog.text
                 mock_add.assert_not_called()
     finally:
         settings.verbose = original_verbose
@@ -64,6 +64,6 @@ def test_on_created_verbose_logging_directory(caplog):
 
             handler.on_created(mock_event)
 
-            assert "[VERBOSE] Ignored directory creation: /test/new_folder" in caplog.text
+            assert "Ignored directory creation: /test/new_folder" in caplog.text
     finally:
         settings.verbose = original_verbose

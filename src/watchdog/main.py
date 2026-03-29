@@ -28,7 +28,7 @@ class PrintQueueEventHandler(FileSystemEventHandler):
 
     def on_created(self, event: Any) -> None:
         """Trigger when a new object is created in the watched filesystem path."""
-        logger.debug(f"[VERBOSE] Watchdog event received: {event.event_type} on {event.src_path}")
+        logger.debug(f"Watchdog event received: {event.event_type} on {event.src_path}")
 
         if not event.is_directory:
             file_path = event.src_path
@@ -38,13 +38,13 @@ class PrintQueueEventHandler(FileSystemEventHandler):
                 is_broken_symlink = os.path.islink(file_path) and not os.path.exists(file_path)
 
                 status_log = "broken symlink" if is_broken_symlink else "valid 3D file"
-                logger.debug(f"[VERBOSE] Detected {status_log}: {filename}")
+                logger.debug(f"Detected {status_log}: {filename}")
                 logger.info(f"Detected new file: {filename}")
                 self._add_to_queue(file_path, filename, is_broken_symlink)
             else:
-                logger.debug(f"[VERBOSE] Ignored non-3D file: {filename}")
+                logger.debug(f"Ignored non-3D file: {filename}")
         else:
-            logger.debug(f"[VERBOSE] Ignored directory creation: {event.src_path}")
+            logger.debug(f"Ignored directory creation: {event.src_path}")
 
     def _add_to_queue(self, file_path: str, filename: str, is_broken_symlink: bool = False) -> None:
         """

@@ -28,7 +28,7 @@ def test_on_created_symlink_valid(caplog, tmp_path):
             with patch.object(handler, "_add_to_queue") as mock_add:
                 handler.on_created(mock_event)
 
-                assert "[VERBOSE] Detected valid 3D file: link.stl" in caplog.text
+                assert "Detected valid 3D file: link.stl" in caplog.text
                 mock_add.assert_called_once_with(str(symlink_file), "link.stl", False)
     finally:
         settings.verbose = original_verbose
@@ -53,7 +53,7 @@ def test_on_created_symlink_broken(caplog, tmp_path):
             with patch.object(handler, "_add_to_queue") as mock_add:
                 handler.on_created(mock_event)
 
-                assert "[VERBOSE] Detected broken symlink: broken.stl" in caplog.text
+                assert "Detected broken symlink: broken.stl" in caplog.text
                 mock_add.assert_called_once_with(str(broken_symlink), "broken.stl", True)
     finally:
         settings.verbose = original_verbose

@@ -143,7 +143,7 @@ def sync_local() -> List[dict[str, Any]]:
     added_files = []
     db = SessionLocal()
     try:
-        logger.debug(f"[VERBOSE] Scanning directory: {watch_path} recursively")
+        logger.debug(f"Scanning directory: {watch_path} recursively")
 
         # Get a set of all currently known local file paths to avoid N queries
         known_paths = {
@@ -161,7 +161,7 @@ def sync_local() -> List[dict[str, Any]]:
                 is_broken_symlink = file_path.is_symlink() and not file_path.exists()
 
                 status_log = "broken symlink" if is_broken_symlink else "new 3D file"
-                logger.debug(f"[VERBOSE] Discovered {status_log}: {file_path.name} at {file_path}")
+                logger.debug(f"Discovered {status_log}: {file_path.name} at {file_path}")
 
                 # If the symlink is broken, we cannot stat() it directly.
                 file_size = 0 if is_broken_symlink else file_path.stat().st_size
