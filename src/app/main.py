@@ -21,8 +21,6 @@ from src.worker.celery_app import (
 app = FastAPI(title="Print Queue Manager")
 
 
-import subprocess
-
 @app.on_event("startup")
 def startup_event():
     """Create database tables on application startup, run migrations, and trigger local sync."""
