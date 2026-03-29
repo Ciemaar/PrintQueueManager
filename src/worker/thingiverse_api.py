@@ -1,11 +1,14 @@
 """Direct API connector for fetching data from Thingiverse without an LLM."""
 
+import logging
 import httpx
 from typing import List, Any
 from src.app.database import SessionLocal, engine
 from src.app.models import Base, PrintJob
 from src.app.config import settings
 from .llm_scraper import ExtractedModelInfo
+
+logger = logging.getLogger(__name__)
 
 
 def fetch_thingiverse_collections() -> List[dict[str, Any]]:
@@ -17,7 +20,7 @@ def fetch_thingiverse_collections() -> List[dict[str, Any]]:
     """
     token = settings.thingiverse_api_token
     if not token:
-        print("No Thingiverse API Token found. Skipping Thingiverse API sync.")
+        logger.info("No Thingiverse API Token found. Skipping Thingiverse API sync.")
         return []
 
     url = "https://api.thingiverse.com/users/me/likes"
@@ -60,16 +63,16 @@ def fetch_thingiverse_collections() -> List[dict[str, Any]]:
                     )
                     saved_items.append(extracted.model_dump())
             db.commit()
-            print(f"Successfully synced {len(saved_items)} models from Thingiverse API.")
+            logger.info(f"Successfully synced {len(saved_items)} models from Thingiverse API.")
         except Exception as e:
-            print(f"Database error saving Thingiverse models: {e}")
+            logger.error(f"Database error saving Thingiverse models: {e}")
             db.rollback()
         finally:
             db.close()
 
     except httpx.RequestError as exc:
-        print(f"An error occurred while requesting Thingiverse API: {exc}")
+        logger.error(f"An error occurred while requesting Thingiverse API: {exc}")
     except httpx.HTTPStatusError as exc:
-        print(f"Error response {exc.response.status_code} while requesting Thingiverse API.")
+        logger.error(f"Error response {exc.response.status_code} while requesting Thingiverse API.")
 
     return saved_items

@@ -1,8 +1,12 @@
 """FastAPI application entrypoint and route definitions."""
 
+import logging
+
 from fastapi import FastAPI, Request, Depends, Form
 from fastapi.responses import HTMLResponse
+from src.app.logging_config import setup_logging
 from fastapi.templating import Jinja2Templates
+
 from sqlalchemy.orm import Session
 from src.app.database import get_db, Base, engine
 from src.app.models import PrintJob, PrintStatus
@@ -15,6 +19,10 @@ from src.worker.celery_app import (
     sync_local,
 )
 
+logger = logging.getLogger(__name__)
+
+setup_logging()
+
 app = FastAPI(title="Print Queue Manager")
 
 
@@ -25,7 +33,7 @@ def startup_event():
     try:
         sync_local.delay()
     except Exception as e:
-        print(f"Failed to trigger initial sync_local task: {e}")
+        logger.error(f"Failed to trigger initial sync_local task: {e}")
 
 
 templates = Jinja2Templates(directory="src/app/templates")
