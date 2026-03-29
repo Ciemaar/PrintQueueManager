@@ -9,7 +9,7 @@ job = PrintJob(
     source="Thingiverse",
     source_url="http://example.com",
     status="TO BE PRINTED",
-    author="Jules"
+    author="Jules",
 )
 
 db.add(job)

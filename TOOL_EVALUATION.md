@@ -54,16 +54,19 @@ This document outlines the evaluation of modern Python tooling for the PrintQueu
 This section compares autonomous agentic coding tools to evaluate which one best fits our stack (FastAPI, Python, GitHub) and developer workflows.
 
 ### Jules (Google)
+
 - **Features:** Jules is an asynchronous coding agent powered by Gemini 2.5 Pro. It connects through CLI tools and APIs to GitHub, Slack, Jira, and Linear. Jules operates within existing workflows rather than requiring process changes. It runs tasks in the background while developers continue other work, presenting code diffs for review before merging. It plans, executes, and iterates on complete tasks autonomously.
 - **Pricing:** Jules offers a free tier for individual developers and small teams. Paid plans, like Pro and Ultra, are accessed through a Google One subscription.
 - **Integration with Current Stack:** Integrates natively with GitHub via CLI and API. Jules is well-suited for Python and FastAPI projects, as its underlying Gemini models have strong Python capabilities. The asynchronous "background task" approach fits well with PR-based workflows.
 
 ### GitHub Copilot (Agent Mode)
+
 - **Features:** GitHub Copilot Agents can handle busywork, review code, write pull requests, and respond to @mentions in real time. It allows developers to delegate tasks from GitHub Issues, IDEs (VS Code), or the CLI. Copilot integrates tightly with GitHub projects and issues. Developers can pick between first-party Copilot models or third-party agents like Claude and OpenAI Codex.
 - **Pricing:** Copilot Free (limited access), Copilot Pro ($10/month), Copilot Pro+ ($39/month). It has premium request limits for features like chat, agent mode, and coding agent.
 - **Integration with Current Stack:** Very deep integration with GitHub (which this project uses). Copilot integrates natively into the developer's IDE (VS Code/PyCharm) and GitHub UI (Issues, Pull Requests), providing a seamless experience for a Python/FastAPI project hosted on GitHub.
 
 ### Claude Code (Anthropic)
+
 - **Features:** Claude Code operates via a CLI interface and uses Anthropic's Claude models (e.g., Sonnet 3.7). It is an autonomous agent that can navigate repositories, plan complex refactors, run multiple agents in parallel, and even watch application logs to autonomously fix errors. It relies heavily on local context files (like `CLAUDE.md`).
 - **Pricing:** Pay-as-you-go based on API token usage. Claude Sonnet 3.7 costs $3 per million input tokens and $15 per million output tokens. There are also Claude subscription plans (Pro at $20/month, Team at $25/user/month) that provide access to the developer environment for high usage.
 - **Integration with Current Stack:** Integrates well via the CLI for Python projects. Its ability to read local Markdown instructions (`CLAUDE.md` or `AGENTS.md`) aligns perfectly with our use of agentic instruction files in the repository.
