@@ -52,8 +52,11 @@ If you prefer to run it outside Docker, we recommend using [uv](https://docs.ast
 # Install dependencies and sync the environment
 uv sync --all-extras --dev
 
-# Run commands using uv run (e.g. starting the FastAPI server)
-uv run uvicorn src.app.main:app --reload
+# Activate the virtual environment
+source .venv/bin/activate
+
+# Run commands directly (e.g. starting the FastAPI server)
+uvicorn src.app.main:app --reload
 
 # Ensure PostgreSQL and Redis are running on your host machine!
 ```

@@ -29,22 +29,25 @@ Ensure you have Python 3.10+ and a local PostgreSQL + Redis instance running. We
 # This command automatically creates a managed environment and installs all dependencies and dev tools
 uv sync --all-extras --dev
 
-# Run any python script using uv run:
-uv run pytest tests/
-uv run uvicorn src.app.main:app --reload
+# Activate the virtual environment:
+source .venv/bin/activate
+
+# Run any python script directly:
+pytest tests/
+uvicorn src.app.main:app --reload
 ```
 
 ## Running Static Analysis & Tests
 
-We rely on `tox` for automation. Running `tox` will check the code quality across the entire project. Using `uv run` ensures tests run in your isolated `uv` environment.
+We rely on `tox` for automation. Running `tox` will check the code quality across the entire project. Ensure you have activated your virtual environment before running tox.
 
-- `uv run tox -e pyright`: Runs Pyright type checking.
-- `uv run tox -e ruff`: Runs Ruff linter and formatter.
-- `uv run pytest tests/`: Runs unit and integration tests with `hypothesis` for property-based generation and testing of schema components.
+- `tox -e pyright`: Runs Pyright type checking.
+- `tox -e ruff`: Runs Ruff linter and formatter.
+- `pytest tests/`: Runs unit and integration tests with `hypothesis` for property-based generation and testing of schema components.
 
 ```bash
 # Run all static analysis
-uv run tox -e ruff,pyright
+tox -e ruff,pyright
 ```
 
 ## Integrating a New 3D Platform
