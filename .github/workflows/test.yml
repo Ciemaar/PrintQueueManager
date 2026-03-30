@@ -35,6 +35,9 @@ jobs:
       if: runner.os != 'Linux'
       run: |
         playwright install chromium
+    - name: Check for outdated dependencies
+      run: |
+        uv pip list --outdated
     - name: Run linting and type checking
       run: |
         tox -e ruff,pyright
