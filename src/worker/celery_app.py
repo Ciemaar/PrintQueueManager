@@ -2,14 +2,17 @@
 
 import logging
 import time
-from typing import List, Any
-from celery import Celery
-from src.app.config import settings
-from src.app.logging_config import setup_logging
-from .llm_scraper import run_scraper
 from pathlib import Path
+from typing import Any, List
+
+from celery import Celery
+
+from src.app.config import settings
 from src.app.database import SessionLocal
+from src.app.logging_config import setup_logging
 from src.app.models import PrintJob
+
+from .llm_scraper import run_scraper
 from .thingiverse_api import fetch_thingiverse_collections
 
 setup_logging()

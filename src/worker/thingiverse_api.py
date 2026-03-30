@@ -1,11 +1,14 @@
 """Direct API connector for fetching data from Thingiverse without an LLM."""
 
 import logging
+from typing import Any, List
+
 import httpx
-from typing import List, Any
+
+from src.app.config import settings
 from src.app.database import SessionLocal, engine
 from src.app.models import Base, PrintJob
-from src.app.config import settings
+
 from .llm_scraper import ExtractedModelInfo
 
 logger = logging.getLogger(__name__)

@@ -72,6 +72,7 @@ select = [
     "E",  # pycodestyle errors
     "F",  # pyflakes
     "D",  # pydocstyle
+    "I",  # isort (import sorting)
 ]
 ignore = [
     "D104", # Allow tests without docstrings for brevity

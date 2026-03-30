@@ -1,0 +1,40 @@
+<tr id="deleted-job-{{ job.id }}" class="status-{{ job.status.value.replace(' ', '-') }}">
+    <td>
+        {% if job.thumbnail_url %}
+            <img src="{{ job.thumbnail_url }}" alt="Thumbnail">
+        {% else %}
+            <div class="no-img">No Img</div>
+        {% endif %}
+    </td>
+    <td>
+        <strong>{{ job.title }}</strong><br>
+        <small style="color: var(--pico-muted-color);">By {{ job.author or 'Unknown' }}</small>
+    </td>
+    <td>
+        <span class="source-badge">{{ job.source }}</span>
+        {% if job.source_url %}
+            <a href="{{ job.source_url }}" target="_blank" style="margin-left: 0.5rem;">
+                <small>Link ↗</small>
+            </a>
+        {% endif %}
+    </td>
+    <td>
+        <strong>{{ job.status.value }}</strong>
+    </td>
+    <td>
+        {% if job.deleted_at %}
+            <small>{{ job.deleted_at.strftime('%Y-%m-%d %H:%M') }}</small>
+        {% else %}
+            <small>N/A</small>
+        {% endif %}
+    </td>
+    <td>
+        <button class="primary outline"
+                hx-post="/jobs/{{ job.id }}/undelete"
+                hx-target="#deleted-job-{{ job.id }}"
+                hx-swap="outerHTML"
+                style="padding: 0.25rem 0.5rem;">
+            Undelete
+        </button>
+    </td>
+</tr>

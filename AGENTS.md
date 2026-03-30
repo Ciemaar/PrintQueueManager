@@ -46,3 +46,20 @@ When instructed to run or mock services, be aware that the `docker-compose.yml` 
 To run these Docker containers in verbose mode, set the `VERBOSE` environment variable to `"true"`. This will increase the logging level from `INFO` to `DEBUG`. For example, you can run `VERBOSE="true" docker compose up` or explicitly add `VERBOSE: "true"` to the respective service environments in `docker-compose.yml`.
 
 Thank you for contributing to the PrintQueueManager!
+
+## Database Migrations (Alembic)
+
+This project uses `Alembic` to manage database schema updates. If you modify any SQLAlchemy models (like adding a column, changing a type, etc.), you **MUST** generate an Alembic migration:
+
+1. Start your task by defining your changes in `src/app/models/__init__.py`.
+2. Create a migration file automatically:
+   ```bash
+   PYTHONPATH=. DATABASE_URL="sqlite:///./test.db" alembic revision --autogenerate -m "Describe your changes"
+   ```
+3. Inspect the generated migration in `alembic/versions/` to verify it correctly implements the changes (especially check `op.drop_column` vs `op.add_column`).
+4. The migration will be automatically applied when the FastAPI application starts (`startup_event` in `src/app/main.py`), or you can apply it locally to test:
+   ```bash
+   PYTHONPATH=. DATABASE_URL="sqlite:///./test.db" alembic upgrade head
+   ```
+
+Do not rely solely on `Base.metadata.create_all()` for schema updates on existing databases, as it does not alter existing tables to add or remove columns.
