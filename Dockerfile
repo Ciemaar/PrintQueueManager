@@ -1,4 +1,4 @@
-FROM python:3.13-slim
+FROM python:3.14-slim
 
 WORKDIR /app
 
@@ -18,5 +18,12 @@ COPY ./alembic /app/alembic/
 
 RUN pip install --upgrade pip
 RUN pip install .
+
+RUN useradd -m appuser \
+    && mkdir -p /watched_folder \
+    && chown -R appuser:appuser /app \
+    && chown -R appuser:appuser /watched_folder
+
+USER appuser
 
 CMD ["uvicorn", "src.app.main:app", "--host", "0.0.0.0", "--port", "8000"]

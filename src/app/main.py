@@ -1,9 +1,7 @@
 """FastAPI application entrypoint and route definitions."""
 
-from fastapi import FastAPI, Request, Depends, Form
-from fastapi.responses import HTMLResponse
-from src.app.logging_config import setup_logging
-from datetime import datetime
+import logging
+from contextlib import asynccontextmanager
 from datetime import datetime
 
 from fastapi import Depends, FastAPI, Form, Request
@@ -12,6 +10,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from src.app.database import Base, engine, get_db
+from src.app.logging_config import setup_logging
 from src.app.models import PrintJob, PrintStatus
 from src.worker.celery_app import (
     sync_cults3d,
@@ -22,11 +21,13 @@ from src.worker.celery_app import (
     sync_thingiverse,
 )
 
-app = FastAPI(title="Print Queue Manager")
+logger = logging.getLogger(__name__)
+
+setup_logging()
 
 
-@app.on_event("startup")
-def startup_event():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     """Create database tables on application startup, run migrations, and trigger local sync."""
     # Base.metadata.create_all handles creating new tables if they don't exist
     Base.metadata.create_all(bind=engine)
@@ -52,8 +53,11 @@ def startup_event():
     try:
         sync_local.delay()
     except Exception as e:
-        print(f"Failed to trigger initial sync_local task: {e}")
+        logger.error(f"Failed to trigger initial sync_local task: {e}")
 
+    yield
+
+app = FastAPI(title="Print Queue Manager", lifespan=lifespan)
 
 templates = Jinja2Templates(directory="src/app/templates")
 
