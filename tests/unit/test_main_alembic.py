@@ -25,6 +25,7 @@ async def test_startup_event(mock_sync, mock_upgrade, mock_create):
 async def test_startup_event_exceptions(mock_sync, mock_upgrade, mock_create, capfd, caplog):
     """Verify that exceptions during alembic or celery sync are gracefully caught and logged."""
     import logging
+
     caplog.set_level(logging.ERROR)
 
     async with lifespan(app):

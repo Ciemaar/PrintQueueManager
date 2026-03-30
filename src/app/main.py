@@ -57,6 +57,7 @@ async def lifespan(app: FastAPI):
 
     yield
 
+
 app = FastAPI(title="Print Queue Manager", lifespan=lifespan)
 
 templates = Jinja2Templates(directory="src/app/templates")
