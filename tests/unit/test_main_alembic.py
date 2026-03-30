@@ -1,7 +1,8 @@
 from unittest.mock import patch
 
 import pytest
-from src.app.main import lifespan, app
+
+from src.app.main import app, lifespan
 
 
 @pytest.mark.asyncio
