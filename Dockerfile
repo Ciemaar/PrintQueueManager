@@ -15,6 +15,9 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 # Copy the dependency files first to leverage Docker layer caching
 COPY pyproject.toml uv.lock ./
+COPY ./src /app/src/
+COPY alembic.ini ./
+COPY ./alembic /app/alembic/
 
 # Install dependencies before installing the project
 RUN uv sync --frozen --no-install-project --no-dev

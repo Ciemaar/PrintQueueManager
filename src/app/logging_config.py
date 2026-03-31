@@ -1,6 +1,7 @@
 """Centralized logging configuration for Print Queue Manager."""
 
 import logging
+
 from src.app.config import settings
 
 

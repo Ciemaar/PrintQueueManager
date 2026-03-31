@@ -1,7 +1,9 @@
 """Test module for the manual synchronization trigger endpoints."""
 
 from unittest.mock import patch
+
 from fastapi.testclient import TestClient
+
 from src.app.main import app
 
 client = TestClient(app)

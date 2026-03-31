@@ -1,7 +1,9 @@
 """Unit tests to verify Pydantic schemas and Agent output data structures."""
 
-from hypothesis import given, strategies as st
+from hypothesis import given
+from hypothesis import strategies as st
 from pydantic import ValidationError
+
 from src.worker.llm_scraper import ExtractedModelInfo, ScrapedPageData
 
 url_st = st.from_regex(r"^https?://[a-zA-Z0-9.-]+(?:/[a-zA-Z0-9.-]*)*$")

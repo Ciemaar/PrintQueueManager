@@ -1,12 +1,12 @@
 """Command-line interface entry point for launching the Print Queue Manager services."""
 
-import click
 import logging
+
+import click
 import uvicorn
 
 from src.app.logging_config import setup_logging
 from src.watchdog.main import main as watchdog_main
-
 
 logger = logging.getLogger(__name__)
 
