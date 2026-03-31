@@ -24,9 +24,14 @@ jobs:
     - name: Verify uv.lock is up-to-date
       run: uv lock --locked
     - name: Install dependencies
+      shell: bash
       run: |
         uv sync --all-extras --dev
-        echo "$PWD/.venv/bin" >> $GITHUB_PATH
+        if [ "$RUNNER_OS" == "Windows" ]; then
+          echo "$PWD/.venv/Scripts" >> $GITHUB_PATH
+        else
+          echo "$PWD/.venv/bin" >> $GITHUB_PATH
+        fi
     - name: Install Playwright system dependencies (Ubuntu)
       if: runner.os == 'Linux'
       run: |
