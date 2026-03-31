@@ -22,24 +22,18 @@ If you are new to background tasks, please read the [Celery & Redis Tutorial](CE
 
 ## Setup Development Environment
 
-Ensure you have Python 3.10+ and a local PostgreSQL + Redis instance running. We recommend using `docker compose` to spin up your databases and then running your web/worker/watchdog locally using [uv](https://docs.astral.sh/uv/) for incredibly fast dependency management. (See the [Docker Compose Guide](DOCKER_GUIDE.md) for detailed container instructions.)
+Ensure you have Python 3.10+ and a local PostgreSQL + Redis instance running. We recommend using `docker-compose` to spin up your databases and then running your web/worker/watchdog locally via virtual environment. (See the [Docker Compose Guide](DOCKER_GUIDE.md) for detailed container instructions.)
 
 ```bash
-# Install uv if you haven't already (https://docs.astral.sh/uv/getting-started/installation/)
-# This command automatically creates a managed environment and installs all dependencies and dev tools
-uv sync --all-extras --dev
-
-# Activate the virtual environment:
-source .venv/bin/activate
-
-# Run any python script directly:
-pytest tests/
-uvicorn src.app.main:app --reload
+# Set up a virtual environment (e.g. pyenv, virtualenv, uv)
+python3 -m venv venv
+source venv/bin/activate
+pip install -e ".[dev]"
 ```
 
 ## Running Static Analysis & Tests
 
-We rely on `tox` for automation. Running `tox` will check the code quality across the entire project. Ensure you have activated your virtual environment before running tox.
+We rely on `tox` for automation. Running `tox` will check the code quality across the entire project.
 
 - `tox -e pyright`: Runs Pyright type checking.
 - `tox -e ruff`: Runs Ruff linter and formatter.

@@ -24,7 +24,6 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
-    "Programming Language :: Python :: 3.14",
     "Topic :: Printing",
 ]
 dependencies = [
@@ -58,7 +57,6 @@ dev = [
     "pytest-cov",
     "hypothesis",
     "tox",
-    "tox-uv",
     "ruff",
     "pyright"
 ]
@@ -72,7 +70,6 @@ select = [
     "E",  # pycodestyle errors
     "F",  # pyflakes
     "D",  # pydocstyle
-    "I",  # isort (import sorting)
 ]
 ignore = [
     "D104", # Allow tests without docstrings for brevity
@@ -87,37 +84,52 @@ asyncio_mode = "auto"
 
 [tool.pyright]
 include = ["src", "tests"]
-pythonVersion = "3.14"
+pythonVersion = "3.10"
 typeCheckingMode = "basic"
 
 [tool.tox]
 legacy_tox_ini = """
 [tox]
-envlist = py314, ruff, pyright
+envlist = py310, ruff, pyright
 isolated_build = True
 
 [testenv]
-runner = uv-venv-lock-runner
-extras = dev
+deps =
+    pytest
+    pytest-asyncio
+    pytest-cov
+    hypothesis
+    fastapi
+    httpx
+    sqlalchemy
+    pydantic
+    pydantic-ai
+    celery
+    redis
+    watchdog
+    ollama
+    psycopg2-binary
+    playwright
 commands =
     pytest tests/ --cov=src --cov-fail-under=85
 
 [testenv:ruff]
-allowlist_externals = ruff
 deps = ruff
 commands =
     ruff check src/ tests/
     ruff format --check src/ tests/
 
 [testenv:pyright]
-allowlist_externals = pyright
-extras = dev
 deps =
     pyright
+    pytest
+    hypothesis
+    playwright
+    sqlalchemy
+    pydantic
+    pydantic-ai
+    fastapi
+    celery
+    watchdog
 commands = pyright src/ tests/
 """
-
-[dependency-groups]
-dev = [
-    "pyright>=1.1.408",
-]

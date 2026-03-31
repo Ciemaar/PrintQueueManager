@@ -1,7 +1,6 @@
 """Unit tests for the watchdog directory monitor."""
 
-from unittest.mock import MagicMock, patch
-
+from unittest.mock import patch, MagicMock
 from src.watchdog.main import PrintQueueEventHandler, main
 
 

@@ -1,15 +1,15 @@
 """LLM-based web scraper for extracting 3D model metadata from unstructured HTML."""
 
 import os
-from typing import Any, List, Optional
-
-from playwright.sync_api import sync_playwright
 from pydantic import BaseModel, Field
+from typing import List, Optional, Any
 from pydantic_ai import Agent
 
-from src.app.config import settings
+from playwright.sync_api import sync_playwright
+
 from src.app.database import SessionLocal, engine
 from src.app.models import Base, PrintJob
+from src.app.config import settings
 
 
 class ExtractedModelInfo(BaseModel):
@@ -109,7 +109,7 @@ def run_scraper(source: str, url: str, credential: str = "") -> List[dict[str, A
     """Run the LLM agent against a URL and store the results in the database."""
     Base.metadata.create_all(bind=engine)
 
-    logger.info(f"Fetching live HTML for {source} at {url}...")
+    print(f"Fetching live HTML for {source} at {url}...")
     html_content = get_page_html(source, url, credential)
 
     if not html_content:

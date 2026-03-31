@@ -1,24 +1,12 @@
 """Command-line interface entry point for launching the Print Queue Manager services."""
 
-import logging
-
-import click
 import argparse
 import sys
 import uvicorn
 
 from src.watchdog.main import main as watchdog_main
 
-logger = logging.getLogger(__name__)
 
-
-@click.group()
-def main() -> None:
-    """Print Queue Manager CLI."""
-    setup_logging()
-
-
-@main.command("web")
 def start_web() -> None:
     """Launch the FastAPI web server using uvicorn."""
     print("Starting Print Queue Manager Web Server on http://0.0.0.0:8000")

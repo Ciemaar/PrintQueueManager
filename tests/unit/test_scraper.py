@@ -1,8 +1,7 @@
 """Unit tests for the LLM scraper functions."""
 
-from unittest.mock import MagicMock, patch
-
 import pytest
+from unittest.mock import patch, MagicMock
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -13,8 +12,8 @@ TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engin
 
 with patch("src.app.database.engine", engine):
     with patch("src.app.database.SessionLocal", TestingSessionLocal):
+        from src.worker.llm_scraper import get_page_html, run_scraper, ExtractedModelInfo
         from src.app.models import Base
-        from src.worker.llm_scraper import ExtractedModelInfo, get_page_html, run_scraper
 
 
 @pytest.fixture(autouse=True)

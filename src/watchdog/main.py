@@ -1,23 +1,16 @@
 """Watchdog service to monitor local directories for new 3D model files."""
 
-import logging
+from typing import Any
 import os
 import time
-from typing import Any
 
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 from sqlalchemy.orm import Session
-from watchdog.events import FileSystemEventHandler
-from watchdog.observers import Observer
 
-from src.app.config import settings
 from src.app.database import SessionLocal, engine
-from src.app.logging_config import setup_logging
 from src.app.models import Base, PrintJob
-
-setup_logging()
-logger = logging.getLogger(__name__)
+from src.app.config import settings
 
 
 class PrintQueueEventHandler(FileSystemEventHandler):

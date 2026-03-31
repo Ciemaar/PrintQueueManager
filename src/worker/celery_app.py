@@ -1,17 +1,12 @@
 """Celery worker configuration and scheduled tasks for external data sync."""
 
 import time
-from pathlib import Path
-from typing import Any, List
-
+from typing import List, Any
 from celery import Celery
-
 from src.app.config import settings
-from src.app.database import SessionLocal
-from src.app.logging_config import setup_logging
-from src.app.models import PrintJob
-
 from .llm_scraper import run_scraper
+from pathlib import Path
+from src.app.database import SessionLocal
 from src.app.models import PrintJob, ServiceConfig
 from .thingiverse_api import fetch_thingiverse_collections
 
@@ -128,7 +123,7 @@ def sync_thingiverse() -> List[dict[str, Any]]:
     # If a token isn't provided, `fetch_thingiverse_collections` simply returns `[]`.
     result = fetch_thingiverse_collections(credential)
     if not result:
-        logger.info(f"Fallback to Ollama agent for Thingiverse at {url}...")
+        print(f"Fallback to Ollama agent for Thingiverse at {url}...")
         result = run_scraper("thingiverse", url, credential)
     print(f"Sync complete. Found {len(result)} models.")
     return result
@@ -153,7 +148,7 @@ def sync_cults3d() -> List[dict[str, Any]]:
     print(f"Starting Cults3D synchronization via Ollama agent at {url}...")
     time.sleep(2)
     result = run_scraper("cults3d", url, credential)
-    logger.info(f"Sync complete. Found {len(result)} models.")
+    print(f"Sync complete. Found {len(result)} models.")
     return result
 
 

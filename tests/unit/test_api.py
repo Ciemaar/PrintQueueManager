@@ -1,7 +1,6 @@
 """Unit tests for external API functions."""
 
-from unittest.mock import MagicMock, patch
-
+from unittest.mock import patch, MagicMock
 import httpx
 import pytest
 from sqlalchemy import create_engine
@@ -14,8 +13,8 @@ TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engin
 
 with patch("src.app.database.engine", engine):
     with patch("src.app.database.SessionLocal", TestingSessionLocal):
-        from src.app.models import Base
         from src.worker.thingiverse_api import fetch_thingiverse_collections
+        from src.app.models import Base
 
 
 @pytest.fixture(autouse=True)

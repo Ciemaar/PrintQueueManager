@@ -46,17 +46,12 @@ A Local, Agentic 3D Print Queue Management System based on a local-first archite
 
 ### Local Development Installation
 
-If you prefer to run it outside Docker, we recommend using [uv](https://docs.astral.sh/uv/) for fast environment management:
+If you prefer to run it outside Docker:
 
 ```bash
-# Install dependencies and sync the environment
-uv sync --all-extras --dev
-
-# Activate the virtual environment
-source .venv/bin/activate
-
-# Run commands directly (e.g. starting the FastAPI server)
-uvicorn src.app.main:app --reload
+python -m venv venv
+source venv/bin/activate
+pip install -e ".[dev]"
 
 # Ensure PostgreSQL and Redis are running on your host machine!
 ```

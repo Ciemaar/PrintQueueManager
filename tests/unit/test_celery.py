@@ -1,18 +1,16 @@
 """Test module for the Celery worker scheduled tasks."""
 
-from unittest.mock import MagicMock, patch
-
 from unittest.mock import patch, MagicMock
 from src.app.models import ServiceConfig
 from src.worker.celery_app import (
     _get_service_config,
     setup_periodic_tasks,
-    sync_cults3d,
-    sync_local,
     sync_makerworld,
-    sync_minihoarder,
     sync_printables,
     sync_thingiverse,
+    sync_cults3d,
+    sync_minihoarder,
+    sync_local,
 )
 
 

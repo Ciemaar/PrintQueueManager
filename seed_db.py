@@ -1,4 +1,4 @@
-from src.app.database import Base, SessionLocal, engine
+from src.app.database import SessionLocal, engine, Base
 from src.app.models import PrintJob
 
 Base.metadata.create_all(bind=engine)

@@ -1,7 +1,6 @@
 from unittest.mock import MagicMock, patch
-
-from src.app.config import settings
 from src.watchdog.main import PrintQueueEventHandler
+from src.app.config import settings
 
 
 def test_on_created_verbose_logging_valid_file(capsys):
