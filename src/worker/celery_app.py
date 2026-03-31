@@ -6,15 +6,14 @@ from pathlib import Path
 from typing import Any, List
 
 from celery import Celery
+from celery.schedules import crontab
 
 from src.app.config import settings
 from src.app.database import SessionLocal
 from src.app.logging_config import setup_logging
-from src.app.models import PrintJob
+from src.app.models import PrintJob, PrintStatus
 
 from .llm_scraper import run_scraper
-from celery.schedules import crontab
-from src.app.models import PrintJob, PrintStatus
 from .thingiverse_api import fetch_thingiverse_collections
 
 setup_logging()
