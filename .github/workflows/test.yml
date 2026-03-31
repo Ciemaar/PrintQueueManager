@@ -16,14 +16,17 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    - name: Set up Python 3.14
-      uses: actions/setup-python@v5
+    - name: Install uv and set up Python
+      uses: astral-sh/setup-uv@v5
       with:
         python-version: "3.14"
+        enable-cache: true
+    - name: Verify uv.lock is up-to-date
+      run: uv lock --locked
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
-        pip install -e ".[dev]"
+        uv sync --all-extras --dev
+        echo "$PWD/.venv/bin" >> $GITHUB_PATH
     - name: Install Playwright system dependencies (Ubuntu)
       if: runner.os == 'Linux'
       run: |
@@ -32,6 +35,9 @@ jobs:
       if: runner.os != 'Linux'
       run: |
         playwright install chromium
+    - name: Check for outdated dependencies
+      run: |
+        uv pip list --outdated
     - name: Run linting and type checking
       run: |
         tox -e ruff,pyright

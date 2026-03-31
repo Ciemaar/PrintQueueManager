@@ -59,13 +59,14 @@ dev = [
     "pytest-cov",
     "hypothesis",
     "tox",
+    "tox-uv",
     "ruff",
     "pyright"
 ]
 
 [tool.ruff]
 line-length = 100
-target-version = "py314"
+target-version = "py313"
 
 [tool.ruff.lint]
 select = [
@@ -97,44 +98,27 @@ envlist = py314, ruff, pyright
 isolated_build = True
 
 [testenv]
-deps =
-    pytest
-    pytest-asyncio
-    pytest-cov
-    hypothesis
-    fastapi
-    httpx
-    sqlalchemy
-    pydantic
-    pydantic-ai
-    celery
-    redis
-    watchdog
-    ollama
-    psycopg2-binary
-    playwright
-    watchfiles
+runner = uv-venv-lock-runner
+extras = dev
 commands =
     pytest tests/ --cov=src --cov-fail-under=85
 
 [testenv:ruff]
+allowlist_externals = ruff
 deps = ruff
 commands =
     ruff check src/ tests/
     ruff format --check src/ tests/
 
 [testenv:pyright]
+allowlist_externals = pyright
+extras = dev
 deps =
     pyright
-    pytest
-    hypothesis
-    playwright
-    watchfiles
-    sqlalchemy
-    pydantic
-    pydantic-ai
-    fastapi
-    celery
-    watchdog
 commands = pyright src/ tests/
 """
+
+[dependency-groups]
+dev = [
+    "pyright>=1.1.408",
+]
