@@ -44,7 +44,7 @@ def generate_thumbnail(
 
         # If it's a scene (like from some 3mf files), dump to a single mesh
         if type(mesh).__name__ == "Scene":
-            mesh = mesh.dump(concatenate=True)
+            mesh = mesh.dump(concatenate=True)  # type: ignore
 
         scene = trimesh.Scene(mesh)
 

@@ -1,12 +1,14 @@
-import pytest
-from unittest.mock import patch, MagicMock
-from src.worker.celery_app import generate_local_thumbnails
+from unittest.mock import MagicMock, patch
+
 from src.app.models import PrintJob
+from src.worker.celery_app import generate_local_thumbnails
+
 
 @patch("src.worker.celery_app.SessionLocal")
 @patch("src.worker.celery_app.Path")
 @patch("src.worker.celery_app.generate_thumbnail")
 def test_generate_local_thumbnails_success(mock_generate, mock_path, mock_session):
+    """Test successful generation of thumbnails for local missing files."""
     mock_db = MagicMock()
     mock_session.return_value = mock_db
 
@@ -34,6 +36,7 @@ def test_generate_local_thumbnails_success(mock_generate, mock_path, mock_sessio
 
 @patch("src.worker.celery_app.SessionLocal")
 def test_generate_local_thumbnails_exception(mock_session):
+    """Test exception handling during thumbnail generation loop."""
     mock_db = MagicMock()
     mock_session.return_value = mock_db
     mock_db.query.side_effect = Exception("DB Error")
