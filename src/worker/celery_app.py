@@ -243,7 +243,7 @@ def generate_local_thumbnails() -> int:
             .filter(
                 PrintJob.source == "Local",
                 PrintJob.thumbnail_url.is_(None),  # type: ignore
-                PrintJob.file_path.isnot(None),    # type: ignore
+                PrintJob.file_path.isnot(None),  # type: ignore
             )
             .all()
         )

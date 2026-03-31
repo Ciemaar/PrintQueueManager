@@ -34,6 +34,7 @@ def test_generate_local_thumbnails_success(mock_generate, mock_path, mock_sessio
     mock_generate.assert_called_once()
     mock_db.commit.assert_called_once()
 
+
 @patch("src.worker.celery_app.SessionLocal")
 def test_generate_local_thumbnails_exception(mock_session):
     """Test exception handling during thumbnail generation loop."""
