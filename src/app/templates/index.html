@@ -45,15 +45,22 @@
 
         .drag-handle {
             cursor: grab;
-            color: var(--pico-muted-color);
+            color: var(--pico-h1-color);
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 2rem;
+            width: 2.5rem;
+            transition: color 0.2s ease, transform 0.2s ease;
+        }
+
+        .drag-handle:hover {
+            color: var(--pico-primary);
+            transform: scale(1.1);
         }
 
         .drag-handle:active {
             cursor: grabbing;
+            transform: scale(0.95);
         }
 
         .sortable-ghost {
