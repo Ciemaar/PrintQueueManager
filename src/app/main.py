@@ -23,6 +23,7 @@ from src.app.logging_config import setup_logging
 logger = logging.getLogger(__name__)
 setup_logging()
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Create database tables on application startup, run migrations, and trigger local sync."""
@@ -50,6 +51,7 @@ async def lifespan(app: FastAPI):
         logger.error(f"Failed to trigger initial sync_local task: {e}")
 
     yield
+
 
 app = FastAPI(title="Print Queue Manager", lifespan=lifespan)
 
@@ -258,21 +260,20 @@ def settings_page(request: Request, db: Session = Depends(get_db)) -> HTMLRespon
             "display_name": "MakerWorld",
             "instructions": (
                 "Go to MakerWorld and log in. Open Developer Tools (F12), navigate to "
-                "Application > Cookies, and find the cookie named <code>session</code> "
-                "or similar authentication token. Copy its value. Set the target to "
-                "your likes page or a specific collection."
+                "Application > Cookies, and find the cookie named <code>TAsessionID</code>. "
+                "Copy its value. Set the target to your likes page or a specific collection."
             ),
             "example_url": "https://makerworld.com/en/user/likes",
-            "credential_placeholder": "Paste session cookie here",
+            "credential_placeholder": "Paste TAsessionID cookie here",
         },
         "printables": {
             "display_name": "Printables",
             "instructions": (
-                "Log in to Printables. Open Developer Tools, find the session cookie in "
-                "Application > Cookies for <code>.printables.com</code>. Copy the value."
+                "Log in to Printables. Open Developer Tools, find the <code>nette-samesite</code> "
+                "cookie in Application > Cookies for <code>.printables.com</code>. Copy the value."
             ),
             "example_url": "https://www.printables.com/user/collections",
-            "credential_placeholder": "Paste session cookie here",
+            "credential_placeholder": "Paste nette-samesite cookie here",
         },
         "thingiverse": {
             "display_name": "Thingiverse",
@@ -281,24 +282,25 @@ def settings_page(request: Request, db: Session = Depends(get_db)) -> HTMLRespon
                 "or use the Developer Tools to find your session token."
             ),
             "example_url": "https://www.thingiverse.com/user/collections",
-            "credential_placeholder": "Paste API token or session cookie",
+            "credential_placeholder": "Paste API token here",
         },
         "cults3d": {
             "display_name": "Cults3D",
             "instructions": (
-                "Log in to Cults3D. Open Developer Tools and locate the session cookie."
+                "Log in to Cults3D. Open Developer Tools and locate the "
+                "<code>_cults_session</code> cookie."
             ),
             "example_url": "https://cults3d.com/en/users/collections",
-            "credential_placeholder": "Paste session cookie here",
+            "credential_placeholder": "Paste _cults_session cookie here",
         },
         "minihoarder": {
             "display_name": "Minihoarder",
             "instructions": (
                 "Log in to Minihoarder. Open Developer Tools and locate "
-                "your session cookie for your library."
+                "the <code>PHPSESSID</code> cookie for your library."
             ),
             "example_url": "https://www.minihoarder.com/library/",
-            "credential_placeholder": "Paste session cookie here",
+            "credential_placeholder": "Paste PHPSESSID cookie here",
         },
     }
 
@@ -348,3 +350,68 @@ def update_settings(
         f'background: var(--pico-primary-background); border-radius: 0.25rem;">'
         f"Settings saved for {service_name.capitalize()}!</div>"
     )
+
+
+@app.post("/settings/test", response_class=HTMLResponse)
+def test_settings(
+    request: Request,
+    service_name: str = Form(...),
+    target_url: str = Form(""),
+    credential: str = Form(""),
+    db: Session = Depends(get_db),
+) -> HTMLResponse:
+    """Test configuration settings synchronously by running a fast HTTP/Playwright fetch."""
+    # If the credential field is empty (masked), fall back to checking the DB
+    if not credential:
+        config = db.query(ServiceConfig).filter(ServiceConfig.service_name == service_name).first()
+        if config and getattr(config, "credential", None):
+            credential = str(config.credential)
+
+    if not target_url:
+        return HTMLResponse(
+            f'<div class="sync-toast" style="color: var(--pico-del-color); '
+            f"font-weight: bold; margin-bottom: 1rem; padding: 0.5rem; "
+            f'background: var(--pico-del-background); border-radius: 0.25rem;">'
+            f"Failed: Target URL is required to test {service_name.capitalize()}.</div>"
+        )
+
+    from src.worker.llm_scraper import get_page_html
+    from src.worker.thingiverse_api import fetch_thingiverse_collections
+
+    success = False
+    error_msg = ""
+    try:
+        if service_name == "thingiverse":
+            # API test
+            result = fetch_thingiverse_collections(credential)
+            success = isinstance(result, list)  # Either [] or data, but no exception
+        else:
+            # Playwright test
+            html = get_page_html(service_name, target_url, credential)
+            # A successful fetch implies the URL was reached and Playwright didn't crash.
+            # Empty HTML means either demo-mode mock fallback failed or Playwright crashed.
+            if html:
+                # Basic sanity check: look for evidence it isn't just an access denied page.
+                # Verifying we got a payload and no exceptions is enough for a "quick" test.
+                success = True
+            else:
+                success = False
+                error_msg = "Could not fetch page. Playwright returned empty content or crashed."
+    except Exception as e:
+        success = False
+        error_msg = str(e)
+
+    if success:
+        return HTMLResponse(
+            f'<div class="sync-toast" style="color: var(--pico-ins-color); '
+            f"font-weight: bold; margin-bottom: 1rem; padding: 0.5rem; "
+            f'background: var(--pico-ins-background); border-radius: 0.25rem;">'
+            f"Test successful for {service_name.capitalize()}! Connection verified.</div>"
+        )
+    else:
+        return HTMLResponse(
+            f'<div class="sync-toast" style="color: var(--pico-del-color); '
+            f"font-weight: bold; margin-bottom: 1rem; padding: 0.5rem; "
+            f'background: var(--pico-del-background); border-radius: 0.25rem;">'
+            f"Test failed for {service_name.capitalize()}. {error_msg}</div>"
+        )

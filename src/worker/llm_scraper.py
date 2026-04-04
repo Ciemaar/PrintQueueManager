@@ -45,15 +45,20 @@ def get_page_html(source: str, url: str, credential: str = "") -> str:
     """Use Playwright to fetch dynamic HTML, injecting session cookies if available."""
     cookie_str = credential
     domain = ""
+    cookie_name = "session"
 
     if source == "makerworld":
         domain = "makerworld.com"
+        cookie_name = "TAsessionID"
     elif source == "printables":
         domain = ".printables.com"
+        cookie_name = "nette-samesite"
     elif source == "cults3d":
         domain = "cults3d.com"
+        cookie_name = "_cults_session"
     elif source == "minihoarder":
         domain = "www.minihoarder.com"
+        cookie_name = "PHPSESSID"
 
     # If no cookie is provided for authentication, the mocked HTML is returned for safety
     if not cookie_str:
@@ -87,7 +92,7 @@ def get_page_html(source: str, url: str, credential: str = "") -> str:
                 context.add_cookies(
                     [
                         {
-                            "name": "session",  # Varies by site; generic
+                            "name": cookie_name,
                             "value": cookie_str,
                             "domain": domain,
                             "path": "/",

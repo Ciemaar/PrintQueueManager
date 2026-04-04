@@ -46,21 +46,7 @@
 <body>
     <main class="container">
         <header>
-            <nav>
-                <ul>
-                    <li>
-                        <hgroup>
-                            <h1>Local 3D Print Queue Manager</h1>
-                            <p>Aggregating models from Local, MakerWorld, Printables, and more.</p>
-                        </hgroup>
-                    </li>
-                </ul>
-                <ul>
-                    <li><a href="/" class="secondary">Main View</a></li>
-                    <li><a href="/deleted" class="secondary">Deleted Jobs</a></li>
-                    <li><a href="/settings" class="secondary">Settings</a></li>
-                </ul>
-            </nav>
+            {% include 'nav.html' with context %}
 
             <section aria-label="Manual Sync Triggers" style="margin-top: 1.5rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
                 <button class="outline secondary" hx-post="/sync/local" hx-swap="innerHTML" hx-target="#sync-feedback">Sync Local</button>

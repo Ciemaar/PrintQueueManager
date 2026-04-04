@@ -258,6 +258,67 @@ def test_update_settings_new_config():
         },
     )
     assert response.status_code == 200
+
+
+def test_test_settings_exception_handling():
+    """Verify test_settings gracefully handles exceptions during the test."""
+    from unittest.mock import patch
+
+    with patch("src.worker.llm_scraper.get_page_html", side_effect=Exception("Timeout Error")):
+        response = client.post(
+            "/settings/test",
+            data={
+                "service_name": "makerworld",
+                "target_url": "http://my-target.com",
+                "credential": "test_session_cookie",
+            },
+        )
+        assert response.status_code == 200
+        assert b"Timeout Error" in response.content
+
+
+def test_test_settings_db_credential_fallback():
+    """Verify test_settings falls back to the database credential if none is provided."""
+    db = TestingSessionLocal()
+    existing = ServiceConfig(
+        service_name="minihoarder",
+        enabled=1,
+        target_url="old_url",
+        credential="db_secret_cookie"
+    )
+    db.add(existing)
+    db.commit()
+
+    from unittest.mock import patch
+    with patch("src.worker.llm_scraper.get_page_html", return_value="<html>Success</html>") as mock_fetch:
+        response = client.post(
+            "/settings/test",
+            data={
+                "service_name": "minihoarder",
+                "target_url": "http://my-target.com",
+                "credential": "",
+            },
+        )
+        assert response.status_code == 200
+        mock_fetch.assert_called_once_with("minihoarder", "http://my-target.com", "db_secret_cookie")
+    db.close()
+    assert b"Test successful for Minihoarder!" in response.content
+
+
+def test_update_settings_new_config():
+    """Verify that posting valid configuration creates a new DB record if missing."""
+    db = TestingSessionLocal()
+
+    response = client.post(
+        "/settings/update",
+        data={
+            "service_name": "makerworld",
+            "enabled": "1",
+            "target_url": "http://my-target.com",
+            "credential": "test_session_cookie",
+        },
+    )
+    assert response.status_code == 200
     assert b"Settings saved for Makerworld!" in response.content
 
     config = db.query(ServiceConfig).filter(ServiceConfig.service_name == "makerworld").first()
@@ -294,3 +355,41 @@ def test_update_settings_existing_config_no_credential():
     assert getattr(config, "target_url") == "new_url"
     assert getattr(config, "credential") == "old_credential"
     db.close()
+
+
+def test_test_settings_success():
+    """Verify that posting valid configuration tests connection successfully."""
+    response = client.post(
+        "/settings/test",
+        data={
+            "service_name": "makerworld",
+            "target_url": "http://my-target.com",
+            "credential": "test_session_cookie",
+        },
+    )
+    assert response.status_code == 200
+
+def test_test_settings_failure_no_url():
+    """Verify testing requires a target url."""
+    response = client.post(
+        "/settings/test",
+        data={
+            "service_name": "makerworld",
+            "target_url": "",
+            "credential": "test_session_cookie",
+        }
+    )
+    assert response.status_code == 200
+    assert b"Target URL is required" in response.content
+
+def test_test_settings_thingiverse_api():
+    """Verify testing Thingiverse hits the API path."""
+    response = client.post(
+        "/settings/test",
+        data={
+            "service_name": "thingiverse",
+            "target_url": "http://my-target.com",
+            "credential": "test_session_cookie",
+        }
+    )
+    assert response.status_code == 200

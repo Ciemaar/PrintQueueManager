@@ -31,19 +31,9 @@
 <body>
     <main class="container">
         <header>
-            <nav>
-                <ul>
-                    <li><strong><a href="/" class="secondary">Print Queue Manager</a></strong></li>
-                </ul>
-                <ul>
-                    <li><a href="/" class="secondary">Dashboard</a></li>
-                    <li><a href="/settings" class="primary">Settings</a></li>
-                </ul>
-            </nav>
-            <hgroup>
-                <h1>Service Configuration</h1>
-                <p>Configure credentials and target collections for each platform.</p>
-            </hgroup>
+            {% set page_title = "Service Configuration" %}
+            {% set page_subtitle = "Configure credentials and target collections for each platform." %}
+            {% include 'nav.html' with context %}
         </header>
 
         <div id="save-feedback" style="margin-bottom: 1rem;"></div>
@@ -75,7 +65,16 @@
                         </div>
                     </div>
 
-                    <button type="submit">Save {{ details.display_name }} Settings</button>
+                    <div style="display: flex; gap: 1rem;">
+                        <button type="submit">Save {{ details.display_name }} Settings</button>
+                        <button type="button" class="secondary outline"
+                                hx-post="/settings/test"
+                                hx-include="closest form"
+                                hx-target="#save-feedback"
+                                hx-swap="innerHTML">
+                            Test Configuration
+                        </button>
+                    </div>
                 </form>
             </article>
         {% endfor %}
