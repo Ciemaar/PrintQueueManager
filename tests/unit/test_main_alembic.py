@@ -8,7 +8,7 @@ from src.app.main import app, lifespan
 @pytest.mark.asyncio
 @patch("src.app.main.Base.metadata.create_all")
 @patch("alembic.command.upgrade")
-@patch("src.app.main.sync_local.delay")
+@patch("src.app.main.sync_local.send")
 async def test_startup_event(mock_sync, mock_upgrade, mock_create):
     """Verify that startup event successfully creates tables, runs migrations, and triggers sync."""
     async with lifespan(app):
@@ -21,9 +21,9 @@ async def test_startup_event(mock_sync, mock_upgrade, mock_create):
 @pytest.mark.asyncio
 @patch("src.app.main.Base.metadata.create_all")
 @patch("alembic.command.upgrade", side_effect=Exception("Alembic failed"))
-@patch("src.app.main.sync_local.delay", side_effect=Exception("Celery failed"))
+@patch("src.app.main.sync_local.send", side_effect=Exception("Dramatiq failed"))
 async def test_startup_event_exceptions(mock_sync, mock_upgrade, mock_create, capfd, caplog):
-    """Verify that exceptions during alembic or celery sync are gracefully caught and logged."""
+    """Verify that exceptions during alembic or dramatiq sync are gracefully caught and logged."""
     import logging
 
     caplog.set_level(logging.ERROR)
@@ -35,4 +35,4 @@ async def test_startup_event_exceptions(mock_sync, mock_upgrade, mock_create, ca
     mock_sync.assert_called_once()
     out, err = capfd.readouterr()
     assert "Failed to run database migrations: Alembic failed" in out
-    assert "Failed to trigger initial sync_local task: Celery failed" in caplog.text
+    assert "Failed to trigger initial sync_local task: Dramatiq failed" in caplog.text

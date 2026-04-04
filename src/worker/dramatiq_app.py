@@ -1,11 +1,13 @@
-"""Celery worker configuration and scheduled tasks for external data sync."""
+"""Dramatiq worker configuration and scheduled tasks for external data sync."""
 
 import logging
 import time
 from pathlib import Path
 from typing import Any, List
 
-from celery import Celery
+import dramatiq
+from dramatiq.brokers.redis import RedisBroker
+from periodiq import PeriodiqMiddleware, cron
 
 from src.app.config import settings
 from src.app.database import SessionLocal
@@ -18,38 +20,12 @@ from .thingiverse_api import fetch_thingiverse_collections
 setup_logging()
 logger = logging.getLogger(__name__)
 
-celery_app = Celery("printqueue", broker=settings.redis_url, backend=settings.redis_url)
-
-celery_app.conf.update(
-    task_serializer="json",
-    accept_content=["json"],
-    result_serializer="json",
-    timezone="UTC",
-    enable_utc=True,
-)
+redis_broker = RedisBroker(url=settings.redis_url)
+redis_broker.add_middleware(PeriodiqMiddleware(skip_delay=30))
+dramatiq.set_broker(redis_broker)
 
 
-@celery_app.on_after_configure.connect  # type: ignore
-def setup_periodic_tasks(sender: Any, **kwargs: Any) -> None:
-    """Register all platform synchronization tasks to run automatically based on config."""
-    sender.add_periodic_task(
-        settings.makerworld_sync_interval, sync_makerworld.s(), name="sync_makerworld_periodic"
-    )
-    sender.add_periodic_task(
-        settings.printables_sync_interval, sync_printables.s(), name="sync_printables_periodic"
-    )
-    sender.add_periodic_task(
-        settings.thingiverse_sync_interval, sync_thingiverse.s(), name="sync_thingiverse_periodic"
-    )
-    sender.add_periodic_task(
-        settings.cults3d_sync_interval, sync_cults3d.s(), name="sync_cults3d_periodic"
-    )
-    sender.add_periodic_task(
-        settings.minihoarder_sync_interval, sync_minihoarder.s(), name="sync_minihoarder_periodic"
-    )
-
-
-@celery_app.task(name="sync_makerworld")
+@dramatiq.actor(periodic=cron(settings.makerworld_sync_cron))
 def sync_makerworld() -> List[dict[str, Any]]:
     """
     Fetch the user's liked models from MakerWorld.
@@ -64,7 +40,7 @@ def sync_makerworld() -> List[dict[str, Any]]:
     return result
 
 
-@celery_app.task(name="sync_printables")
+@dramatiq.actor(periodic=cron(settings.printables_sync_cron))
 def sync_printables() -> List[dict[str, Any]]:
     """
     Fetch the user's collections from Printables.
@@ -79,7 +55,7 @@ def sync_printables() -> List[dict[str, Any]]:
     return result
 
 
-@celery_app.task(name="sync_thingiverse")
+@dramatiq.actor(periodic=cron(settings.thingiverse_sync_cron))
 def sync_thingiverse() -> List[dict[str, Any]]:
     """
     Fetch the user's liked models from Thingiverse.
@@ -100,7 +76,7 @@ def sync_thingiverse() -> List[dict[str, Any]]:
     return result
 
 
-@celery_app.task(name="sync_cults3d")
+@dramatiq.actor(periodic=cron(settings.cults3d_sync_cron))
 def sync_cults3d() -> List[dict[str, Any]]:
     """
     Fetch the user's collections from Cults3D.
@@ -115,7 +91,7 @@ def sync_cults3d() -> List[dict[str, Any]]:
     return result
 
 
-@celery_app.task(name="sync_minihoarder")
+@dramatiq.actor(periodic=cron(settings.minihoarder_sync_cron))
 def sync_minihoarder() -> List[dict[str, Any]]:
     """
     Fetch the user's purchased/downloaded library from Minihoarder.
@@ -130,7 +106,7 @@ def sync_minihoarder() -> List[dict[str, Any]]:
     return result
 
 
-@celery_app.task(name="sync_local")
+@dramatiq.actor
 def sync_local() -> List[dict[str, Any]]:
     """
     Scan the local watched directory for models and import any missing files.

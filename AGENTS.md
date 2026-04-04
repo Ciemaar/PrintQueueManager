@@ -40,7 +40,7 @@ When instructed to run or mock services, be aware that the `docker-compose.yml` 
 - PostgreSQL (`db` on `5432`)
 - Redis (`redis` on `6379`)
 - Ollama (`ollama` on `11434`)
-- Celery Worker & Beat scheduler
+- Dramatiq Worker & Beat scheduler
 - Watchdog Local File Monitor
 
 To run these Docker containers in verbose mode, set the `VERBOSE` environment variable to `"true"`. This will increase the logging level from `INFO` to `DEBUG`. For example, you can run `VERBOSE="true" docker compose up` or explicitly add `VERBOSE: "true"` to the respective service environments in `docker-compose.yml`.
