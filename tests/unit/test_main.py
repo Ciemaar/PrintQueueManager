@@ -151,6 +151,55 @@ def test_reorder_job():
     db.close()
 
 
+def test_reorder_job_same_priority():
+    """Verify that reordering a job between two jobs with the same priority works."""
+    db = TestingSessionLocal()
+    # Create three jobs with default priority 0
+    job1 = PrintJob(title="Job 1", source="Test", user_priority=0.0)
+    job2 = PrintJob(title="Job 2", source="Test", user_priority=0.0)
+    job3 = PrintJob(title="Job 3", source="Test", user_priority=0.0)
+    db.add_all([job1, job2, job3])
+    db.commit()
+    db.refresh(job1)
+    db.refresh(job2)
+    db.refresh(job3)
+
+    # Move job3 between job1 and job2
+    response = client.post(
+        f"/jobs/{job3.id}/reorder", data={"above_id": str(job1.id), "below_id": str(job2.id)}
+    )
+    assert response.status_code == 200
+
+    db.expire_all()
+    updated_job1 = db.query(PrintJob).filter(PrintJob.id == job1.id).first()
+    updated_job2 = db.query(PrintJob).filter(PrintJob.id == job2.id).first()
+    updated_job3 = db.query(PrintJob).filter(PrintJob.id == job3.id).first()
+
+    assert updated_job1 is not None
+    assert updated_job2 is not None
+    assert updated_job3 is not None
+
+    p1 = getattr(updated_job1, "user_priority")
+    p2 = getattr(updated_job2, "user_priority")
+    p3 = getattr(updated_job3, "user_priority")
+
+    # Since they were 0.0, a collision should have been detected,
+    # causing a normalization.
+    # Because updated_at is descending, initial order is:
+    # 1. Job 3 (created last, highest updated_at, priority 1.0)
+    # 2. Job 2 (priority 2.0)
+    # 3. Job 1 (priority 3.0)
+    # When we move Job 3 between Job 1 and Job 2:
+    # above_job = Job 1 (priority 3.0)
+    # below_job = Job 2 (priority 2.0)
+    # The midpoint user_priority will be 2.5
+    # Since we sort by user_priority ASCENDING:
+    # Job 2 (2.0) -> Job 3 (2.5) -> Job 1 (3.0)
+    assert p2 < p3 < p1
+
+    db.close()
+
+
 def test_update_notes():
     """Verify that posting to the notes route correctly updates material and timing notes."""
     db = TestingSessionLocal()

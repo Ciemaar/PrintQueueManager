@@ -142,6 +142,25 @@ def deleted_jobs(
     )  # type: ignore
 
 
+def _normalize_priorities_sync(db: Session) -> None:
+    """
+    Normalize the user_priority values for all active PrintJobs synchronously.
+
+    This is called when a priority collision is detected during drag-and-drop reordering.
+    """
+    jobs = (
+        db.query(PrintJob)
+        .filter(PrintJob.status != PrintStatus.DELETED)
+        .order_by(PrintJob.user_priority.asc(), PrintJob.updated_at.desc())
+        .all()
+    )
+
+    for index, j in enumerate(jobs, start=1):
+        setattr(j, "user_priority", float(index))
+
+    db.commit()
+
+
 @app.post("/jobs/{job_id}/reorder", response_class=HTMLResponse)
 def reorder_job(
     job_id: int,
@@ -154,32 +173,39 @@ def reorder_job(
     Update the priority of a specific job via drag-and-drop.
 
     Accepts the IDs of the jobs above and below the new position to calculate
-    a new user_priority float value.
+    a new user_priority float value. If the gap between items is too small or
+    a collision exists, forces a sync normalization to guarantee distinct ordering.
     """
     job = db.query(PrintJob).filter(PrintJob.id == job_id).first()
     if not job:
         return HTMLResponse(status_code=404)
 
-    if above_id and below_id:
-        above_job = db.query(PrintJob).filter(PrintJob.id == above_id).first()
-        below_job = db.query(PrintJob).filter(PrintJob.id == below_id).first()
+    # Fetch reference jobs
+    above_job = db.query(PrintJob).filter(PrintJob.id == above_id).first() if above_id else None
+    below_job = db.query(PrintJob).filter(PrintJob.id == below_id).first() if below_id else None
 
-        if above_job and below_job:
-            job.user_priority = (above_job.user_priority + below_job.user_priority) / 2.0  # type: ignore
-        elif above_job:
-            job.user_priority = above_job.user_priority + 1.0  # type: ignore
-        elif below_job:
-            job.user_priority = below_job.user_priority - 1.0  # type: ignore
+    # Detect priority collisions or inversions that prevent calculating a midpoint
+    if above_job and below_job:
+        above_priority = getattr(above_job, "user_priority")
+        below_priority = getattr(below_job, "user_priority")
 
-    elif above_id:
-        above_job = db.query(PrintJob).filter(PrintJob.id == above_id).first()
-        if above_job:
-            job.user_priority = above_job.user_priority + 1.0  # type: ignore
+        # If priorities are identical or inverted, normalize the entire list first
+        if above_priority >= below_priority:
+            _normalize_priorities_sync(db)
+            db.refresh(above_job)
+            db.refresh(below_job)
 
-    elif below_id:
-        below_job = db.query(PrintJob).filter(PrintJob.id == below_id).first()
-        if below_job:
-            job.user_priority = below_job.user_priority - 1.0  # type: ignore
+    # Re-calculate with normalized (or distinct) values
+    if above_job and below_job:
+        above_priority = getattr(above_job, "user_priority")
+        below_priority = getattr(below_job, "user_priority")
+        setattr(job, "user_priority", (above_priority + below_priority) / 2.0)
+    elif above_job:
+        above_priority = getattr(above_job, "user_priority")
+        setattr(job, "user_priority", above_priority + 1.0)
+    elif below_job:
+        below_priority = getattr(below_job, "user_priority")
+        setattr(job, "user_priority", below_priority - 1.0)
 
     # Note: If both are None, this is either a single-item list or an error.
     # The job remains at its current priority.
