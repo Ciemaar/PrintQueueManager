@@ -97,3 +97,82 @@ This section compares autonomous agentic coding tools to evaluate which one best
 - Configured `ruff format`.
 - Migrated environment management from `pip` to `uv sync` + `uv.lock`.
 - Integrated `tox-uv` for fast test execution.
+
+## Background Job Orchestration & Task Queues
+
+**Current:** `Celery`
+**Alternatives:** `RQ`, `Huey`, `Dramatiq`, `Temporal`
+**Decision:** **Migrate to `RQ` (Redis Queue) or `Dramatiq`.**
+
+- _Reasoning:_ While Celery is the de facto standard for distributed task processing in Python, its feature richness brings significant complexity and operational overhead. PrintQueueManager is designed as a local-first application for deployment via Docker Compose on user hardware, prioritizing simplicity.
+  - **Celery:**
+    - _Supporting:_ Massive ecosystem, supports complex task routing (canvas, chords), highly resilient under scale, and supports cross-language tasks via AMQP.
+    - _Opposing:_ Steep learning curve, verbose and error-prone configuration, suboptimal defaults (e.g., worker prefetching can cause lost jobs on crash without careful setup), and widely considered overkill for a single-node local application.
+  - **RQ (Redis Queue):**
+    - _Supporting:_ Dead-simple API, extremely lightweight, low cognitive overhead, and uses Redis as both broker and storage (which we already run). Excellent for small-to-medium local apps.
+    - _Opposing:_ Less reliable than Celery backed by RabbitMQ (lacks durable delivery guarantees; if a worker crashes mid-task, the job may be lost unless handled manually), and lacks built-in task scheduling (requires `rq-scheduler`).
+  - **Huey:**
+    - _Supporting:_ Even lighter than RQ and includes built-in periodic task scheduling.
+    - _Opposing:_ A much smaller community and ecosystem compared to RQ and Dramatiq, leading to fewer extensions and community support.
+  - **Dramatiq:**
+    - _Supporting:_ Focused on simplicity, reliability, and performance. Often considered a modern, safer alternative to Celery with excellent defaults (built-in retries, thread safety). Supports Redis and RabbitMQ.
+    - _Opposing:_ Smaller feature set than Celery, requires a third-party add-on for a built-in scheduler, and slightly more complex than RQ.
+  - **Temporal:**
+    - _Supporting:_ A highly advanced workflow engine that solves many of Celery's reliability issues (native transactional workflows, exponential retries by default, no lost jobs, strong versioning, and built-in async/await support).
+    - _Opposing:_ Requires running the Temporal Server (a complex distributed system involving Go, Cassandra/PostgreSQL, and Elasticsearch/OpenSearch), which fundamentally violates the "Local Inference First" and lightweight Docker Compose goals of PrintQueueManager.
+
+- _Action:_ Given that we already use Redis, **RQ** is the simplest drop-in replacement that drastically reduces cognitive and operational load while serving our basic async needs. Alternatively, **Dramatiq** is a strong modern choice if higher performance or better built-in reliability is needed. We propose a spike to migrate from Celery to RQ.
+
+## Message Brokers
+
+**Current:** `Redis`
+**Alternatives:** `RabbitMQ`, `Amazon SQS`
+**Decision:** **Keep `Redis`.**
+
+- _Reasoning:_
+  - **Redis:**
+    - _Supporting:_ Simple to configure, incredibly fast (in-memory), easily deployable via a single lightweight Docker container, and doubles as an application cache.
+    - _Opposing:_ Not originally designed as a highly durable message queue. Under extreme memory pressure or crashes, it can drop messages (unlike AMQP systems).
+  - **RabbitMQ:**
+    - _Supporting:_ Adheres to the AMQP standard, offers bulletproof durable message delivery, and supports highly advanced topic routing.
+    - _Opposing:_ Significantly higher memory footprint and operational complexity in Docker compared to Redis, which is unnecessary for a localized, offline-first application.
+  - **Amazon SQS:**
+    - _Supporting:_ A fully managed, infinitely scalable, zero-maintenance cloud queue.
+    - _Opposing:_ Requires an active internet connection and AWS credentials, violating the project's "Local Inference First" and privacy-centric offline design.
+
+- _Action:_ Continue using Redis as the primary message broker and cache.
+
+## Web Frameworks
+
+**Current:** `FastAPI`
+**Alternatives:** `Django`, `Flask`
+**Decision:** **Keep `FastAPI`.**
+
+- _Reasoning:_
+  - **FastAPI:**
+    - _Supporting:_ Built heavily on modern Python type hints and Pydantic. Since PrintQueueManager relies entirely on `Pydantic AI` for agentic scraping, the shared Pydantic ecosystem makes data validation seamless between the AI layer and the web API. Excellent out-of-the-box async/await support, crucial for non-blocking local LLM HTTP requests.
+    - _Opposing:_ Minimalist architecture means developers must piece together the stack (ORM via SQLAlchemy, migrations via Alembic) rather than having "batteries included".
+  - **Django:**
+    - _Supporting:_ "Batteries-included" (built-in ORM, admin panel, auth), incredibly stable, and massive ecosystem.
+    - _Opposing:_ Synchronous by legacy design; while async support is maturing, the ORM and middleware are not fully optimized for an entirely async, HTMX-driven, and Pydantic-heavy architecture.
+  - **Flask:**
+    - _Supporting:_ The ultimate microframework, highly flexible, and extremely simple to stand up.
+    - _Opposing:_ Lacks native typing and Pydantic validation (requires extensions), synchronous by default, and doesn't auto-generate OpenAPI documentation.
+
+- _Action:_ Retain FastAPI as the core web framework.
+
+## Autoscaling & Cloud Hosting Platforms
+
+**Current:** `Docker Compose` (Local)
+**Alternatives:** `Judoscale` (Autoscaling), `Amazon ECS`, `Fly.io`, `Heroku`, `Railway`, `Render`
+**Decision:** **Reject Cloud Hosting and Autoscaling.**
+
+- _Reasoning:_
+  - **Cloud Hosting Platforms (ECS, Fly.io, Heroku, Railway, Render):**
+    - _Supporting:_ Managed infrastructure, built-in CI/CD, and zero local hardware maintenance.
+    - _Opposing:_ Deploying to these platforms would require exposing local 3D printer APIs over the internet and paying for expensive cloud GPU instances to run local LLMs (like Llama 3.2 via Ollama). This fundamentally contradicts the project's core philosophy of being a "Local, Agentic 3D Print Queue Management System" designed for privacy.
+  - **Judoscale (Autoscaler):**
+    - _Supporting:_ Excellent for automatically scaling worker nodes horizontally based on queue latency rather than CPU, saving cloud costs.
+    - _Opposing:_ Horizontal autoscaling of worker containers is unnecessary for a single-node, local-first system running on a single user's hardware.
+
+- _Action:_ Continue relying solely on `docker-compose.yml` for orchestration and local deployment.
