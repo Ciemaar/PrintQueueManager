@@ -100,28 +100,28 @@ This section compares autonomous agentic coding tools to evaluate which one best
 
 ## Background Job Orchestration & Task Queues
 
-**Current:** `Dramatiq`
-**Alternatives:** `RQ`, `Huey`, `Dramatiq`, `Temporal`
-**Decision:** **Migrate to `RQ` (Redis Queue) or `Dramatiq`.**
+**Current:** `Dramatiq` (Migrated from `Celery`)
+**Alternatives:** `Celery`, `RQ`, `Huey`, `Temporal`
+**Decision:** **Adopted `Dramatiq`.**
 
-- _Reasoning:_ While Dramatiq is the de facto standard for distributed task processing in Python, its feature richness brings significant complexity and operational overhead. PrintQueueManager is designed as a local-first application for deployment via Docker Compose on user hardware, prioritizing simplicity.
-  - **Dramatiq:**
+- _Reasoning:_ While Celery is the de facto standard for distributed task processing in Python, its feature richness brings significant complexity and operational overhead. PrintQueueManager is designed as a local-first application for deployment via Docker Compose on user hardware, prioritizing simplicity.
+  - **Celery:**
     - _Supporting:_ Massive ecosystem, supports complex task routing (canvas, chords), highly resilient under scale, and supports cross-language tasks via AMQP.
     - _Opposing:_ Steep learning curve, verbose and error-prone configuration, suboptimal defaults (e.g., worker prefetching can cause lost jobs on crash without careful setup), and widely considered overkill for a single-node local application.
   - **RQ (Redis Queue):**
     - _Supporting:_ Dead-simple API, extremely lightweight, low cognitive overhead, and uses Redis as both broker and storage (which we already run). Excellent for small-to-medium local apps.
-    - _Opposing:_ Less reliable than Dramatiq backed by RabbitMQ (lacks durable delivery guarantees; if a worker crashes mid-task, the job may be lost unless handled manually), and lacks built-in task scheduling (requires `rq-scheduler`).
+    - _Opposing:_ Less reliable than Celery backed by RabbitMQ (lacks durable delivery guarantees; if a worker crashes mid-task, the job may be lost unless handled manually), and lacks built-in task scheduling (requires `rq-scheduler`).
   - **Huey:**
     - _Supporting:_ Even lighter than RQ and includes built-in periodic task scheduling.
     - _Opposing:_ A much smaller community and ecosystem compared to RQ and Dramatiq, leading to fewer extensions and community support.
   - **Dramatiq:**
-    - _Supporting:_ Focused on simplicity, reliability, and performance. Often considered a modern, safer alternative to Dramatiq with excellent defaults (built-in retries, thread safety). Supports Redis and RabbitMQ.
-    - _Opposing:_ Smaller feature set than Dramatiq, requires a third-party add-on for a built-in scheduler, and slightly more complex than RQ.
+    - _Supporting:_ Focused on simplicity, reliability, and performance. Often considered a modern, safer alternative to Celery with excellent defaults (built-in retries, thread safety). Supports Redis and RabbitMQ. Periodiq supports native CRON scheduling.
+    - _Opposing:_ Smaller feature set than Celery, requires a third-party add-on (`periodiq`) for a built-in scheduler, and slightly more complex than RQ.
   - **Temporal:**
-    - _Supporting:_ A highly advanced workflow engine that solves many of Dramatiq's reliability issues (native transactional workflows, exponential retries by default, no lost jobs, strong versioning, and built-in async/await support).
+    - _Supporting:_ A highly advanced workflow engine that solves many of Celery's reliability issues (native transactional workflows, exponential retries by default, no lost jobs, strong versioning, and built-in async/await support).
     - _Opposing:_ Requires running the Temporal Server (a complex distributed system involving Go, Cassandra/PostgreSQL, and Elasticsearch/OpenSearch), which fundamentally violates the "Local Inference First" and lightweight Docker Compose goals of PrintQueueManager.
 
-- _Action:_ Given that we already use Redis, **RQ** is the simplest drop-in replacement that drastically reduces cognitive and operational load while serving our basic async needs. Alternatively, **Dramatiq** is a strong modern choice if higher performance or better built-in reliability is needed. We propose a spike to migrate from Dramatiq to RQ.
+- _Action:_ Given that we already use Redis, **Dramatiq** serves as a strong modern choice for high performance, simplified reliability, and reduced cognitive load compared to Celery. We successfully migrated from Celery to Dramatiq + Periodiq.
 
 ## Message Brokers
 

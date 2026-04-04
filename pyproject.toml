@@ -47,7 +47,7 @@ dependencies = [
     "watchfiles",
     "dramatiq[redis,watch]>=1.18.0",
     "periodiq>=0.13.0",
-    "setuptools",
+    "setuptools<70.0",
 ]
 requires-python = ">=3.10"
 
