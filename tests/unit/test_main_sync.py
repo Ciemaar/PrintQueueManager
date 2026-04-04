@@ -9,22 +9,24 @@ from src.app.main import app
 client = TestClient(app)
 
 
-@patch("src.worker.celery_app.sync_makerworld.delay")
-def test_trigger_sync_success(mock_delay):
-    """Ensure that a valid platform triggers the Celery task and returns a success message."""
+@patch("src.app.main.get_queue")
+def test_trigger_sync_success(mock_get_queue):
+    """Ensure that a valid platform triggers the RQ task and returns a success message."""
+    mock_queue = mock_get_queue.return_value
     response = client.post("/sync/makerworld")
     assert response.status_code == 200
     assert "Sync started for Makerworld!" in response.text
-    mock_delay.assert_called_once()
+    mock_queue.enqueue.assert_called_once()
 
 
-@patch("src.worker.celery_app.sync_local.delay")
-def test_trigger_sync_local(mock_delay):
-    """Ensure that the local platform triggers the Celery task and returns a success message."""
+@patch("src.app.main.get_queue")
+def test_trigger_sync_local(mock_get_queue):
+    """Ensure that the local platform triggers the RQ task and returns a success message."""
+    mock_queue = mock_get_queue.return_value
     response = client.post("/sync/local")
     assert response.status_code == 200
     assert "Sync started for Local!" in response.text
-    mock_delay.assert_called_once()
+    mock_queue.enqueue.assert_called_once()
 
 
 def test_trigger_sync_unknown_platform():
