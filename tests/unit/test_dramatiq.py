@@ -1,5 +1,6 @@
 """Test module for the Dramatiq worker scheduled tasks."""
 
+from typing import Any, List
 from unittest.mock import MagicMock, patch
 
 from src.worker.dramatiq_app import (
@@ -10,7 +11,6 @@ from src.worker.dramatiq_app import (
     sync_printables,
     sync_thingiverse,
 )
-from typing import Any, List
 
 
 @patch("src.worker.dramatiq_app.run_scraper")

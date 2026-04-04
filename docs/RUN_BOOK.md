@@ -89,7 +89,7 @@ The project uses a unified CLI to launch components individually if you don't wa
 
 - **Start Web Server:** `printqueue web` (or `uvicorn src.app.main:app --reload`)
 - **Start Watchdog:** `printqueue watchdog`
-- **Start Worker:** `dramatiq -A src.worker.dramatiq_app worker --loglevel=info`
+- **Start Worker:** `dramatiq src.worker.dramatiq_app`
 
 _(Ensure `DATABASE_URL` and `REDIS_URL` are set as environment variables to point to your local development containers!)_
 
