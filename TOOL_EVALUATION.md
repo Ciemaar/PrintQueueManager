@@ -88,6 +88,32 @@ This section compares autonomous agentic coding tools to evaluate which one best
 - _Reasoning:_ GitHub Copilot offers the most seamless integration with our existing GitHub-based workflow. Claude Code is highly praised for its autonomous CLI capabilities and works great with repository-level instructions (`AGENTS.md`). Both are excellent for FastAPI/Python.
 - _Action:_ Encourage developers to use Copilot Pro or Claude Code locally. Evaluate Jules once it becomes more widely available outside of personal Google accounts.
 
+## LLM Inference Providers
+
+**Current:** Local Ollama
+**Alternatives:** OpenRouter, Alibaba Cloud Model Studio
+**Decision:** **Support all three via configuration.**
+
+This section compares the LLM inference providers supported by the application.
+
+### Ollama (Local)
+
+- **Pros:** Completely offline, free, ensures total data privacy, no API keys required, low latency (if running on a capable GPU).
+- **Cons:** Constrained by local hardware. Large models (like 70B+ parameters) cannot run on standard consumer hardware.
+- **Use Case:** Best for default local setups and developers prioritizing privacy or running on limited connectivity.
+
+### OpenRouter
+
+- **Pros:** Provides an OpenAI-compatible API layer over hundreds of models (including closed models like Claude and open models like Arcee's Trinity). Offers a single billing and API interface. Access to massive models that are impossible to run locally.
+- **Cons:** Requires an internet connection, API keys, and incurs usage costs.
+- **Use Case:** Best for operators who want access to frontier models (like `arcee-ai/trinity-large-thinking`) or wish to easily benchmark different cloud models using a unified API.
+
+### Alibaba Cloud Model Studio
+
+- **Pros:** Provides enterprise-grade access to the powerful Qwen family of models. Very cost-effective and highly performant for complex reasoning tasks. Offers OpenAI compatibility.
+- **Cons:** Requires account setup on Alibaba Cloud. Less diverse model selection compared to OpenRouter.
+- **Use Case:** Excellent choice when leveraging Qwen models (like `qwen-max` or `qwen-plus`) for complex extraction tasks requiring large context windows and strong reasoning.
+
 ---
 
 **Summary of Changes Adopted:**

@@ -1,5 +1,6 @@
 """Configuration settings for the Print Queue Manager application."""
 
+from pydantic import SecretStr
 from pydantic_settings import BaseSettings
 
 
@@ -25,6 +26,11 @@ class Settings(BaseSettings):
     thingiverse_sync_interval: float = 604800.0
     cults3d_sync_interval: float = 604800.0
     minihoarder_sync_interval: float = 604800.0
+
+    # LLM Settings
+    openrouter_api_key: SecretStr | None = None
+    alibaba_api_key: SecretStr | None = None
+    llm_model_mapping: dict[str, str] = {"scraper.*": "ollama:llama3.2"}
 
     # Debugging
     verbose: bool = False

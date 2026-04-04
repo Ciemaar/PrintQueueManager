@@ -84,9 +84,9 @@ def test_run_scraper_empty_html(mock_get_html):
     assert result == []
 
 
-@patch("src.worker.llm_scraper.scraper_agent.run_sync")
+@patch("src.worker.llm_scraper.get_scraper_agent")
 @patch("src.worker.llm_scraper.get_page_html")
-def test_run_scraper_success(mock_get_html, mock_run_sync):
+def test_run_scraper_success(mock_get_html, mock_get_agent):
     """Verify run_scraper parses LLM output and saves to DB."""
     mock_get_html.return_value = "<html>Valid Data</html>"
 
@@ -94,7 +94,9 @@ def test_run_scraper_success(mock_get_html, mock_run_sync):
     mock_result.data.models = [
         ExtractedModelInfo(title="LLM Vase", url="http://url.com", thumbnail=None, author=None)
     ]
-    mock_run_sync.return_value = mock_result
+    mock_agent = MagicMock()
+    mock_agent.run_sync.return_value = mock_result
+    mock_get_agent.return_value = mock_agent
 
     result = run_scraper("test", "http://test.com")
 
@@ -106,12 +108,14 @@ def test_run_scraper_success(mock_get_html, mock_run_sync):
     assert len(result2) == 0
 
 
-@patch("src.worker.llm_scraper.scraper_agent.run_sync")
+@patch("src.worker.llm_scraper.get_scraper_agent")
 @patch("src.worker.llm_scraper.get_page_html")
-def test_run_scraper_llm_error(mock_get_html, mock_run_sync):
+def test_run_scraper_llm_error(mock_get_html, mock_get_agent):
     """Verify run_scraper uses fallback mock data if LLM throws an exception."""
     mock_get_html.return_value = "<html>Complex Data</html>"
-    mock_run_sync.side_effect = Exception("Ollama disconnected")
+    mock_agent = MagicMock()
+    mock_agent.run_sync.side_effect = Exception("Ollama disconnected")
+    mock_get_agent.return_value = mock_agent
 
     result = run_scraper("test", "http://test.com")
 
@@ -119,14 +123,16 @@ def test_run_scraper_llm_error(mock_get_html, mock_run_sync):
     assert "Mock Vase" in result[0]["title"]
 
 
-@patch("src.worker.llm_scraper.scraper_agent.run_sync")
+@patch("src.worker.llm_scraper.get_scraper_agent")
 @patch("src.worker.llm_scraper.get_page_html")
-def test_run_scraper_db_error(mock_get_html, mock_run_sync):
+def test_run_scraper_db_error(mock_get_html, mock_get_agent):
     """Verify run_scraper handles database commit errors safely."""
     mock_get_html.return_value = "<html>Valid Data</html>"
-    mock_run_sync.return_value.data.models = [
+    mock_agent = MagicMock()
+    mock_agent.run_sync.return_value.data.models = [
         ExtractedModelInfo(title="LLM Vase", url="http://url.com", thumbnail=None, author=None)
     ]
+    mock_get_agent.return_value = mock_agent
 
     with patch("src.worker.llm_scraper.SessionLocal") as mock_session_local:
         mock_db = MagicMock()

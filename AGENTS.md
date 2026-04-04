@@ -4,8 +4,8 @@ Welcome! If you are an AI assistant working on this repository, please read thes
 
 ## Architectural Philosophy
 
-1. **Local-First & Private:** This application handles sensitive user data (3D print collections, local directories). Never send data to third-party cloud LLM APIs. We strictly rely on local inference servers like Ollama.
-2. **Pydantic AI over Beautiful Soup:** When scraping dynamic or unstructured web content (e.g., MakerWorld, Printables), use `pydantic-ai` with local LLMs to map the HTML string into a defined Pydantic schema (`ScrapedPageData`). Avoid writing CSS selector logic that easily breaks.
+1. **Local-First & Configurable Models:** This application supports local inference via Ollama to ensure data privacy, but it can also be configured to use cloud models (OpenRouter, Alibaba). **Important:** Whenever you test or integrate new LLM models or inference providers, you **must** update the `MODEL_EVALUATION.md` file with your findings, specifically noting latency, accuracy, and use cases.
+2. **Pydantic AI over Beautiful Soup:** When scraping dynamic or unstructured web content (e.g., MakerWorld, Printables), use `pydantic-ai` with local or configured LLMs to map the HTML string into a defined Pydantic schema (`ScrapedPageData`). Avoid writing CSS selector logic that easily breaks.
 3. **Structured APIs First:** If an official API exists (e.g., Thingiverse), fetch data directly via `httpx` and bypass the LLM agent to save compute time. Only fallback to the LLM agent if the API fails or no token is provided.
 4. **FastAPI & HTMX Backend:** Avoid complex JS frameworks. The user interface uses server-side rendered Jinja2 templates via FastAPI and `htmx` for dynamic frontend interactions.
 
