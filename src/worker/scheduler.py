@@ -9,15 +9,16 @@ from src.app.config import settings
 from src.app.logging_config import setup_logging
 from src.worker.rq_worker import (
     get_redis_connection,
+    sync_cults3d,
     sync_makerworld,
+    sync_minihoarder,
     sync_printables,
     sync_thingiverse,
-    sync_cults3d,
-    sync_minihoarder,
 )
 
 setup_logging()
 logger = logging.getLogger(__name__)
+
 
 def setup_periodic_tasks() -> Scheduler:
     """Register all platform synchronization tasks to run automatically based on config."""
@@ -33,10 +34,10 @@ def setup_periodic_tasks() -> Scheduler:
 
     logger.info("Registering sync_makerworld periodic task...")
     scheduler.schedule(
-        scheduled_time=now, # run immediately
+        scheduled_time=now,  # run immediately
         func=sync_makerworld,
         interval=settings.makerworld_sync_interval,
-        repeat=None # forever
+        repeat=None,  # forever
     )
 
     logger.info("Registering sync_printables periodic task...")
@@ -44,7 +45,7 @@ def setup_periodic_tasks() -> Scheduler:
         scheduled_time=now,
         func=sync_printables,
         interval=settings.printables_sync_interval,
-        repeat=None
+        repeat=None,
     )
 
     logger.info("Registering sync_thingiverse periodic task...")
@@ -52,15 +53,12 @@ def setup_periodic_tasks() -> Scheduler:
         scheduled_time=now,
         func=sync_thingiverse,
         interval=settings.thingiverse_sync_interval,
-        repeat=None
+        repeat=None,
     )
 
     logger.info("Registering sync_cults3d periodic task...")
     scheduler.schedule(
-        scheduled_time=now,
-        func=sync_cults3d,
-        interval=settings.cults3d_sync_interval,
-        repeat=None
+        scheduled_time=now, func=sync_cults3d, interval=settings.cults3d_sync_interval, repeat=None
     )
 
     logger.info("Registering sync_minihoarder periodic task...")
@@ -68,10 +66,11 @@ def setup_periodic_tasks() -> Scheduler:
         scheduled_time=now,
         func=sync_minihoarder,
         interval=settings.minihoarder_sync_interval,
-        repeat=None
+        repeat=None,
     )
 
     return scheduler
+
 
 if __name__ == "__main__":
     setup_periodic_tasks()

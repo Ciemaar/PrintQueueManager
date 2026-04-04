@@ -19,9 +19,11 @@ from .thingiverse_api import fetch_thingiverse_collections
 setup_logging()
 logger = logging.getLogger(__name__)
 
+
 def get_redis_connection() -> Redis:
     """Return a configured Redis connection instance."""
     return Redis.from_url(settings.redis_url)
+
 
 def get_queue() -> Queue:
     """Return a configured RQ Queue instance."""
