@@ -1,6 +1,7 @@
 """Unit tests for the FastAPI application main routes."""
 
 import pytest
+from datetime import datetime
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -119,6 +120,120 @@ def test_update_notes():
     assert updated_job.material_notes == "PLA"  # type: ignore
     assert updated_job.timing_notes == "2 hrs"  # type: ignore
     db.close()
+
+
+def test_read_main_show_printed():
+    """Verify that the main view respects the show_printed query parameter."""
+    db = TestingSessionLocal()
+    job1 = PrintJob(title="Test Job 1", source="Test", status=PrintStatus.TO_BE_PRINTED)
+    job2 = PrintJob(title="Test Job 2", source="Test", status=PrintStatus.PRINTED)
+    db.add(job1)
+    db.add(job2)
+    db.commit()
+
+    response = client.get("/?show_printed=true")
+    assert response.status_code == 200
+    assert b"Test Job 1" in response.content
+    assert b"Test Job 2" in response.content
+
+    response_no_printed = client.get("/")
+    assert response_no_printed.status_code == 200
+    assert b"Test Job 1" in response_no_printed.content
+    assert b"Test Job 2" not in response_no_printed.content
+
+    # Test hx-request
+    response_hx = client.get("/", headers={"hx-request": "true"})
+    assert response_hx.status_code == 200
+    assert b"Test Job 1" in response_hx.content
+    assert (
+        b"Local 3D Print Queue Manager" not in response_hx.content
+    )  # Check it's just the table rows
+
+
+def test_undelete_job_from_deleted():
+    """Verify that a DELETED job gets restored to TO BE PRINTED state."""
+    db = TestingSessionLocal()
+    job = PrintJob(
+        title="Test Job", source="Test", status=PrintStatus.DELETED, deleted_at=datetime.utcnow()
+    )
+    db.add(job)
+    db.commit()
+    db.refresh(job)
+
+    response = client.post(f"/jobs/{job.id}/undelete")
+    assert response.status_code == 200
+
+    db.expire_all()
+    undeleted_job = db.query(PrintJob).filter(PrintJob.id == job.id).first()
+    assert undeleted_job is not None
+    assert undeleted_job.status == PrintStatus.TO_BE_PRINTED  # type: ignore
+    assert undeleted_job.deleted_at is None
+    db.close()
+
+
+def test_undelete_job_from_printed():
+    """Verify that a PRINTED job gets restored to PRINT AGAIN state."""
+    db = TestingSessionLocal()
+    job = PrintJob(
+        title="Test Job", source="Test", status=PrintStatus.PRINTED, deleted_at=datetime.utcnow()
+    )
+    db.add(job)
+    db.commit()
+    db.refresh(job)
+
+    response = client.post(f"/jobs/{job.id}/undelete")
+    assert response.status_code == 200
+
+    db.expire_all()
+    undeleted_job = db.query(PrintJob).filter(PrintJob.id == job.id).first()
+    assert undeleted_job is not None
+    assert undeleted_job.status == PrintStatus.PRINT_AGAIN  # type: ignore
+    assert undeleted_job.deleted_at is None
+    db.close()
+
+
+def test_read_deleted_jobs():
+    """Verify that the deleted jobs view accurately filters and displays records."""
+    db = TestingSessionLocal()
+    job1 = PrintJob(
+        title="Deleted Job 1",
+        source="Test",
+        status=PrintStatus.DELETED,
+        deleted_at=datetime.utcnow(),
+    )
+    job2 = PrintJob(
+        title="Skipped Job", source="Test", status=PrintStatus.SKIPPED, deleted_at=datetime.utcnow()
+    )
+    job3 = PrintJob(
+        title="Printed Job", source="Test", status=PrintStatus.PRINTED, deleted_at=datetime.utcnow()
+    )
+    db.add(job1)
+    db.add(job2)
+    db.add(job3)
+    db.commit()
+
+    # Initial page load with no params should show all 3
+    response = client.get("/deleted")
+    assert response.status_code == 200
+    assert b"Deleted Job 1" in response.content
+    assert b"Skipped Job" in response.content
+    assert b"Printed Job" in response.content
+
+    # HTMX request sending only show_skipped and show_deleted (so show_printed is absent/false)
+    response_no_printed = client.get(
+        "/deleted?show_skipped=true&show_deleted=true", headers={"hx-request": "true"}
+    )
+    assert response_no_printed.status_code == 200
+    assert b"Deleted Job 1" in response_no_printed.content
+    assert b"Skipped Job" in response_no_printed.content
+    assert b"Printed Job" not in response_no_printed.content
+
+    # HTMX request sending none of them
+    response_none = client.get("/deleted", headers={"hx-request": "true"})
+    assert response_none.status_code == 200
+    assert b"Deleted Job 1" not in response_none.content
+    assert b"Skipped Job" not in response_none.content
+    assert b"Printed Job" not in response_none.content
 
 
 def test_settings_page_get():

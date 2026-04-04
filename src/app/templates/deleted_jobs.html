@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Local 3D Print Queue Manager</title>
+    <title>Deleted Jobs - Local 3D Print Queue Manager</title>
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
     <style>
@@ -50,38 +50,37 @@
                 <ul>
                     <li>
                         <hgroup>
-                            <h1>Local 3D Print Queue Manager</h1>
-                            <p>Aggregating models from Local, MakerWorld, Printables, and more.</p>
+                            <h1>Deleted Jobs</h1>
+                            <p>History of deleted, skipped, and printed models.</p>
                         </hgroup>
                     </li>
                 </ul>
                 <ul>
                     <li><a href="/" class="secondary">Main View</a></li>
                     <li><a href="/deleted" class="secondary">Deleted Jobs</a></li>
-                    <li><a href="/settings" class="secondary">Settings</a></li>
                 </ul>
             </nav>
-
-            <section aria-label="Manual Sync Triggers" style="margin-top: 1.5rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                <button class="outline secondary" hx-post="/sync/local" hx-swap="innerHTML" hx-target="#sync-feedback">Sync Local</button>
-                <button class="outline secondary" hx-post="/sync/makerworld" hx-swap="innerHTML" hx-target="#sync-feedback">Sync MakerWorld</button>
-                <button class="outline secondary" hx-post="/sync/printables" hx-swap="innerHTML" hx-target="#sync-feedback">Sync Printables</button>
-                <button class="outline secondary" hx-post="/sync/thingiverse" hx-swap="innerHTML" hx-target="#sync-feedback">Sync Thingiverse</button>
-                <button class="outline secondary" hx-post="/sync/cults3d" hx-swap="innerHTML" hx-target="#sync-feedback">Sync Cults3D</button>
-                <button class="outline secondary" hx-post="/sync/minihoarder" hx-swap="innerHTML" hx-target="#sync-feedback">Sync Minihoarder</button>
-            </section>
-            <div id="sync-feedback" style="min-height: 2rem; margin-top: 0.5rem;"></div>
         </header>
 
         <article>
-            <div style="margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+            <form id="filter-form" style="margin-bottom: 1rem; display: flex; align-items: center; gap: 1rem;"
+                  hx-get="/deleted" hx-target="#deleted-job-list" hx-swap="innerHTML" hx-trigger="change">
                 <label for="show-printed">
                     <input type="checkbox" id="show-printed" name="show_printed" value="true"
-                           {% if show_printed %}checked{% endif %}
-                           hx-get="/" hx-target="#job-list" hx-swap="innerHTML" />
-                    Show PRINTED Jobs
+                           {% if show_printed %}checked{% endif %} />
+                    Show PRINTED
                 </label>
-            </div>
+                <label for="show-skipped">
+                    <input type="checkbox" id="show-skipped" name="show_skipped" value="true"
+                           {% if show_skipped %}checked{% endif %} />
+                    Show SKIPPED
+                </label>
+                <label for="show-deleted">
+                    <input type="checkbox" id="show-deleted" name="show_deleted" value="true"
+                           {% if show_deleted %}checked{% endif %} />
+                    Show DELETED
+                </label>
+            </form>
             <figure>
                 <table role="grid">
                     <thead>
@@ -90,12 +89,12 @@
                             <th scope="col">Title</th>
                             <th scope="col">Source</th>
                             <th scope="col">Status</th>
-                            <th scope="col">Notes</th>
+                            <th scope="col">Deleted At</th>
                             <th scope="col" class="actions-col">Actions</th>
                         </tr>
                     </thead>
-                    <tbody id="job-list">
-                        {% include 'job_list.html' %}
+                    <tbody id="deleted-job-list">
+                        {% include 'deleted_job_list.html' %}
                     </tbody>
                 </table>
             </figure>
