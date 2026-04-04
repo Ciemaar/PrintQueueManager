@@ -10,6 +10,7 @@ from src.worker.celery_app import (
     sync_thingiverse,
     sync_cults3d,
     sync_minihoarder,
+    sync_myminifactory,
     sync_local,
 )
 
@@ -18,7 +19,7 @@ def test_setup_periodic_tasks():
     """Ensure all expected periodic synchronization tasks are registered."""
     sender_mock = MagicMock()
     setup_periodic_tasks(sender=sender_mock)
-    assert sender_mock.add_periodic_task.call_count == 5
+    assert sender_mock.add_periodic_task.call_count == 6
 
 
 @patch("src.worker.celery_app.SessionLocal")
@@ -59,6 +60,19 @@ def test_get_service_config_enabled(mock_session):
     assert enabled is True
     assert url == "http://target"
     assert cred == "secret"
+
+
+@patch("src.worker.celery_app._get_service_config")
+@patch("src.worker.celery_app.run_scraper")
+def test_sync_myminifactory(mock_run_scraper, mock_get_config):
+    """Verify that the MyMiniFactory task triggers the scraper with the correct target."""
+    mock_get_config.return_value = (True, "https://www.myminifactory.com/library", "fake_cookie")
+    mock_run_scraper.return_value = [{"title": "TestMMF"}]
+    result = sync_myminifactory()
+    mock_run_scraper.assert_called_once_with(
+        "myminifactory", "https://www.myminifactory.com/library", "fake_cookie"
+    )
+    assert result == [{"title": "TestMMF"}]
 
 
 @patch("src.worker.celery_app._get_service_config")
@@ -189,6 +203,14 @@ def test_sync_minihoarder_disabled(mock_get_config):
     """Verify that the Minihoarder task exits early if disabled."""
     mock_get_config.return_value = (False, "", "")
     result = sync_minihoarder()
+    assert result == []
+
+
+@patch("src.worker.celery_app._get_service_config")
+def test_sync_myminifactory_disabled(mock_get_config):
+    """Verify that the MyMiniFactory task exits early if disabled."""
+    mock_get_config.return_value = (False, "", "")
+    result = sync_myminifactory()
     assert result == []
 
 

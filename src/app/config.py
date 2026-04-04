@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     thingiverse_sync_interval: float = 604800.0
     cults3d_sync_interval: float = 604800.0
     minihoarder_sync_interval: float = 604800.0
+    myminifactory_sync_interval: float = 604800.0
 
     # Debugging
     verbose: bool = False

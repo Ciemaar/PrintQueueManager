@@ -59,6 +59,9 @@ def get_page_html(source: str, url: str, credential: str = "") -> str:
     elif source == "minihoarder":
         domain = "www.minihoarder.com"
         cookie_name = "PHPSESSID"
+    elif source == "myminifactory":
+        domain = ".myminifactory.com"
+        cookie_name = "PHPSESSID"  # fallback to session if user specified one
 
     # If no cookie is provided for authentication, the mocked HTML is returned for safety
     if not cookie_str:

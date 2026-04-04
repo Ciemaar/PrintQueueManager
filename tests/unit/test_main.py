@@ -246,7 +246,7 @@ def test_settings_page_get():
 
 def test_update_settings_new_config():
     """Verify that posting valid configuration creates a new DB record if missing."""
-    db = TestingSessionLocal()
+    TestingSessionLocal()
 
     response = client.post(
         "/settings/update",
@@ -290,7 +290,10 @@ def test_test_settings_db_credential_fallback():
     db.commit()
 
     from unittest.mock import patch
-    with patch("src.worker.llm_scraper.get_page_html", return_value="<html>Success</html>") as mock_fetch:
+
+    with patch(
+        "src.worker.llm_scraper.get_page_html", return_value="<html>Success</html>"
+    ) as mock_fetch:
         response = client.post(
             "/settings/test",
             data={
@@ -300,12 +303,14 @@ def test_test_settings_db_credential_fallback():
             },
         )
         assert response.status_code == 200
-        mock_fetch.assert_called_once_with("minihoarder", "http://my-target.com", "db_secret_cookie")
+        mock_fetch.assert_called_once_with(
+            "minihoarder", "http://my-target.com", "db_secret_cookie"
+        )
     db.close()
     assert b"Test successful for Minihoarder!" in response.content
 
 
-def test_update_settings_new_config():
+def test_update_settings_existing_config():
     """Verify that posting valid configuration creates a new DB record if missing."""
     db = TestingSessionLocal()
 

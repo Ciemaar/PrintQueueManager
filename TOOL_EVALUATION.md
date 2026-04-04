@@ -1,54 +1,34 @@
-# Tool Evaluation & Recommendations
+# Tool Evaluation
 
-This document outlines the evaluation of modern Python tooling for the PrintQueueManager project to ensure speed, correctness, and developer experience.
+## Playwright
 
-## Linting & Formatting
+### Pros
+- Supports multiple browsers.
+- Fully supports JavaScript execution and modern web pages.
+- Highly reliable for waiting on elements to load (auto-waiting).
+- Robust handling of complex user interactions like clicks, scrolling, forms.
+- Provides screenshots and video recording for debugging.
+- Bypasses basic bot-detection techniques if configured correctly.
 
-**Current:** `ruff` (linting) + `pylint` (linting) + `no strict formatter`
-**Alternatives:** `black`, `isort`, `flake8`
-**Decision:** **Standardize entirely on `ruff`.**
+### Cons
+- High resource usage (CPU and Memory).
+- Downloading browser binaries significantly increases Docker image sizes.
+- Hard to deploy in restrictive environments due to dependencies (`install-deps`).
 
-- _Reasoning:_ Ruff has effectively replaced `flake8`, `isort`, `black`, and `pylint` in the modern Python ecosystem. It runs in milliseconds (written in Rust) and covers >95% of Pylint's rules. Running `pylint` alongside `ruff` adds duplicate CI time for diminishing returns.
-- _Action:_ Drop `pylint`. Enable `ruff format` to replace the need for `black`.
+## Alternatives
 
-## Type Checking
+### Requests + BeautifulSoup
+- **Pros:** Fast, lightweight, very low resource usage, minimal dependencies.
+- **Cons:** Cannot execute JavaScript. Will not work on SPAs or sites heavily reliant on client-side rendering. Can't bypass Cloudflare/JS-challenges easily.
 
-**Current:** `mypy`
-**Alternatives:** `pyright`, `basedpyright`, `pyre`
-**Decision:** **Migrate to `pyright`.**
+### Selenium
+- **Pros:** Long-standing industry standard, huge community.
+- **Cons:** Slower, more setup required (WebDriver management), less reliable auto-waiting than Playwright.
 
-- _Reasoning:_ `mypy` is the classic standard, but `pyright` (maintained by Microsoft) is significantly faster, handles complex generic inference better, and integrates perfectly with `pydantic` (which this project relies on heavily for agentic extraction).
-- _Action:_ Remove `mypy` from dependencies and CI, configure `pyproject.toml` for `pyright`, and update the `tox.ini`.
+### Puppeteer
+- **Pros:** Native Chrome support, slightly smaller footprint than full Playwright if only using Chrome.
+- **Cons:** Primarily Node.js (Pyppeteer exists but is less maintained than Playwright Python). Doesn't officially support Firefox/WebKit as cleanly as Playwright.
 
-## Testing
+## Conclusion
 
-**Current:** `pytest` + `pytest-cov` + `hypothesis`
-**Alternatives:** `unittest`, `nose`
-**Decision:** **Keep `pytest` stack.**
-
-- _Reasoning:_ `pytest` is undeniably the industry standard. `hypothesis` is perfect for property-based testing on the Pydantic schema validation.
-
-## Environment Management & Automation
-
-**Current:** `pip` + `tox`
-**Alternatives:** `uv`, `poetry`, `hatch`, `nox`
-**Decision:** **Introduce `uv` to speed up CI/CD, keep `tox` for orchestration.**
-
-- _Reasoning:_ `uv` (by Astral, makers of Ruff) is a drop-in replacement for `pip` that resolves and installs dependencies 10-100x faster. We can use `tox-uv` to make our Tox runs instantaneous.
-- _Action:_ Update GitHub actions to use `uv pip install` if desired, or simply document `uv` usage for local developers.
-
-## Documentation
-
-**Current:** Markdown (`README.md`, `USER_GUIDE.md`, etc.)
-**Alternatives:** `mkdocs` (with Material theme), `Sphinx`
-**Decision:** **Keep Markdown for now.**
-
-- _Reasoning:_ Given the currently small scope of the project, raw Markdown files rendered natively by GitHub are sufficient. Moving to MkDocs introduces build steps that aren't strictly necessary yet.
-
----
-
-**Summary of Changes Adopted:**
-
-- Removed `pylint` and `mypy`.
-- Added `pyright`.
-- Configured `ruff format`.
+Given the nature of the sites being scraped (MyMiniFactory, MakerWorld, Printables, etc.), which often require complex authentication or JS execution, **Playwright is the necessary tool**. The overhead of the browser binaries is justified by the requirement to execute client-side code and manage session cookies reliably. The alternatives either cannot render JS (BeautifulSoup) or offer a worse developer experience (Selenium).

@@ -39,6 +39,11 @@ def setup_periodic_tasks(sender: Any, **kwargs: Any) -> None:
     sender.add_periodic_task(
         settings.minihoarder_sync_interval, sync_minihoarder.s(), name="sync_minihoarder_periodic"
     )
+    sender.add_periodic_task(
+        settings.myminifactory_sync_interval,
+        sync_myminifactory.s(),
+        name="sync_myminifactory_periodic",
+    )
 
 
 def _get_service_config(service_name: str) -> tuple[bool, str, str]:
@@ -171,6 +176,29 @@ def sync_minihoarder() -> List[dict[str, Any]]:
     print(f"Starting Minihoarder synchronization via Ollama agent at {url}...")
     time.sleep(2)
     result = run_scraper("minihoarder", url, credential)
+    print(f"Sync complete. Found {len(result)} models.")
+    return result
+
+
+@celery_app.task(name="sync_myminifactory")
+def sync_myminifactory() -> List[dict[str, Any]]:
+    """
+    Fetch the user's purchased/downloaded library from MyMiniFactory.
+
+    Uses Playwright and session cookies to access the private user library,
+    and leverages the local Pydantic AI agent to extract model attributes.
+    """
+    enabled, url, credential = _get_service_config("myminifactory")
+    if not enabled:
+        print("MyMiniFactory synchronization disabled or not configured. Skipping.")
+        return []
+
+    if not url:
+        url = "https://www.myminifactory.com/library"
+
+    print(f"Starting MyMiniFactory synchronization via Ollama agent at {url}...")
+    time.sleep(2)
+    result = run_scraper("myminifactory", url, credential)
     print(f"Sync complete. Found {len(result)} models.")
     return result
 

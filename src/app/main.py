@@ -15,6 +15,7 @@ from src.worker.celery_app import (
     sync_printables,
     sync_cults3d,
     sync_minihoarder,
+    sync_myminifactory,
     sync_local,
 )
 
@@ -235,6 +236,7 @@ def trigger_sync(platform: str) -> HTMLResponse:
         "thingiverse": sync_thingiverse,
         "cults3d": sync_cults3d,
         "minihoarder": sync_minihoarder,
+        "myminifactory": sync_myminifactory,
         "local": sync_local,
     }
 
@@ -301,6 +303,15 @@ def settings_page(request: Request, db: Session = Depends(get_db)) -> HTMLRespon
             ),
             "example_url": "https://www.minihoarder.com/library/",
             "credential_placeholder": "Paste PHPSESSID cookie here",
+        },
+        "myminifactory": {
+            "display_name": "MyMiniFactory",
+            "instructions": (
+                "Log in to MyMiniFactory. Open Developer Tools and locate the appropriate session "
+                "cookie (e.g. <code>PHPSESSID</code> or <code>myminifactory_session</code>)."
+            ),
+            "example_url": "https://www.myminifactory.com/library",
+            "credential_placeholder": "Paste session cookie here",
         },
     }
 
@@ -375,6 +386,7 @@ def test_settings(
             f"Failed: Target URL is required to test {service_name.capitalize()}.</div>"
         )
 
+    import html
     from src.worker.llm_scraper import get_page_html
     from src.worker.thingiverse_api import fetch_thingiverse_collections
 
@@ -383,8 +395,15 @@ def test_settings(
     try:
         if service_name == "thingiverse":
             # API test
-            result = fetch_thingiverse_collections(credential)
-            success = isinstance(result, list)  # Either [] or data, but no exception
+            # fetch_thingiverse_collections catches errors and returns []
+            # For a test, we actually want to know if it failed. Let's make a quick raw request
+            # or just rely on the fact that if it returns [], we can't be sure it succeeded
+            # if we have no items. Let's make a raw request.
+            import requests
+            headers = {"Authorization": f"Bearer {credential}"}
+            response = requests.get("https://api.thingiverse.com/users/me", headers=headers, timeout=10)
+            response.raise_for_status()
+            success = True
         else:
             # Playwright test
             html = get_page_html(service_name, target_url, credential)
@@ -399,7 +418,7 @@ def test_settings(
                 error_msg = "Could not fetch page. Playwright returned empty content or crashed."
     except Exception as e:
         success = False
-        error_msg = str(e)
+        error_msg = html.escape(str(e))
 
     if success:
         return HTMLResponse(
