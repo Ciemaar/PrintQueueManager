@@ -10,7 +10,7 @@ It provides context on how the PrintQueueManager evolved from a simple blueprint
 - **Core Requirements**:
   - Use FastAPI, PostgreSQL, and SQLAlchemy.
   - Use local LLMs via Ollama and `pydantic-ai` for structured data extraction.
-  - Use a background worker (Celery/Redis) to periodically sync models.
+  - Use a background worker (Dramatiq/Redis) to periodically sync models.
   - Implement a standalone Watchdog file monitor for local directories.
   - Use HTMX and Jinja2 for a responsive, reactive UI instead of a heavy JS framework (like React).
   - Use a Docker Compose setup for easy infrastructure orchestration.

@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 from src.app.database import Base, engine, get_db
 from src.app.logging_config import setup_logging
 from src.app.models import PrintJob, PrintStatus
-from src.worker.celery_app import (
+from src.worker.dramatiq_app import (
     sync_cults3d,
     sync_local,
     sync_makerworld,
@@ -51,7 +51,7 @@ async def lifespan(app: FastAPI):
         print(f"Failed to run database migrations: {e}")
 
     try:
-        sync_local.delay()
+        sync_local.send()
     except Exception as e:
         logger.error(f"Failed to trigger initial sync_local task: {e}")
 
@@ -234,7 +234,7 @@ def update_notes(
 
 @app.post("/sync/{platform}", response_class=HTMLResponse)
 def trigger_sync(platform: str) -> HTMLResponse:
-    """Manually trigger a background Celery task to synchronize a specific platform."""
+    """Manually trigger a background Dramatiq task to synchronize a specific platform."""
     tasks = {
         "makerworld": sync_makerworld,
         "printables": sync_printables,
@@ -246,7 +246,7 @@ def trigger_sync(platform: str) -> HTMLResponse:
 
     task = tasks.get(platform.lower())
     if task:
-        task.delay()
+        task.send()
         msg = f"Sync started for {platform.capitalize()}!"
         return HTMLResponse(
             f'<div class="sync-toast" style="color: var(--pico-primary); '

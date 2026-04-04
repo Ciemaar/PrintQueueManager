@@ -48,7 +48,7 @@ services:
 
   worker:
     build: .
-    command: watchfiles --filter default 'celery -A src.worker.celery_app worker --loglevel=info' ./src
+    command: watchfiles --filter default 'dramatiq src.worker.dramatiq_app' ./src
     volumes:
       - ./src:/app/src
       - ./watched_folder:/watched_folder
@@ -65,7 +65,7 @@ services:
 
   beat:
     build: .
-    command: watchfiles --filter default 'celery -A src.worker.celery_app beat --loglevel=info' ./src
+    command: watchfiles --filter default 'periodiq src.worker.dramatiq_app' ./src
     volumes:
       - ./src:/app/src
     environment:
