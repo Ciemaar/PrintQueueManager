@@ -26,7 +26,7 @@ _(For detailed info on how the system automatically scrapes sites like Printable
 
 _If you are deploying, monitoring, or managing the production infrastructure._
 
-The system is deployed using `docker compose`. It consists of an orchestrator for a PostgreSQL database, a Redis cache, an Ollama LLM server, the FastAPI backend, a Celery worker, a Celery beat scheduler, and a file watchdog.
+The system is deployed using `docker compose`. It consists of an orchestrator for a PostgreSQL database, a Redis cache, an Ollama LLM server, the FastAPI backend, an RQ worker, an RQ scheduler, and a file watchdog.
 
 **Startup:**
 
@@ -89,7 +89,7 @@ The project uses a unified CLI to launch components individually if you don't wa
 
 - **Start Web Server:** `printqueue web` (or `uvicorn src.app.main:app --reload`)
 - **Start Watchdog:** `printqueue watchdog`
-- **Start Worker:** `celery -A src.worker.celery_app worker --loglevel=info`
+- **Start Worker:** `rq worker -u redis://localhost:6379/0`
 
 _(Ensure `DATABASE_URL` and `REDIS_URL` are set as environment variables to point to your local development containers!)_
 

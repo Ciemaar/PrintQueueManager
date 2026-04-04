@@ -1,9 +1,8 @@
-"""Test module for the Celery worker scheduled tasks."""
+"""Test module for the RQ worker scheduled tasks."""
 
 from unittest.mock import MagicMock, patch
 
-from src.worker.celery_app import (
-    setup_periodic_tasks,
+from src.worker.rq_worker import (
     sync_cults3d,
     sync_local,
     sync_makerworld,
@@ -13,14 +12,7 @@ from src.worker.celery_app import (
 )
 
 
-def test_setup_periodic_tasks():
-    """Ensure all expected periodic synchronization tasks are registered."""
-    sender_mock = MagicMock()
-    setup_periodic_tasks(sender=sender_mock)
-    assert sender_mock.add_periodic_task.call_count == 5
-
-
-@patch("src.worker.celery_app.run_scraper")
+@patch("src.worker.rq_worker.run_scraper")
 def test_sync_makerworld(mock_run_scraper):
     """Verify that the MakerWorld task triggers the scraper with the correct target."""
     mock_run_scraper.return_value = [{"title": "Test"}]
@@ -29,7 +21,7 @@ def test_sync_makerworld(mock_run_scraper):
     assert result == [{"title": "Test"}]
 
 
-@patch("src.worker.celery_app.run_scraper")
+@patch("src.worker.rq_worker.run_scraper")
 def test_sync_printables(mock_run_scraper):
     """Verify that the Printables task triggers the scraper with the correct target."""
     mock_run_scraper.return_value = [{"title": "Test"}]
@@ -40,7 +32,7 @@ def test_sync_printables(mock_run_scraper):
     assert result == [{"title": "Test"}]
 
 
-@patch("src.worker.celery_app.fetch_thingiverse_collections")
+@patch("src.worker.rq_worker.fetch_thingiverse_collections")
 def test_sync_thingiverse_api_success(mock_fetch_api):
     """Verify that the Thingiverse task prefers the API over scraping if data is returned."""
     mock_fetch_api.return_value = [{"title": "Test from API"}]
@@ -49,8 +41,8 @@ def test_sync_thingiverse_api_success(mock_fetch_api):
     assert result == [{"title": "Test from API"}]
 
 
-@patch("src.worker.celery_app.run_scraper")
-@patch("src.worker.celery_app.fetch_thingiverse_collections")
+@patch("src.worker.rq_worker.run_scraper")
+@patch("src.worker.rq_worker.fetch_thingiverse_collections")
 def test_sync_thingiverse_api_fallback(mock_fetch_api, mock_run_scraper):
     """Verify that the Thingiverse task falls back to the scraper if the API returns no data."""
     mock_fetch_api.return_value = []
@@ -63,7 +55,7 @@ def test_sync_thingiverse_api_fallback(mock_fetch_api, mock_run_scraper):
     assert result == [{"title": "Test from Scraper"}]
 
 
-@patch("src.worker.celery_app.run_scraper")
+@patch("src.worker.rq_worker.run_scraper")
 def test_sync_cults3d(mock_run_scraper):
     """Verify that the Cults3D task triggers the scraper with the correct target."""
     mock_run_scraper.return_value = [{"title": "Test"}]
@@ -72,7 +64,7 @@ def test_sync_cults3d(mock_run_scraper):
     assert result == [{"title": "Test"}]
 
 
-@patch("src.worker.celery_app.run_scraper")
+@patch("src.worker.rq_worker.run_scraper")
 def test_sync_minihoarder(mock_run_scraper):
     """Verify that the Minihoarder task triggers the scraper with the correct target."""
     mock_run_scraper.return_value = [{"title": "Test"}]
@@ -81,8 +73,8 @@ def test_sync_minihoarder(mock_run_scraper):
     assert result == [{"title": "Test"}]
 
 
-@patch("src.worker.celery_app.settings")
-@patch("src.worker.celery_app.SessionLocal")
+@patch("src.worker.rq_worker.settings")
+@patch("src.worker.rq_worker.SessionLocal")
 def test_sync_local(mock_session, mock_settings, tmp_path):
     """Verify the local directory scan properly identifies and inserts missing files."""
     # Point settings.watch_directory to the temporary py.test directory

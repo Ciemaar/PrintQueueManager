@@ -121,7 +121,7 @@ This section compares autonomous agentic coding tools to evaluate which one best
     - _Supporting:_ A highly advanced workflow engine that solves many of Celery's reliability issues (native transactional workflows, exponential retries by default, no lost jobs, strong versioning, and built-in async/await support).
     - _Opposing:_ Requires running the Temporal Server (a complex distributed system involving Go, Cassandra/PostgreSQL, and Elasticsearch/OpenSearch), which fundamentally violates the "Local Inference First" and lightweight Docker Compose goals of PrintQueueManager.
 
-- _Action:_ Given that we already use Redis, **RQ** is the simplest drop-in replacement that drastically reduces cognitive and operational load while serving our basic async needs. Alternatively, **Dramatiq** is a strong modern choice if higher performance or better built-in reliability is needed. We propose a spike to migrate from Celery to RQ.
+- _Action:_ We have successfully migrated from Celery to **RQ**, using `rq-scheduler` for periodic background tasks. This reduces cognitive overhead and aligns perfectly with our simplified, local-first Docker architecture.
 
 ## Message Brokers
 
