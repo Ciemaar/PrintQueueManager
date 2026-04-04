@@ -81,93 +81,79 @@ def test_sync_minihoarder(mock_run_scraper):
     assert result == [{"title": "Test"}]
 
 
+class FakeJob:
+    """Helper class to mock SQLAlchemy PrintJob objects in tests."""
+
+    def __init__(self, path):
+        """Initialize the fake job with a file path."""
+        self.file_path = str(path)
+
+
+class MockQuery:
+    """Helper class to mock SQLAlchemy Query objects in tests."""
+
+    def __init__(self, items):
+        """Initialize the mock query with a list of items."""
+        self.items = items
+
+    def __iter__(self):
+        """Return an iterator over the items."""
+        return iter(self.items)
+
+
+class MockFilter:
+    """Helper class to mock SQLAlchemy Filter objects in tests."""
+
+    def __init__(self, items):
+        """Initialize the mock filter with a list of items."""
+        self.items = items
+
+    def filter(self, *args, **kwargs):
+        """Mock the filter method to return a MockQuery."""
+        return MockQuery(self.items)
+
+
 @patch("src.worker.celery_app.settings")
 @patch("src.worker.celery_app.SessionLocal")
 def test_sync_local(mock_session, mock_settings, tmp_path):
     """Verify the local directory scan properly identifies and inserts missing files."""
-    # Point settings.watch_directory to the temporary py.test directory
     mock_settings.watch_directory = str(tmp_path)
     mock_settings.verbose = False
 
     mock_db = MagicMock()
     mock_session.return_value = mock_db
 
-    # Create physical files inside the temp directory
     existing_file = tmp_path / "existing.stl"
     existing_file.write_text("dummy stl content")
 
     new_file = tmp_path / "new.3mf"
     new_file.write_text("dummy 3mf content")
 
-    ignored_file = tmp_path / "ignore.txt"
-    ignored_file.write_text("this should be ignored")
+    (tmp_path / "ignore.txt").write_text("this should be ignored")
 
-    # We also create a nested subdirectory to test recursive rglob
     nested_dir = tmp_path / "nested"
     nested_dir.mkdir()
-    nested_file = nested_dir / "nested_new.STL"
-    nested_file.write_text("dummy nested content")
+    (nested_dir / "nested_new.STL").write_text("dummy nested content")
 
-    # Create a valid symlink to new.3mf
-    valid_symlink = tmp_path / "valid_link.3mf"
-    valid_symlink.symlink_to(new_file)
+    (tmp_path / "valid_link.3mf").symlink_to(new_file)
+    (tmp_path / "broken_link.stl").symlink_to(tmp_path / "does_not_exist.stl")
 
-    # Create a broken symlink
-    broken_symlink = tmp_path / "broken_link.stl"
-    broken_symlink.symlink_to(tmp_path / "does_not_exist.stl")
-
-    # Define what the mock DB query `.first()` returns.
-    # It will be called once per valid file (.stl or .3mf) discovered.
-    # We will simulate that "existing.stl" is already in the database,
-    # but the others are not.
-    def mock_db_check():
-        # The sqlalchemy filter expression is passed down, we can inspect
-        # the call args if we wanted to be perfectly precise, but simulating
-        # based on call order is easiest here. We know rglob order isn't guaranteed,
-        # so we inspect the mock's call history.
-        pass
-
-    def side_effect(*args, **kwargs):
-        # We need to know which file path is being queried to return the right result.
-        # Since we mock the DB session, we can just intercept the filter call.
-        pass
-
-    # Mocking the new behavior in `sync_local` which queries the db
-    # to return an iterable of jobs to build a set.
-    class FakeJob:
-        def __init__(self, path):
-            self.file_path = str(path)
-
-    class MockQuery:
-        def __iter__(self):
-            # Simulates the DB query returning a single known file
-            yield FakeJob(existing_file)
-
-    class MockFilter:
-        def filter(self, *args, **kwargs):
-            return MockQuery()
-
-    mock_db.query.return_value = MockFilter()
+    mock_db.query.return_value = MockFilter([FakeJob(existing_file)])
 
     result = sync_local()
 
-    # The function should find "new.3mf", "nested_new.STL", "valid_link.3mf", and "broken_link.stl"
     assert len(result) == 4
     titles = [r["title"] for r in result]
-    assert "new.3mf" in titles
-    assert "nested_new.STL" in titles
-    assert "valid_link.3mf" in titles
-    assert "broken_link.stl" in titles
+    for name in ["new.3mf", "nested_new.STL", "valid_link.3mf", "broken_link.stl"]:
+        assert name in titles
     assert "existing.stl" not in titles
 
-    # Check that the broken symlink is correctly identified in its metadata
     broken_job_call = next(
         call for call in mock_db.add.call_args_list if call[0][0].title == "broken_link.stl"
     )
     assert broken_job_call[0][0].metadata_json.get("is_broken_symlink") is True
     assert broken_job_call[0][0].metadata_json.get("size_bytes") == 0
 
-    # The database `add` should be called four times
     assert mock_db.add.call_count == 4
     mock_db.commit.assert_called_once()
     mock_db.close.assert_called_once()

@@ -89,6 +89,18 @@ def index(
     )  # type: ignore
 
 
+def _get_status_filters(
+    show_printed: bool, show_skipped: bool, show_deleted: bool
+) -> list[PrintStatus]:
+    """Convert boolean flags into a list of PrintStatus enums."""
+    mapping = {
+        PrintStatus.PRINTED: show_printed,
+        PrintStatus.SKIPPED: show_skipped,
+        PrintStatus.DELETED: show_deleted,
+    }
+    return [status for status, enabled in mapping.items() if enabled]
+
+
 @app.get("/deleted", response_class=HTMLResponse)
 def deleted_jobs(
     request: Request,
@@ -98,40 +110,24 @@ def deleted_jobs(
     db: Session = Depends(get_db),
 ) -> HTMLResponse:
     """Render the deleted jobs view, filtered by type."""
-    # If this is the initial page load (not an HTMX request), default to showing everything
     is_htmx = request.headers.get("hx-request") == "true"
     if not is_htmx and not request.query_params:
-        show_printed = True
-        show_skipped = True
-        show_deleted = True
+        show_printed = show_skipped = show_deleted = True
 
-    query = db.query(PrintJob)
+    status_filters = _get_status_filters(show_printed, show_skipped, show_deleted)
+    jobs = (
+        db.query(PrintJob)
+        .filter(PrintJob.status.in_(status_filters))
+        .order_by(PrintJob.deleted_at.desc().nullslast())
+        .all()
+        if status_filters
+        else []
+    )
 
-    status_filters = []
-    if show_printed:
-        status_filters.append(PrintStatus.PRINTED)
-    if show_skipped:
-        status_filters.append(PrintStatus.SKIPPED)
-    if show_deleted:
-        status_filters.append(PrintStatus.DELETED)
-
-    if not status_filters:
-        jobs = []
-    else:
-        jobs = (
-            query.filter(PrintJob.status.in_(status_filters))
-            .order_by(PrintJob.deleted_at.desc().nullslast())
-            .all()
-        )
-
-    if request.headers.get("hx-request") == "true":
-        return templates.TemplateResponse(
-            request=request, name="deleted_job_list.html", context={"jobs": jobs}
-        )  # type: ignore
-
+    template = "deleted_job_list.html" if is_htmx else "deleted_jobs.html"
     return templates.TemplateResponse(
         request=request,
-        name="deleted_jobs.html",
+        name=template,
         context={
             "jobs": jobs,
             "show_printed": show_printed,

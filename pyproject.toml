@@ -74,12 +74,16 @@ select = [
     "F",  # pyflakes
     "D",  # pydocstyle
     "I",  # isort (import sorting)
+    "C901",  # mccabe complexity
 ]
 ignore = [
     "D104", # Allow tests without docstrings for brevity
     "D100", # Missing module docstring
-    "D211", "D212", "D203" # Styling rules conflicts
+    "D211", "D212", "D203", # Styling rules conflicts
 ]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 5
 
 [tool.pytest.ini_options]
 addopts = "-v --cov=src --cov-report=term-missing --cov-fail-under=85"

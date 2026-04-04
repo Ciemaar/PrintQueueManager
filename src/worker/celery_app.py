@@ -130,56 +130,52 @@ def sync_minihoarder() -> List[dict[str, Any]]:
     return result
 
 
+def _process_local_file(file_path: Path, known_paths: set[str | None]) -> dict[str, Any] | None:
+    """Check if a local file is a valid 3D model and return its metadata if it's new."""
+    if not (file_path.is_file() or file_path.is_symlink()):
+        return None
+    if file_path.suffix.lower() not in {".stl", ".3mf"}:
+        return None
+    if str(file_path) in known_paths:
+        return None
+
+    is_broken = file_path.is_symlink() and not file_path.exists()
+    logger.debug(
+        f"Discovered {'broken symlink' if is_broken else 'new 3D file'}: "
+        f"{file_path.name} at {file_path}"
+    )
+
+    metadata: dict[str, Any] = {"size_bytes": 0 if is_broken else file_path.stat().st_size}
+    if is_broken:
+        metadata["is_broken_symlink"] = True
+
+    return {
+        "title": file_path.name,
+        "source": "Local",
+        "file_path": str(file_path),
+        "metadata_json": metadata,
+    }
+
+
 @celery_app.task(name="sync_local")
 def sync_local() -> List[dict[str, Any]]:
-    """
-    Scan the local watched directory for models and import any missing files.
-
-    This is useful for bulk-importing a pre-existing directory that was already
-    populated before the Watchdog service was running.
-    """
+    """Scan the local watched directory for models and import any missing files."""
     logger.info(f"Scanning local directory for new models: {settings.watch_directory}")
     watch_path = Path(settings.watch_directory)
-    if not watch_path.exists():
-        watch_path.mkdir(parents=True, exist_ok=True)
+    watch_path.mkdir(parents=True, exist_ok=True)
 
     added_files = []
     db = SessionLocal()
     try:
-        logger.debug(f"Scanning directory: {watch_path} recursively")
-
-        # Get a set of all currently known local file paths to avoid N queries
         known_paths = {
             job.file_path for job in db.query(PrintJob.file_path).filter(PrintJob.source == "Local")
         }
 
         for file_path in watch_path.rglob("*"):
-            if (file_path.is_file() or file_path.is_symlink()) and file_path.suffix.lower() in {
-                ".stl",
-                ".3mf",
-            }:
-                if str(file_path) in known_paths:
-                    continue
-
-                is_broken_symlink = file_path.is_symlink() and not file_path.exists()
-
-                status_log = "broken symlink" if is_broken_symlink else "new 3D file"
-                logger.debug(f"Discovered {status_log}: {file_path.name} at {file_path}")
-
-                # If the symlink is broken, we cannot stat() it directly.
-                file_size = 0 if is_broken_symlink else file_path.stat().st_size
-                metadata = {"size_bytes": file_size}
-                if is_broken_symlink:
-                    metadata["is_broken_symlink"] = True
-
-                new_job = PrintJob(
-                    title=file_path.name,
-                    source="Local",
-                    file_path=str(file_path),
-                    metadata_json=metadata,
-                )
-                db.add(new_job)
-                added_files.append({"title": file_path.name, "file_path": str(file_path)})
+            job_data = _process_local_file(file_path, known_paths)
+            if job_data:
+                db.add(PrintJob(**job_data))
+                added_files.append({"title": job_data["title"], "file_path": job_data["file_path"]})
 
         if added_files:
             db.commit()
