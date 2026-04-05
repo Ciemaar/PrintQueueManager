@@ -258,6 +258,15 @@ def trigger_sync(platform: str) -> HTMLResponse:
 def settings_page(request: Request, db: Session = Depends(get_db)) -> HTMLResponse:
     """Render the configuration page for managing service settings."""
     service_defs = {
+        "local": {
+            "display_name": "Local Directory",
+            "instructions": (
+                "Configure a local directory path accessible by the backend (e.g. within the Docker container) "
+                "to automatically sync 3D model files into the queue."
+            ),
+            "example_url": "/watched_folder",
+            "credential_placeholder": "Not required",
+        },
         "makerworld": {
             "display_name": "MakerWorld",
             "instructions": (
@@ -363,6 +372,55 @@ def update_settings(
     )
 
 
+@app.get("/settings/browse", response_class=HTMLResponse)
+def browse_directories(request: Request, path: str = "/") -> HTMLResponse:
+    """Return an HTML snippet of subdirectories within the given path."""
+    import os
+    import html
+
+    # Simple security constraint to keep it absolute and avoid jumping around too much wildly,
+    # though it's an admin internal tool.
+    target_path = os.path.abspath(path)
+
+    dirs = []
+    try:
+        # parent directory link
+        parent_path = os.path.dirname(target_path)
+        if target_path != "/":
+            dirs.append({"name": "..", "path": parent_path})
+
+        with os.scandir(target_path) as it:
+            for entry in it:
+                if entry.is_dir() and not entry.name.startswith('.'):
+                    dirs.append({"name": entry.name, "path": entry.path})
+    except Exception as e:
+        return HTMLResponse(f"<div style='color: var(--pico-del-color);'>Error accessing path: {html.escape(str(e))}</div>")
+
+    dirs.sort(key=lambda x: x["name"].lower())
+
+    # Render an inline list of links that will load back into the modal
+    html_content = f"<div style='margin-bottom: 1rem;'><strong>Current Path:</strong> {html.escape(target_path)}</div>"
+    html_content += "<ul style='list-style: none; padding: 0; max-height: 200px; overflow-y: auto; border: 1px solid var(--pico-muted-border-color); border-radius: 0.25rem; padding: 0.5rem;'>"
+    for d in dirs:
+        html_content += f"""
+        <li style='margin-bottom: 0.25rem;'>
+            <a href="#" hx-get="/settings/browse?path={d['path']}" hx-target="#directory-browser-content" style="text-decoration: none;">
+                📁 {html.escape(d['name'])}
+            </a>
+        </li>
+        """
+    html_content += "</ul>"
+
+    html_content += f"""
+    <div style='margin-top: 1rem; display: flex; justify-content: flex-end; gap: 0.5rem;'>
+        <button type="button" class="secondary" onclick="document.getElementById('directory-modal').removeAttribute('open');">Cancel</button>
+        <button type="button" onclick="document.getElementById('local_target_url').value = '{target_path}'; document.getElementById('directory-modal').removeAttribute('open');">Select Directory</button>
+    </div>
+    """
+
+    return HTMLResponse(html_content)
+
+
 @app.post("/settings/test", response_class=HTMLResponse)
 def test_settings(
     request: Request,
@@ -393,7 +451,14 @@ def test_settings(
     success = False
     error_msg = ""
     try:
-        if service_name == "thingiverse":
+        if service_name == "local":
+            import os
+            if os.path.isdir(target_url):
+                success = True
+            else:
+                success = False
+                error_msg = f"Directory not found: {target_url}"
+        elif service_name == "thingiverse":
             # API test
             # fetch_thingiverse_collections catches errors and returns []
             # For a test, we actually want to know if it failed. Let's make a quick raw request

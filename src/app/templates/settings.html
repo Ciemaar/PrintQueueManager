@@ -52,6 +52,19 @@
             Testing configuration, please wait...
         </div>
 
+        <!-- Directory Picker Modal -->
+        <dialog id="directory-modal">
+            <article>
+                <header>
+                    <button aria-label="Close" rel="prev" onclick="document.getElementById('directory-modal').removeAttribute('open');"></button>
+                    <p><strong>Select Directory</strong></p>
+                </header>
+                <div id="directory-browser-content">
+                    Loading...
+                </div>
+            </article>
+        </dialog>
+
         {% for service_name, details in services.items() %}
             <article class="service-card">
                 <form hx-post="/settings/update" hx-target="#save-feedback" hx-swap="innerHTML">
@@ -70,13 +83,27 @@
 
                     <div class="grid">
                         <div>
-                            <label for="{{ service_name }}_target_url">Target URL / Collection</label>
-                            <input type="text" id="{{ service_name }}_target_url" name="target_url" value="{{ details.config.target_url or '' }}" placeholder="e.g. {{ details.example_url }}" required>
+                            <label for="{{ service_name }}_target_url">
+                                {% if service_name == "local" %}Directory Path{% else %}Target URL / Collection{% endif %}
+                            </label>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <input type="text" id="{{ service_name }}_target_url" name="target_url" value="{{ details.config.target_url or '' }}" placeholder="e.g. {{ details.example_url }}" required>
+                                {% if service_name == "local" %}
+                                <button type="button" class="secondary"
+                                        onclick="document.getElementById('directory-modal').setAttribute('open', 'open');"
+                                        hx-get="/settings/browse?path={{ details.config.target_url or '/' }}"
+                                        hx-target="#directory-browser-content">
+                                    Browse
+                                </button>
+                                {% endif %}
+                            </div>
                         </div>
+                        {% if service_name != "local" %}
                         <div>
                             <label for="{{ service_name }}_credential">Credential / Cookie</label>
                             <input type="password" id="{{ service_name }}_credential" name="credential" placeholder="{% if details.config.credential %}******** (Leave empty to keep current){% else %}{{ details.credential_placeholder }}{% endif %}">
                         </div>
+                        {% endif %}
                     </div>
 
                     <div style="display: flex; gap: 1rem; align-items: center;">
@@ -88,6 +115,13 @@
                                 hx-indicator="#global-indicator"
                                 hx-swap="innerHTML">
                             Test Configuration
+                        </button>
+                        <button type="button" class="outline"
+                                hx-post="/sync/{{ service_name }}"
+                                hx-target="#save-feedback"
+                                hx-swap="innerHTML"
+                                {% if not details.config.enabled %}disabled{% endif %}>
+                            Sync {{ details.display_name }} Now
                         </button>
                     </div>
                 </form>

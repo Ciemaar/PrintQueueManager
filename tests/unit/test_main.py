@@ -277,6 +277,93 @@ def test_test_settings_exception_handling():
         assert b"Timeout Error" in response.content
 
 
+from fastapi.testclient import TestClient
+from src.app.main import app
+from unittest.mock import patch, MagicMock
+
+def test_browse_directories_success():
+    """Test the /settings/browse endpoint returns directories correctly."""
+    client = TestClient(app)
+    with patch("os.scandir") as mock_scandir:
+        mock_entry1 = MagicMock()
+        mock_entry1.is_dir.return_value = True
+        mock_entry1.name = "folderA"
+        mock_entry1.path = "/mock/folderA"
+
+        mock_entry2 = MagicMock()
+        mock_entry2.is_dir.return_value = True
+        mock_entry2.name = ".hidden"
+
+        mock_entry3 = MagicMock()
+        mock_entry3.is_dir.return_value = False
+        mock_entry3.name = "file.txt"
+
+        mock_scandir.return_value.__enter__.return_value = [mock_entry1, mock_entry2, mock_entry3]
+
+        response = client.get("/settings/browse?path=/mock")
+        assert response.status_code == 200
+        assert "folderA" in response.text
+        assert ".hidden" not in response.text
+        assert "file.txt" not in response.text
+        assert ".." in response.text
+
+
+def test_browse_directories_root():
+    """Test the /settings/browse endpoint at root (no parent link)."""
+    client = TestClient(app)
+    with patch("os.scandir") as mock_scandir:
+        mock_scandir.return_value.__enter__.return_value = []
+        response = client.get("/settings/browse?path=/")
+        assert response.status_code == 200
+        assert ".." not in response.text
+
+
+def test_browse_directories_error():
+    """Test the /settings/browse endpoint handles os errors."""
+    client = TestClient(app)
+    with patch("os.scandir") as mock_scandir:
+        mock_scandir.side_effect = PermissionError("Access denied")
+        response = client.get("/settings/browse?path=/mock")
+        assert response.status_code == 200
+        assert "Error accessing path" in response.text
+        assert "Access denied" in response.text
+
+
+def test_test_settings_local_success():
+    """Test the /settings/test endpoint for local service with valid dir."""
+    client = TestClient(app)
+    with patch("os.path.isdir") as mock_isdir:
+        mock_isdir.return_value = True
+        response = client.post(
+            "/settings/test",
+            data={
+                "service_name": "local",
+                "target_url": "/valid/dir",
+                "credential": "",
+            },
+        )
+        assert response.status_code == 200
+        assert "Test successful" in response.text
+
+
+def test_test_settings_local_failure():
+    """Test the /settings/test endpoint for local service with invalid dir."""
+    client = TestClient(app)
+    with patch("os.path.isdir") as mock_isdir:
+        mock_isdir.return_value = False
+        response = client.post(
+            "/settings/test",
+            data={
+                "service_name": "local",
+                "target_url": "/invalid/dir",
+                "credential": "",
+            },
+        )
+        assert response.status_code == 200
+        assert "Test failed" in response.text
+        assert "Directory not found: /invalid/dir" in response.text
+
+
 def test_test_settings_db_credential_fallback():
     """Verify test_settings falls back to the database credential if none is provided."""
     db = TestingSessionLocal()
