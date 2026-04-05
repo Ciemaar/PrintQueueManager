@@ -7,6 +7,16 @@
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
     <style>
+        .htmx-indicator {
+            display: none;
+        }
+        .htmx-request .htmx-indicator {
+            display: inline-block;
+        }
+        .htmx-request.htmx-indicator {
+            display: inline-block;
+        }
+
         .service-card { margin-bottom: 2rem; }
         .service-header {
             display: flex;
@@ -38,6 +48,10 @@
 
         <div id="save-feedback" style="margin-bottom: 1rem;"></div>
 
+        <div id="global-indicator" class="htmx-indicator sync-toast" style="color: var(--pico-muted-color); font-weight: bold; margin-bottom: 1rem; padding: 0.5rem; background: var(--pico-card-background-color); border-radius: 0.25rem;">
+            Testing configuration, please wait...
+        </div>
+
         {% for service_name, details in services.items() %}
             <article class="service-card">
                 <form hx-post="/settings/update" hx-target="#save-feedback" hx-swap="innerHTML">
@@ -65,12 +79,13 @@
                         </div>
                     </div>
 
-                    <div style="display: flex; gap: 1rem;">
+                    <div style="display: flex; gap: 1rem; align-items: center;">
                         <button type="submit">Save {{ details.display_name }} Settings</button>
                         <button type="button" class="secondary outline"
                                 hx-post="/settings/test"
                                 hx-include="closest form"
                                 hx-target="#save-feedback"
+                                hx-indicator="#global-indicator"
                                 hx-swap="innerHTML">
                             Test Configuration
                         </button>
