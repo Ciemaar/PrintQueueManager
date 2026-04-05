@@ -1,6 +1,7 @@
 """LLM-based web scraper for extracting 3D model metadata from unstructured HTML."""
 
 import os
+import logging
 from pydantic import BaseModel, Field
 from typing import List, Optional, Any
 from pydantic_ai import Agent
@@ -10,6 +11,8 @@ from playwright.sync_api import sync_playwright
 from src.app.database import SessionLocal, engine
 from src.app.models import Base, PrintJob
 from src.app.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 class ExtractedModelInfo(BaseModel):
@@ -55,7 +58,7 @@ def get_page_html(source: str, url: str, credential: str = "") -> str:
         cookie_name = "nette-samesite"
     elif source == "cults3d":
         domain = "cults3d.com"
-        cookie_name = "_cults_session"
+        cookie_name = "_session_id"
     elif source == "minihoarder":
         domain = "www.minihoarder.com"
         cookie_name = "PHPSESSID"
@@ -65,9 +68,9 @@ def get_page_html(source: str, url: str, credential: str = "") -> str:
 
     # If no cookie is provided for authentication, the mocked HTML is returned for safety
     if not cookie_str:
-        print(f"No authentication cookie found for {source}.")
+        logger.info(f"No authentication cookie found for {source}.")
         if getattr(settings, "demo_mode", False):
-            print("Falling back to mock data.")
+            logger.info("Falling back to mock data.")
             return f"""
             <html><body>
             <div class="model-card">
@@ -108,8 +111,8 @@ def get_page_html(source: str, url: str, credential: str = "") -> str:
             content = str(page.content())
             browser.close()
             return content
-    except Exception as e:
-        print(f"Failed to fetch {url} using Playwright: {e}")
+    except Exception:
+        logger.exception(f"Failed to fetch {url} using Playwright")
         return ""
 
 
@@ -117,19 +120,19 @@ def run_scraper(source: str, url: str, credential: str = "") -> List[dict[str, A
     """Run the LLM agent against a URL and store the results in the database."""
     Base.metadata.create_all(bind=engine)
 
-    print(f"Fetching live HTML for {source} at {url}...")
+    logger.info(f"Fetching live HTML for {source} at {url}...")
     html_content = get_page_html(source, url, credential)
 
     if not html_content:
         return []
 
-    print(f"Agentic extraction starting for {source}...")
+    logger.info(f"Agentic extraction starting for {source}...")
 
     try:
         result = scraper_agent.run_sync(html_content)
         data = result.data.models  # type: ignore
-    except Exception as e:
-        print(f"Error communicating with Ollama: {e}. Returning fallback mock data.")
+    except Exception:
+        logger.exception("Error communicating with Ollama. Returning fallback mock data.")
         data = [
             ExtractedModelInfo(
                 title=f"Mock Vase from {source}",
@@ -162,8 +165,8 @@ def run_scraper(source: str, url: str, credential: str = "") -> List[dict[str, A
                 db.add(new_job)
                 saved_items.append(model.model_dump())
         db.commit()
-    except Exception as e:
-        print(f"Database error saving models: {e}")
+    except Exception:
+        logger.exception("Database error saving models")
         db.rollback()
     finally:
         db.close()
@@ -172,6 +175,6 @@ def run_scraper(source: str, url: str, credential: str = "") -> List[dict[str, A
 
 
 if __name__ == "__main__":
-    print("Testing scraping manually...")
+    logger.info("Testing scraping manually...")
     run_scraper("Test Source", "https://test.example.com")
-    print("Test complete.")
+    logger.info("Test complete.")

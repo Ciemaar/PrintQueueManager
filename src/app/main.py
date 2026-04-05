@@ -290,10 +290,10 @@ def settings_page(request: Request, db: Session = Depends(get_db)) -> HTMLRespon
             "display_name": "Cults3D",
             "instructions": (
                 "Log in to Cults3D. Open Developer Tools and locate the "
-                "<code>_cults_session</code> cookie."
+                "<code>_session_id</code> cookie."
             ),
             "example_url": "https://cults3d.com/en/users/collections",
-            "credential_placeholder": "Paste _cults_session cookie here",
+            "credential_placeholder": "Paste _session_id cookie here",
         },
         "minihoarder": {
             "display_name": "Minihoarder",
