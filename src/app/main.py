@@ -2,7 +2,7 @@
 
 import logging
 from contextlib import asynccontextmanager
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import Depends, FastAPI, Form, Request
@@ -50,6 +50,16 @@ async def lifespan(app: FastAPI):
         alembic.command.upgrade(alembic_cfg, "head")
     except Exception as e:
         print(f"Failed to run database migrations: {e}")
+
+    # Normalize priorities synchronously so the first page load has valid integer sorting
+    try:
+        from src.app.database import SessionLocal
+
+        db = SessionLocal()
+        _normalize_priorities_sync(db)
+        db.close()
+    except Exception as e:
+        logger.error(f"Failed to normalize priorities during startup: {e}")
 
     try:
         sync_local.delay()
@@ -230,7 +240,7 @@ def delete_job(job_id: int, request: Request, db: Session = Depends(get_db)) -> 
     job = db.query(PrintJob).filter(PrintJob.id == job_id).first()
     if job:
         job.status = PrintStatus.DELETED  # type: ignore
-        job.deleted_at = datetime.utcnow()  # type: ignore
+        job.deleted_at = datetime.now(timezone.utc)  # type: ignore
         db.commit()
     return HTMLResponse("")
 
@@ -274,7 +284,7 @@ def update_status(
             job.status = enum_status  # type: ignore
             if enum_status in [PrintStatus.PRINTED, PrintStatus.SKIPPED, PrintStatus.DELETED]:
                 if job.deleted_at is None:
-                    job.deleted_at = datetime.utcnow()  # type: ignore
+                    job.deleted_at = datetime.now(timezone.utc)  # type: ignore
             else:
                 job.deleted_at = None  # type: ignore
             db.commit()

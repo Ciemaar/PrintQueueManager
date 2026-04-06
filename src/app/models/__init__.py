@@ -1,6 +1,6 @@
 """SQLAlchemy database models for the application."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 
 from sqlalchemy import Column, DateTime, Float, Integer, String
@@ -45,6 +45,10 @@ class PrintJob(Base):
     # User-defined ordering via drag-and-drop
     user_priority = Column(Float, default=0.0)
 
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
     deleted_at = Column(DateTime, nullable=True)

@@ -1,6 +1,6 @@
 """Unit tests for the FastAPI application main routes."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pytest
 from fastapi.testclient import TestClient
@@ -279,7 +279,10 @@ def test_undelete_job_from_deleted():
     """Verify that a DELETED job gets restored to TO BE PRINTED state."""
     db = TestingSessionLocal()
     job = PrintJob(
-        title="Test Job", source="Test", status=PrintStatus.DELETED, deleted_at=datetime.utcnow()
+        title="Test Job",
+        source="Test",
+        status=PrintStatus.DELETED,
+        deleted_at=datetime.now(timezone.utc),
     )
     db.add(job)
     db.commit()
@@ -300,7 +303,10 @@ def test_undelete_job_from_printed():
     """Verify that a PRINTED job gets restored to PRINT AGAIN state."""
     db = TestingSessionLocal()
     job = PrintJob(
-        title="Test Job", source="Test", status=PrintStatus.PRINTED, deleted_at=datetime.utcnow()
+        title="Test Job",
+        source="Test",
+        status=PrintStatus.PRINTED,
+        deleted_at=datetime.now(timezone.utc),
     )
     db.add(job)
     db.commit()
@@ -324,13 +330,19 @@ def test_read_deleted_jobs():
         title="Deleted Job 1",
         source="Test",
         status=PrintStatus.DELETED,
-        deleted_at=datetime.utcnow(),
+        deleted_at=datetime.now(timezone.utc),
     )
     job2 = PrintJob(
-        title="Skipped Job", source="Test", status=PrintStatus.SKIPPED, deleted_at=datetime.utcnow()
+        title="Skipped Job",
+        source="Test",
+        status=PrintStatus.SKIPPED,
+        deleted_at=datetime.now(timezone.utc),
     )
     job3 = PrintJob(
-        title="Printed Job", source="Test", status=PrintStatus.PRINTED, deleted_at=datetime.utcnow()
+        title="Printed Job",
+        source="Test",
+        status=PrintStatus.PRINTED,
+        deleted_at=datetime.now(timezone.utc),
     )
     db.add(job1)
     db.add(job2)
