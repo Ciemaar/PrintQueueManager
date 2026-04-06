@@ -197,14 +197,14 @@ def reorder_job(
 
     # Re-calculate with normalized (or distinct) values
     if above_job and below_job:
-        above_priority = getattr(above_job, "user_priority")
-        below_priority = getattr(below_job, "user_priority")
+        above_priority = getattr(above_job, "user_priority") or 0.0
+        below_priority = getattr(below_job, "user_priority") or 0.0
         setattr(job, "user_priority", (above_priority + below_priority) / 2.0)
     elif above_job:
-        above_priority = getattr(above_job, "user_priority")
+        above_priority = getattr(above_job, "user_priority") or 0.0
         setattr(job, "user_priority", above_priority + 1.0)
     elif below_job:
-        below_priority = getattr(below_job, "user_priority")
+        below_priority = getattr(below_job, "user_priority") or 0.0
         setattr(job, "user_priority", below_priority - 1.0)
 
     # Note: If both are None, this is either a single-item list or an error.
