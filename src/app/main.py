@@ -368,7 +368,8 @@ def update_settings(
         f'<div class="sync-toast" style="color: var(--pico-primary); '
         f"font-weight: bold; margin-bottom: 1rem; padding: 0.5rem; "
         f'background: var(--pico-primary-background); border-radius: 0.25rem;">'
-        f"Settings saved for {service_name.capitalize()}!</div>"
+        f"Settings saved for {service_name.capitalize()}!</div>",
+        headers={"HX-Refresh": "true"}
     )
 
 
