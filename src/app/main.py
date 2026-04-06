@@ -78,7 +78,11 @@ def index(
             PrintJob.status.notin_([PrintStatus.PRINTED, PrintStatus.SKIPPED, PrintStatus.DELETED])
         )
 
-    jobs = query.order_by(PrintJob.user_priority.asc(), PrintJob.updated_at.desc()).all()
+    # Use nullsfirst for SQLite/Postgres compatibility if NULLs slip in,
+    # though Alembic should catch them and default them to 0.0.
+    jobs = query.order_by(
+        PrintJob.user_priority.asc().nullsfirst(), PrintJob.updated_at.desc()
+    ).all()
 
     if request.headers.get("hx-request") == "true":
         return templates.TemplateResponse(
@@ -151,7 +155,7 @@ def _normalize_priorities_sync(db: Session) -> None:
     jobs = (
         db.query(PrintJob)
         .filter(PrintJob.status != PrintStatus.DELETED)
-        .order_by(PrintJob.user_priority.asc(), PrintJob.updated_at.desc())
+        .order_by(PrintJob.user_priority.asc().nullsfirst(), PrintJob.updated_at.desc())
         .all()
     )
 

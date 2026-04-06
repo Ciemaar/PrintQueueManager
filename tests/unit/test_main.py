@@ -155,14 +155,18 @@ def test_reorder_job_with_null_priority():
     """Verify that reordering handles jobs that have NULL user_priority (e.g. from migrations)."""
     db = TestingSessionLocal()
     # Use raw insert to bypass the model's default=0.0
-    db.execute(PrintJob.__table__.insert(), [{"title": "Job NULL 1", "source": "Test", "user_priority": None}])
-    db.execute(PrintJob.__table__.insert(), [{"title": "Job NULL 2", "source": "Test", "user_priority": None}])
+    db.execute(
+        PrintJob.__table__.insert(),
+        [{"title": "Job NULL 1", "source": "Test", "user_priority": None}],
+    )
+    db.execute(
+        PrintJob.__table__.insert(),
+        [{"title": "Job NULL 2", "source": "Test", "user_priority": None}],
+    )
     db.commit()
 
     # Move Job 2 to the top (above Job 1)
-    response = client.post(
-        "/jobs/2/reorder", data={"below_id": "1"}
-    )
+    response = client.post("/jobs/2/reorder", data={"below_id": "1"})
     assert response.status_code == 200
 
     db.expire_all()

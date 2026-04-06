@@ -216,7 +216,7 @@ def normalize_priorities() -> None:
         jobs = (
             db.query(PrintJob)
             .filter(PrintJob.status != PrintStatus.DELETED)
-            .order_by(PrintJob.user_priority.asc(), PrintJob.updated_at.desc())
+            .order_by(PrintJob.user_priority.asc().nullsfirst(), PrintJob.updated_at.desc())
             .all()
         )
 
