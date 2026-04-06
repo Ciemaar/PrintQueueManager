@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 from typing import List, Optional, Any
 from pydantic_ai import Agent
 
-from playwright.sync_api import sync_playwright
+from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeoutError
 
 from src.app.database import SessionLocal, engine
 from src.app.models import Base, PrintJob
@@ -107,7 +107,13 @@ def get_page_html(source: str, url: str, credential: str = "") -> str:
                 )
 
             page = context.new_page()
-            page.goto(url, wait_until="networkidle")
+            try:
+                # Modern SPAs might never reach networkidle due to websockets/analytics.
+                # If it times out, we catch it and grab the content anyway.
+                page.goto(url, wait_until="networkidle", timeout=15000)
+            except PlaywrightTimeoutError:
+                logger.warning(f"Timeout waiting for networkidle on {url}. Proceeding with current DOM.")
+
             content = str(page.content())
             browser.close()
             return content
