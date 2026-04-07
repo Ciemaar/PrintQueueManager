@@ -210,24 +210,22 @@ def normalize_priorities() -> None:
     sequential integers (1.0, 2.0, 3.0, etc.) based on their current order.
     """
     logger.info("Starting daily normalization of PrintJob priorities.")
-    db = SessionLocal()
-    try:
-        # Fetch all active jobs in their current sorted order
-        jobs = (
-            db.query(PrintJob)
-            .filter(PrintJob.status != PrintStatus.DELETED)
-            .order_by(PrintJob.user_priority.asc().nullsfirst(), PrintJob.updated_at.desc())
-            .all()
-        )
+    with SessionLocal() as db:
+        try:
+            # Fetch all active jobs in their current sorted order
+            jobs = (
+                db.query(PrintJob)
+                .filter(PrintJob.status != PrintStatus.DELETED)
+                .order_by(PrintJob.user_priority.asc().nullsfirst(), PrintJob.updated_at.desc())
+                .all()
+            )
 
-        # Reassign sequential float priorities
-        for index, job in enumerate(jobs, start=1):
-            setattr(job, "user_priority", float(index))
+            # Reassign sequential float priorities
+            for index, job in enumerate(jobs, start=1):
+                setattr(job, "user_priority", float(index))
 
-        db.commit()
-        logger.info(f"Successfully normalized priorities for {len(jobs)} active jobs.")
-    except Exception as e:
-        logger.error(f"Failed to normalize priorities: {e}")
-        db.rollback()
-    finally:
-        db.close()
+            db.commit()
+            logger.info(f"Successfully normalized priorities for {len(jobs)} active jobs.")
+        except Exception as e:
+            logger.error(f"Failed to normalize priorities: {e}")
+            db.rollback()
