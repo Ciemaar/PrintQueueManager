@@ -10,7 +10,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
-from src.app.database import Base, engine, get_db
+from src.app.database import Base, SessionLocal, engine, get_db
 from src.app.logging_config import setup_logging
 from src.app.models import PrintJob, PrintStatus
 from src.worker.celery_app import (
@@ -53,8 +53,6 @@ async def lifespan(app: FastAPI):
 
     # Normalize priorities synchronously so the first page load has valid integer sorting
     try:
-        from src.app.database import SessionLocal
-
         db = SessionLocal()
         _normalize_priorities_sync(db)
         db.close()
@@ -209,24 +207,20 @@ def reorder_job(
             db.refresh(above_job)
             db.refresh(below_job)
 
+    # Helper to fetch priority robustly
+    def _get_prio(j) -> float:
+        p = getattr(j, "user_priority", None)
+        return float(p) if p is not None else 0.0
+
     # Re-calculate with normalized (or distinct) values
-    job_prio = getattr(job, "user_priority")
-    new_priority = job_prio if job_prio is not None else 0.0
+    new_priority = _get_prio(job)
 
     if above_job and below_job:
-        above_prio = getattr(above_job, "user_priority")
-        above_priority = above_prio if above_prio is not None else 0.0
-        below_prio = getattr(below_job, "user_priority")
-        below_priority = below_prio if below_prio is not None else 0.0
-        new_priority = (above_priority + below_priority) / 2.0
+        new_priority = (_get_prio(above_job) + _get_prio(below_job)) / 2.0
     elif above_job:
-        above_prio = getattr(above_job, "user_priority")
-        above_priority = above_prio if above_prio is not None else 0.0
-        new_priority = above_priority + 1.0
+        new_priority = _get_prio(above_job) + 1.0
     elif below_job:
-        below_prio = getattr(below_job, "user_priority")
-        below_priority = below_prio if below_prio is not None else 0.0
-        new_priority = below_priority - 1.0
+        new_priority = _get_prio(below_job) - 1.0
 
     # Note: If both are None, this is either a single-item list or an error.
     # The job remains at its current priority.
