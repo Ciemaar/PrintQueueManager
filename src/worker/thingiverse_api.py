@@ -41,13 +41,25 @@ def fetch_thingiverse_collections() -> List[dict[str, Any]]:
         db = SessionLocal()
 
         try:
+            # Batch optimization: Extract all URLs and check for existence in one query
+            urls_to_check = [
+                str(item.get("url", f"https://www.thingiverse.com/thing:{item.get('id')}"))
+                for item in data
+            ]
+
+            existing_urls = {
+                url
+                for (url,) in db.query(PrintJob.source_url)
+                .filter(PrintJob.source_url.in_(urls_to_check))
+                .all()
+            }
+
             for item in data:
                 model_url = str(
                     item.get("url", f"https://www.thingiverse.com/thing:{item.get('id')}")
                 )
 
-                existing = db.query(PrintJob).filter(PrintJob.source_url == model_url).first()
-                if not existing:
+                if model_url not in existing_urls:
                     new_job = PrintJob(
                         title=str(item.get("name", "Unknown Thingiverse Model")),
                         source="thingiverse",

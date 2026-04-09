@@ -149,9 +149,18 @@ def run_scraper(source: str, url: str) -> List[dict[str, Any]]:
     db = SessionLocal()
     saved_items: List[dict[str, Any]] = []
     try:
+        # Batch optimization: Extract all URLs and check for existence in one query
+        urls_to_check = [str(model.url) for model in data]
+
+        existing_urls = {
+            url
+            for (url,) in db.query(PrintJob.source_url)
+            .filter(PrintJob.source_url.in_(urls_to_check))
+            .all()
+        }
+
         for model in data:
-            existing = db.query(PrintJob).filter(PrintJob.source_url == model.url).first()
-            if not existing:
+            if str(model.url) not in existing_urls:
                 new_job = PrintJob(
                     title=model.title,
                     source=source,
