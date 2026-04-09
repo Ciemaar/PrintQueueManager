@@ -134,6 +134,8 @@ def test_reorder_job():
     db.expire_all()
     updated_job2 = db.query(PrintJob).filter(PrintJob.id == job2.id).first()
     assert updated_job2 is not None
+
+    # job1 priority is 1.0, so moving job2 above it gives `below_priority - 1.0` -> 0.0
     assert getattr(updated_job2, "user_priority") == 0.0  # 1.0 - 1.0
 
     # Move job1 to bottom (below job3 which is now 1.5)
