@@ -195,13 +195,13 @@ def reorder_job(
     # Fetch reference jobs
     above_job = db.query(PrintJob).filter(PrintJob.id == above_id).first() if above_id else None
     below_job = db.query(PrintJob).filter(PrintJob.id == below_id).first() if below_id else None
-    if not above_job and not below_job:
-        return HTMLResponse(status_code=404)
 
     # Detect priority collisions or inversions that prevent calculating a midpoint
     if above_job and below_job:
-        above_priority = getattr(above_job, "user_priority")
-        below_priority = getattr(below_job, "user_priority")
+        above_p = getattr(above_job, "user_priority", None)
+        below_p = getattr(below_job, "user_priority", None)
+        above_priority = float(above_p) if above_p is not None else 0.0
+        below_priority = float(below_p) if below_p is not None else 0.0
 
         # If priorities are identical or inverted, normalize the entire list first
         if above_priority >= below_priority:
@@ -210,16 +210,26 @@ def reorder_job(
             db.refresh(below_job)
 
     # Re-calculate with normalized (or distinct) values
-    if above_job:
-        above_priority = float(getattr(above_job, "user_priority", 0))
-    else:
-        above_priority = float(getattr(below_job, "user_priority", 0)) + 2
-    if below_job:
-        below_priority = float(getattr(below_job, "user_priority", 0))
-    else:
-        below_priority = float(getattr(above_job, "user_priority", 0)) - 2
+    job_prio = getattr(job, "user_priority", None)
+    new_priority = float(job_prio) if job_prio is not None else 0.0
 
-    new_priority = (above_priority + below_priority) / 2.0
+    if above_job and below_job:
+        above_prio = getattr(above_job, "user_priority", None)
+        above_priority = float(above_prio) if above_prio is not None else 0.0
+        below_prio = getattr(below_job, "user_priority", None)
+        below_priority = float(below_prio) if below_prio is not None else 0.0
+        new_priority = (above_priority + below_priority) / 2.0
+    elif above_job:
+        above_prio = getattr(above_job, "user_priority", None)
+        above_priority = float(above_prio) if above_prio is not None else 0.0
+        new_priority = above_priority + 1.0
+    elif below_job:
+        below_prio = getattr(below_job, "user_priority", None)
+        below_priority = float(below_prio) if below_prio is not None else 0.0
+        new_priority = below_priority - 1.0
+
+    # Note: If both are None, this is either a single-item list or an error.
+    # The job remains at its current priority.
 
     setattr(job, "user_priority", new_priority)
     db.commit()
