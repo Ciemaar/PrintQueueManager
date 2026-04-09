@@ -8,7 +8,7 @@ from typing import Any, List
 from celery import Celery
 
 from src.app.config import settings
-from src.app.database import SessionLocal
+from src.app.database import transactional_session
 from src.app.logging_config import setup_logging
 from src.app.models import PrintJob
 
@@ -144,52 +144,49 @@ def sync_local() -> List[dict[str, Any]]:
         watch_path.mkdir(parents=True, exist_ok=True)
 
     added_files = []
-    db = SessionLocal()
     try:
-        logger.debug(f"Scanning directory: {watch_path} recursively")
+        with transactional_session() as db:
+            logger.debug(f"Scanning directory: {watch_path} recursively")
 
-        # Get a set of all currently known local file paths to avoid N queries
-        known_paths = {
-            job.file_path for job in db.query(PrintJob.file_path).filter(PrintJob.source == "Local")
-        }
+            # Get a set of all currently known local file paths to avoid N queries
+            known_paths = {
+                job.file_path
+                for job in db.query(PrintJob.file_path).filter(PrintJob.source == "Local")
+            }
 
-        for file_path in watch_path.rglob("*"):
-            if (file_path.is_file() or file_path.is_symlink()) and file_path.suffix.lower() in {
-                ".stl",
-                ".3mf",
-            }:
-                if str(file_path) in known_paths:
-                    continue
+            for file_path in watch_path.rglob("*"):
+                if (file_path.is_file() or file_path.is_symlink()) and file_path.suffix.lower() in {
+                    ".stl",
+                    ".3mf",
+                }:
+                    if str(file_path) in known_paths:
+                        continue
 
-                is_broken_symlink = file_path.is_symlink() and not file_path.exists()
+                    is_broken_symlink = file_path.is_symlink() and not file_path.exists()
 
-                status_log = "broken symlink" if is_broken_symlink else "new 3D file"
-                logger.debug(f"Discovered {status_log}: {file_path.name} at {file_path}")
+                    status_log = "broken symlink" if is_broken_symlink else "new 3D file"
+                    logger.debug(f"Discovered {status_log}: {file_path.name} at {file_path}")
 
-                # If the symlink is broken, we cannot stat() it directly.
-                file_size = 0 if is_broken_symlink else file_path.stat().st_size
-                metadata = {"size_bytes": file_size}
-                if is_broken_symlink:
-                    metadata["is_broken_symlink"] = True
+                    # If the symlink is broken, we cannot stat() it directly.
+                    file_size = 0 if is_broken_symlink else file_path.stat().st_size
+                    metadata = {"size_bytes": file_size}
+                    if is_broken_symlink:
+                        metadata["is_broken_symlink"] = True
 
-                new_job = PrintJob(
-                    title=file_path.name,
-                    source="Local",
-                    file_path=str(file_path),
-                    metadata_json=metadata,
-                )
-                db.add(new_job)
-                added_files.append({"title": file_path.name, "file_path": str(file_path)})
+                    new_job = PrintJob(
+                        title=file_path.name,
+                        source="Local",
+                        file_path=str(file_path),
+                        metadata_json=metadata,
+                    )
+                    db.add(new_job)
+                    added_files.append({"title": file_path.name, "file_path": str(file_path)})
 
-        if added_files:
-            db.commit()
-            logger.info(f"Added {len(added_files)} local files to print queue.")
-        else:
-            logger.info("No new local files discovered.")
+            if added_files:
+                logger.info(f"Added {len(added_files)} local files to print queue.")
+            else:
+                logger.info("No new local files discovered.")
     except Exception as e:
         logger.error(f"Error synchronizing local files: {e}")
-        db.rollback()
-    finally:
-        db.close()
 
     return added_files

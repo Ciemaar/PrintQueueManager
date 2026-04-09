@@ -5,12 +5,11 @@ import os
 import time
 from typing import Any
 
-from sqlalchemy.orm import Session
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
 from src.app.config import settings
-from src.app.database import SessionLocal, engine
+from src.app.database import engine, transactional_session
 from src.app.logging_config import setup_logging
 from src.app.models import Base, PrintJob
 
@@ -54,33 +53,29 @@ class PrintQueueEventHandler(FileSystemEventHandler):
         before inserting a new PrintJob record. Also calculates and stores the
         file size in bytes in the flexible JSONB metadata column.
         """
-        db: Session = SessionLocal()
         try:
-            # Check if file already exists
-            existing_job = db.query(PrintJob).filter(PrintJob.file_path == file_path).first()
-            if existing_job:
-                logger.info(f"File {filename} is already in the queue.")
-                return
+            with transactional_session() as db:
+                # Check if file already exists
+                existing_job = db.query(PrintJob).filter(PrintJob.file_path == file_path).first()
+                if existing_job:
+                    logger.info(f"File {filename} is already in the queue.")
+                    return
 
-            file_size = 0 if is_broken_symlink else os.path.getsize(file_path)
-            metadata = {"size_bytes": file_size}
-            if is_broken_symlink:
-                metadata["is_broken_symlink"] = True
+                file_size = 0 if is_broken_symlink else os.path.getsize(file_path)
+                metadata = {"size_bytes": file_size}
+                if is_broken_symlink:
+                    metadata["is_broken_symlink"] = True
 
-            new_job = PrintJob(
-                title=filename,
-                source="Local",
-                file_path=file_path,
-                metadata_json=metadata,
-            )
-            db.add(new_job)
-            db.commit()
+                new_job = PrintJob(
+                    title=filename,
+                    source="Local",
+                    file_path=file_path,
+                    metadata_json=metadata,
+                )
+                db.add(new_job)
             logger.info(f"Added {filename} to print queue.")
         except Exception as e:
             logger.error(f"Failed to add {filename} to queue: {e}")
-            db.rollback()
-        finally:
-            db.close()
 
 
 def main() -> None:

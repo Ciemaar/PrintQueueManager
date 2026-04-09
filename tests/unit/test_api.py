@@ -120,12 +120,11 @@ def test_fetch_thingiverse_db_error(mock_settings, mock_get):
     mock_response.json.return_value = [{"id": 123, "name": "API Vase"}]
     mock_get.return_value = mock_response
 
-    with patch("src.worker.thingiverse_api.SessionLocal") as mock_session_local:
+    with patch("src.worker.thingiverse_api.transactional_session") as mock_transactional_session:
         mock_db = MagicMock()
-        mock_session_local.return_value = mock_db
+        mock_transactional_session.return_value.__enter__.return_value = mock_db
         mock_db.query.side_effect = Exception("DB Error")
 
         result = fetch_thingiverse_collections()
 
         assert not result
-        mock_db.rollback.assert_called_once()

@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 from pydantic_ai import Agent
 
 from src.app.config import settings
-from src.app.database import SessionLocal, engine
+from src.app.database import engine, transactional_session
 from src.app.models import Base, PrintJob
 
 logger = logging.getLogger(__name__)
@@ -146,28 +146,24 @@ def run_scraper(source: str, url: str) -> List[dict[str, Any]]:
             ),
         ]
 
-    db = SessionLocal()
     saved_items: List[dict[str, Any]] = []
     try:
-        for model in data:
-            existing = db.query(PrintJob).filter(PrintJob.source_url == model.url).first()
-            if not existing:
-                new_job = PrintJob(
-                    title=model.title,
-                    source=source,
-                    source_url=model.url,
-                    thumbnail_url=model.thumbnail,
-                    author=model.author,
-                    metadata_json={"extracted_via": "ollama_agent"},
-                )
-                db.add(new_job)
-                saved_items.append(model.model_dump())
-        db.commit()
+        with transactional_session() as db:
+            for model in data:
+                existing = db.query(PrintJob).filter(PrintJob.source_url == model.url).first()
+                if not existing:
+                    new_job = PrintJob(
+                        title=model.title,
+                        source=source,
+                        source_url=model.url,
+                        thumbnail_url=model.thumbnail,
+                        author=model.author,
+                        metadata_json={"extracted_via": "ollama_agent"},
+                    )
+                    db.add(new_job)
+                    saved_items.append(model.model_dump())
     except Exception as e:
         logger.error(f"Database error saving models: {e}")
-        db.rollback()
-    finally:
-        db.close()
 
     return saved_items
 

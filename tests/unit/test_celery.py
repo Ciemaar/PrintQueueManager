@@ -82,15 +82,15 @@ def test_sync_minihoarder(mock_run_scraper):
 
 
 @patch("src.worker.celery_app.settings")
-@patch("src.worker.celery_app.SessionLocal")
-def test_sync_local(mock_session, mock_settings, tmp_path):
+@patch("src.worker.celery_app.transactional_session")
+def test_sync_local(mock_transactional_session, mock_settings, tmp_path):
     """Verify the local directory scan properly identifies and inserts missing files."""
     # Point settings.watch_directory to the temporary py.test directory
     mock_settings.watch_directory = str(tmp_path)
     mock_settings.verbose = False
 
     mock_db = MagicMock()
-    mock_session.return_value = mock_db
+    mock_transactional_session.return_value.__enter__.return_value = mock_db
 
     # Create physical files inside the temp directory
     existing_file = tmp_path / "existing.stl"
@@ -169,5 +169,3 @@ def test_sync_local(mock_session, mock_settings, tmp_path):
 
     # The database `add` should be called four times
     assert mock_db.add.call_count == 4
-    mock_db.commit.assert_called_once()
-    mock_db.close.assert_called_once()

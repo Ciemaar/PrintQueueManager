@@ -1,5 +1,6 @@
 """Database connection and session management."""
 
+from contextlib import contextmanager
 from typing import Generator
 
 from sqlalchemy import create_engine
@@ -18,5 +19,19 @@ def get_db() -> Generator[Session, None, None]:
     db = SessionLocal()
     try:
         yield db
+    finally:
+        db.close()
+
+
+@contextmanager
+def transactional_session() -> Generator[Session, None, None]:
+    """Provide a transactional scope around a series of operations with auto-commit/rollback."""
+    db = SessionLocal()
+    try:
+        yield db
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
     finally:
         db.close()

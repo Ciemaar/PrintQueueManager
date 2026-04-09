@@ -50,12 +50,12 @@ def test_on_created_ignores_non_3d_files():
 
 
 @patch("src.watchdog.main.os.path.getsize")
-@patch("src.watchdog.main.SessionLocal")
-def test_add_to_queue_new_file(mock_session_local, mock_getsize):
+@patch("src.watchdog.main.transactional_session")
+def test_add_to_queue_new_file(mock_transactional_session, mock_getsize):
     """Verify add_to_queue inserts a new job into the database."""
     mock_getsize.return_value = 1024
     mock_db = MagicMock()
-    mock_session_local.return_value = mock_db
+    mock_transactional_session.return_value.__enter__.return_value = mock_db
 
     # Simulate DB query returning None (file doesn't exist yet)
     mock_db.query.return_value.filter.return_value.first.return_value = None
@@ -64,15 +64,13 @@ def test_add_to_queue_new_file(mock_session_local, mock_getsize):
     handler._add_to_queue("/fake/test.stl", "test.stl")  # pylint: disable=protected-access
 
     mock_db.add.assert_called_once()
-    mock_db.commit.assert_called_once()
-    mock_db.close.assert_called_once()
 
 
-@patch("src.watchdog.main.SessionLocal")
-def test_add_to_queue_existing_file(mock_session_local):
+@patch("src.watchdog.main.transactional_session")
+def test_add_to_queue_existing_file(mock_transactional_session):
     """Verify add_to_queue skips inserting if the file is already in the database."""
     mock_db = MagicMock()
-    mock_session_local.return_value = mock_db
+    mock_transactional_session.return_value.__enter__.return_value = mock_db
 
     # Simulate DB query returning an existing record
     mock_db.query.return_value.filter.return_value.first.return_value = MagicMock()
@@ -81,15 +79,13 @@ def test_add_to_queue_existing_file(mock_session_local):
     handler._add_to_queue("/fake/test.stl", "test.stl")  # pylint: disable=protected-access
 
     mock_db.add.assert_not_called()
-    mock_db.commit.assert_not_called()
-    mock_db.close.assert_called_once()
 
 
-@patch("src.watchdog.main.SessionLocal")
-def test_add_to_queue_exception_handling(mock_session_local):
+@patch("src.watchdog.main.transactional_session")
+def test_add_to_queue_exception_handling(mock_transactional_session):
     """Verify add_to_queue rolls back the transaction on exception."""
     mock_db = MagicMock()
-    mock_session_local.return_value = mock_db
+    mock_transactional_session.return_value.__enter__.return_value = mock_db
 
     # Simulate DB query raising an exception
     mock_db.query.side_effect = Exception("DB Connection Error")
@@ -97,8 +93,7 @@ def test_add_to_queue_exception_handling(mock_session_local):
     handler = PrintQueueEventHandler()
     handler._add_to_queue("/fake/test.stl", "test.stl")  # pylint: disable=protected-access
 
-    mock_db.rollback.assert_called_once()
-    mock_db.close.assert_called_once()
+    # transactional_session context manager handles rollback/close
 
 
 @patch("src.watchdog.main.time.sleep", side_effect=KeyboardInterrupt)

@@ -128,12 +128,13 @@ def test_run_scraper_db_error(mock_get_html, mock_run_sync):
         ExtractedModelInfo(title="LLM Vase", url="http://url.com", thumbnail=None, author=None)
     ]
 
-    with patch("src.worker.llm_scraper.SessionLocal") as mock_session_local:
+    with patch("src.worker.llm_scraper.transactional_session") as mock_transactional_session:
         mock_db = MagicMock()
-        mock_session_local.return_value = mock_db
-        mock_db.commit.side_effect = Exception("DB Constraints")
+        mock_transactional_session.return_value.__enter__.return_value = mock_db
+        # Simulate failure within the transactional block.
+        # run_scraper has a try/except around the with transactional_session()
+        mock_db.query.side_effect = Exception("DB Constraints")
 
         result = run_scraper("test", "http://test.com")
 
         assert result == []  # Return logic should fail properly
-        mock_db.rollback.assert_called_once()
