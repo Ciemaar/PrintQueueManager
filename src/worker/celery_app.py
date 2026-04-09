@@ -6,11 +6,12 @@ from pathlib import Path
 from typing import Any, List
 
 from celery import Celery
+from celery.schedules import crontab
 
 from src.app.config import settings
 from src.app.database import SessionLocal
 from src.app.logging_config import setup_logging
-from src.app.models import PrintJob
+from src.app.models import PrintJob, PrintStatus
 
 from .llm_scraper import run_scraper
 from .thingiverse_api import fetch_thingiverse_collections
@@ -46,6 +47,10 @@ def setup_periodic_tasks(sender: Any, **kwargs: Any) -> None:
     )
     sender.add_periodic_task(
         settings.minihoarder_sync_interval, sync_minihoarder.s(), name="sync_minihoarder_periodic"
+    )
+    # Run the priority normalization task daily at midnight UTC
+    sender.add_periodic_task(
+        crontab(minute="0", hour="0"), normalize_priorities.s(), name="normalize_priorities_daily"
     )
 
 
@@ -193,3 +198,34 @@ def sync_local() -> List[dict[str, Any]]:
         db.close()
 
     return added_files
+
+
+@celery_app.task(name="normalize_priorities")
+def normalize_priorities() -> None:
+    """
+    Normalize the user_priority values for all active PrintJobs.
+
+    This helps prevent precision loss from continuously halving user_priority
+    floats when moving items between other items. It reassigns priorities as
+    sequential integers (1.0, 2.0, 3.0, etc.) based on their current order.
+    """
+    logger.info("Starting daily normalization of PrintJob priorities.")
+    with SessionLocal() as db:
+        try:
+            # Fetch all active jobs in their current sorted order
+            jobs = (
+                db.query(PrintJob)
+                .filter(PrintJob.status != PrintStatus.DELETED)
+                .order_by(PrintJob.user_priority.asc().nullsfirst(), PrintJob.updated_at.desc())
+                .all()
+            )
+
+            # Reassign sequential float priorities
+            for index, job in enumerate(jobs, start=1):
+                setattr(job, "user_priority", float(index))
+
+            db.commit()
+            logger.info(f"Successfully normalized priorities for {len(jobs)} active jobs.")
+        except Exception as e:
+            logger.error(f"Failed to normalize priorities: {e}")
+            db.rollback()

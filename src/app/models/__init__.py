@@ -1,9 +1,9 @@
 """SQLAlchemy database models for the application."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 
-from sqlalchemy import Column, DateTime, Integer, String
+from sqlalchemy import Column, DateTime, Float, Integer, String
 from sqlalchemy import Enum as SQLAlchemyEnum
 from sqlalchemy.types import JSON
 
@@ -42,6 +42,13 @@ class PrintJob(Base):
     material_notes = Column(String, nullable=True)
     timing_notes = Column(String, nullable=True)
 
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    # User-defined ordering via drag-and-drop
+    user_priority = Column(Float, default=0.0, nullable=False)
+
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
     deleted_at = Column(DateTime, nullable=True)

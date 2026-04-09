@@ -2,14 +2,15 @@
 
 import logging
 from contextlib import asynccontextmanager
-from datetime import datetime
+from datetime import datetime, timezone
+from typing import Optional
 
 from fastapi import Depends, FastAPI, Form, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
-from src.app.database import Base, engine, get_db
+from src.app.database import Base, SessionLocal, engine, get_db
 from src.app.logging_config import setup_logging
 from src.app.models import PrintJob, PrintStatus
 from src.worker.celery_app import (
@@ -50,6 +51,14 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         print(f"Failed to run database migrations: {e}")
 
+    # Normalize priorities synchronously so the first page load has valid integer sorting
+    try:
+        db = SessionLocal()
+        _normalize_priorities_sync(db)
+        db.close()
+    except Exception as e:
+        logger.error(f"Failed to normalize priorities during startup: {e}")
+
     try:
         sync_local.delay()
     except Exception as e:
@@ -77,7 +86,11 @@ def index(
             PrintJob.status.notin_([PrintStatus.PRINTED, PrintStatus.SKIPPED, PrintStatus.DELETED])
         )
 
-    jobs = query.order_by(PrintJob.created_at.desc()).all()
+    # Use nullsfirst for SQLite/Postgres compatibility if NULLs slip in,
+    # though Alembic should catch them and default them to 0.0.
+    jobs = query.order_by(
+        PrintJob.user_priority.asc().nullsfirst(), PrintJob.updated_at.desc()
+    ).all()
 
     if request.headers.get("hx-request") == "true":
         return templates.TemplateResponse(
@@ -141,6 +154,81 @@ def deleted_jobs(
     )  # type: ignore
 
 
+def _normalize_priorities_sync(db: Session) -> None:
+    """
+    Normalize the user_priority values for all active PrintJobs synchronously.
+
+    This is called when a priority collision is detected during drag-and-drop reordering.
+    """
+    jobs = (
+        db.query(PrintJob)
+        .filter(PrintJob.status != PrintStatus.DELETED)
+        .order_by(PrintJob.user_priority.asc(), PrintJob.updated_at.desc())
+        .all()
+    )
+
+    for index, j in enumerate(jobs, start=1):
+        setattr(j, "user_priority", float(index))
+
+    db.commit()
+
+
+@app.post("/jobs/{job_id}/reorder", response_class=HTMLResponse)
+def reorder_job(
+    job_id: int,
+    request: Request,
+    above_id: Optional[int] = Form(None),
+    below_id: Optional[int] = Form(None),
+    db: Session = Depends(get_db),
+) -> HTMLResponse:
+    """
+    Update the priority of a specific job via drag-and-drop.
+
+    Accepts the IDs of the jobs above and below the new position to calculate
+    a new user_priority float value. If the gap between items is too small or
+    a collision exists, forces a sync normalization to guarantee distinct ordering.
+    """
+    job = db.query(PrintJob).filter(PrintJob.id == job_id).first()
+    if not job:
+        return HTMLResponse(status_code=404)
+
+    # Fetch reference jobs
+    above_job = db.query(PrintJob).filter(PrintJob.id == above_id).first() if above_id else None
+    below_job = db.query(PrintJob).filter(PrintJob.id == below_id).first() if below_id else None
+
+    # Detect priority collisions or inversions that prevent calculating a midpoint
+    if above_job and below_job:
+        above_priority = float(getattr(above_job, "user_priority"))
+        below_priority = float(getattr(below_job, "user_priority"))
+
+        # If priorities are identical or inverted, normalize the entire list first
+        if above_priority >= below_priority:
+            _normalize_priorities_sync(db)
+            db.refresh(above_job)
+            db.refresh(below_job)
+
+    # Re-calculate with normalized (or distinct) values
+    new_priority = float(getattr(job, "user_priority"))
+
+    if above_job and below_job:
+        above_priority = float(getattr(above_job, "user_priority"))
+        below_priority = float(getattr(below_job, "user_priority"))
+        new_priority = (above_priority + below_priority) / 2.0
+    elif above_job:
+        above_priority = float(getattr(above_job, "user_priority"))
+        new_priority = above_priority + 1.0
+    elif below_job:
+        below_priority = float(getattr(below_job, "user_priority"))
+        new_priority = below_priority - 1.0
+
+    # Note: If both are None, this is either a single-item list or an error.
+    # The job remains at its current priority.
+
+    setattr(job, "user_priority", new_priority)
+    db.commit()
+    return HTMLResponse("")
+
+
 @app.post("/jobs/{job_id}/delete", response_class=HTMLResponse)
 def delete_job(job_id: int, request: Request, db: Session = Depends(get_db)) -> HTMLResponse:
     """
@@ -153,7 +241,7 @@ def delete_job(job_id: int, request: Request, db: Session = Depends(get_db)) -> 
     job = db.query(PrintJob).filter(PrintJob.id == job_id).first()
     if job:
         job.status = PrintStatus.DELETED  # type: ignore
-        job.deleted_at = datetime.utcnow()  # type: ignore
+        job.deleted_at = datetime.now(timezone.utc)  # type: ignore
         db.commit()
     return HTMLResponse("")
 
@@ -197,7 +285,7 @@ def update_status(
             job.status = enum_status  # type: ignore
             if enum_status in [PrintStatus.PRINTED, PrintStatus.SKIPPED, PrintStatus.DELETED]:
                 if job.deleted_at is None:
-                    job.deleted_at = datetime.utcnow()  # type: ignore
+                    job.deleted_at = datetime.now(timezone.utc)  # type: ignore
             else:
                 job.deleted_at = None  # type: ignore
             db.commit()

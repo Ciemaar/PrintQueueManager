@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Local 3D Print Queue Manager</title>
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
     <style>
         .status-PRINTED { text-decoration: line-through; opacity: 0.7; }
@@ -40,6 +41,31 @@
 
         .actions-col {
             min-width: 120px;
+        }
+
+        .drag-handle {
+            cursor: grab;
+            color: var(--pico-h1-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 2.5rem;
+            transition: color 0.2s ease, transform 0.2s ease;
+        }
+
+        .drag-handle:hover {
+            color: var(--pico-primary);
+            transform: scale(1.1);
+        }
+
+        .drag-handle:active {
+            cursor: grabbing;
+            transform: scale(0.95);
+        }
+
+        .sortable-ghost {
+            opacity: 0.4;
+            background-color: var(--pico-secondary-background);
         }
     </style>
 </head>
@@ -85,6 +111,7 @@
                 <table role="grid">
                     <thead>
                         <tr>
+                            <th scope="col" style="width: 3rem;"></th>
                             <th scope="col">Thumbnail</th>
                             <th scope="col">Title</th>
                             <th scope="col">Source</th>
@@ -100,5 +127,41 @@
             </figure>
         </article>
     </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var el = document.getElementById('job-list');
+            var sortable = Sortable.create(el, {
+                handle: '.drag-handle',
+                animation: 150,
+                onEnd: function (evt) {
+                    const itemEl = evt.item;
+                    const jobId = itemEl.getAttribute('data-job-id');
+
+                    const prevEl = itemEl.previousElementSibling;
+                    const nextEl = itemEl.nextElementSibling;
+
+                    const aboveId = prevEl ? prevEl.getAttribute('data-job-id') : '';
+                    const belowId = nextEl ? nextEl.getAttribute('data-job-id') : '';
+
+                    // Use fetch to post the new order
+                    const formData = new FormData();
+                    if (aboveId) formData.append('above_id', aboveId);
+                    if (belowId) formData.append('below_id', belowId);
+
+                    fetch(`/jobs/${jobId}/reorder`, {
+                        method: 'POST',
+                        body: formData
+                    }).then(response => {
+                        if (!response.ok) {
+                            console.error('Failed to update job order');
+                        }
+                    }).catch(err => {
+                        console.error('Error updating job order', err);
+                    });
+                }
+            });
+        });
+    </script>
 </body>
 </html>
