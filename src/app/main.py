@@ -163,7 +163,7 @@ def _normalize_priorities_sync(db: Session) -> None:
     jobs = (
         db.query(PrintJob)
         .filter(PrintJob.status != PrintStatus.DELETED)
-        .order_by(PrintJob.user_priority.asc().nullsfirst(), PrintJob.updated_at.desc())
+        .order_by(PrintJob.user_priority.asc(), PrintJob.updated_at.desc())
         .all()
     )
 
@@ -198,10 +198,8 @@ def reorder_job(
 
     # Detect priority collisions or inversions that prevent calculating a midpoint
     if above_job and below_job:
-        above_p = getattr(above_job, "user_priority", None)
-        below_p = getattr(below_job, "user_priority", None)
-        above_priority = float(above_p) if above_p is not None else 0.0
-        below_priority = float(below_p) if below_p is not None else 0.0
+        above_priority = float(getattr(above_job, "user_priority"))
+        below_priority = float(getattr(below_job, "user_priority"))
 
         # If priorities are identical or inverted, normalize the entire list first
         if above_priority >= below_priority:
@@ -210,22 +208,17 @@ def reorder_job(
             db.refresh(below_job)
 
     # Re-calculate with normalized (or distinct) values
-    job_prio = getattr(job, "user_priority", None)
-    new_priority = float(job_prio) if job_prio is not None else 0.0
+    new_priority = float(getattr(job, "user_priority"))
 
     if above_job and below_job:
-        above_prio = getattr(above_job, "user_priority", None)
-        above_priority = float(above_prio) if above_prio is not None else 0.0
-        below_prio = getattr(below_job, "user_priority", None)
-        below_priority = float(below_prio) if below_prio is not None else 0.0
+        above_priority = float(getattr(above_job, "user_priority"))
+        below_priority = float(getattr(below_job, "user_priority"))
         new_priority = (above_priority + below_priority) / 2.0
     elif above_job:
-        above_prio = getattr(above_job, "user_priority", None)
-        above_priority = float(above_prio) if above_prio is not None else 0.0
+        above_priority = float(getattr(above_job, "user_priority"))
         new_priority = above_priority + 1.0
     elif below_job:
-        below_prio = getattr(below_job, "user_priority", None)
-        below_priority = float(below_prio) if below_prio is not None else 0.0
+        below_priority = float(getattr(below_job, "user_priority"))
         new_priority = below_priority - 1.0
 
     # Note: If both are None, this is either a single-item list or an error.

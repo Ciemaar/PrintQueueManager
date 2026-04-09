@@ -43,7 +43,7 @@ class PrintJob(Base):
     timing_notes = Column(String, nullable=True)
 
     # User-defined ordering via drag-and-drop
-    user_priority = Column(Float, default=0.0)
+    user_priority = Column(Float, default=0.0, nullable=False)
 
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(

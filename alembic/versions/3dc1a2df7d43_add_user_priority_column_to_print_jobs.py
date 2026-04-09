@@ -25,6 +25,9 @@ def upgrade() -> None:
 
     # Backfill existing records with a default priority of 0.0
     op.execute("UPDATE print_jobs SET user_priority = 0.0 WHERE user_priority IS NULL")
+
+    # Now that data is backfilled, we can safely make the column non-nullable
+    op.alter_column('print_jobs', 'user_priority', nullable=False)
     # ### end Alembic commands ###
 
 
