@@ -1,13 +1,16 @@
 """Celery worker configuration and scheduled tasks for external data sync."""
 
 import time
-from typing import List, Any
-from celery import Celery
-from src.app.config import settings
-from .llm_scraper import run_scraper
 from pathlib import Path
+from typing import Any, List
+
+from celery import Celery
+
+from src.app.config import settings
 from src.app.database import SessionLocal
 from src.app.models import PrintJob, ServiceConfig
+
+from .llm_scraper import run_scraper
 from .thingiverse_api import fetch_thingiverse_collections
 
 celery_app = Celery("printqueue", broker=settings.redis_url, backend=settings.redis_url)

@@ -1,10 +1,12 @@
 """SQLAlchemy database models for the application."""
 
-from enum import Enum
-from sqlalchemy import Column, Integer, String, DateTime
-from sqlalchemy.types import JSON
-from sqlalchemy import Enum as SQLAlchemyEnum
 from datetime import datetime
+from enum import Enum
+
+from sqlalchemy import Column, DateTime, Integer, String
+from sqlalchemy import Enum as SQLAlchemyEnum
+from sqlalchemy.types import JSON
+
 from src.app.database import Base
 
 

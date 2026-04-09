@@ -1,13 +1,15 @@
 """Unit tests for the FastAPI application main routes."""
 
-import pytest
 from datetime import datetime
+from unittest.mock import MagicMock, patch
+
+import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from unittest.mock import patch, MagicMock
-from src.app.main import app
+
 from src.app.database import Base, get_db
+from src.app.main import app
 from src.app.models import PrintJob, PrintStatus, ServiceConfig
 
 # Test database

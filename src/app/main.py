@@ -3,23 +3,24 @@
 import logging
 from contextlib import asynccontextmanager
 from datetime import datetime
-from fastapi import FastAPI, Request, Depends, Form
+
+from fastapi import Depends, FastAPI, Form, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-from src.app.database import get_db, Base, engine
+
+from src.app.database import Base, engine, get_db
+from src.app.logging_config import setup_logging
 from src.app.models import PrintJob, PrintStatus, ServiceConfig
 from src.worker.celery_app import (
-    sync_thingiverse,
-    sync_makerworld,
-    sync_printables,
     sync_cults3d,
+    sync_local,
+    sync_makerworld,
     sync_minihoarder,
     sync_myminifactory,
-    sync_local,
+    sync_printables,
+    sync_thingiverse,
 )
-
-from src.app.logging_config import setup_logging
 
 logger = logging.getLogger(__name__)
 setup_logging()
@@ -32,6 +33,7 @@ async def lifespan(app: FastAPI):
 
     try:
         import os
+
         import alembic.command
         import alembic.config
 
@@ -377,8 +379,8 @@ def update_settings(
 @app.get("/settings/browse", response_class=HTMLResponse)
 def browse_directories(request: Request, path: str = "/") -> HTMLResponse:
     """Return an HTML snippet of subdirectories within the given path."""
-    import os
     import html
+    import os
 
     # Simple security constraint to keep it absolute and avoid jumping around too much wildly,
     # though it's an admin internal tool.
@@ -468,6 +470,7 @@ def test_settings(
         )
 
     import html
+
     from src.worker.llm_scraper import get_page_html
 
     success = False

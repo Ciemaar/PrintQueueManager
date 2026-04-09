@@ -2,6 +2,7 @@
 
 import argparse
 import sys
+
 import uvicorn
 
 from src.watchdog.main import main as watchdog_main
