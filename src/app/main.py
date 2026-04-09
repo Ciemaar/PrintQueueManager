@@ -261,7 +261,8 @@ def settings_page(request: Request, db: Session = Depends(get_db)) -> HTMLRespon
         "local": {
             "display_name": "Local Directory",
             "instructions": (
-                "Configure a local directory path accessible by the backend (e.g. within the Docker container) "
+                "Configure a local directory path accessible by the backend "
+                "(e.g. within the Docker container) "
                 "to automatically sync 3D model files into the queue."
             ),
             "example_url": "/watched_folder",
@@ -369,7 +370,7 @@ def update_settings(
         f"font-weight: bold; margin-bottom: 1rem; padding: 0.5rem; "
         f'background: var(--pico-primary-background); border-radius: 0.25rem;">'
         f"Settings saved for {service_name.capitalize()}!</div>",
-        headers={"HX-Refresh": "true"}
+        headers={"HX-Refresh": "true"},
     )
 
 
@@ -392,21 +393,35 @@ def browse_directories(request: Request, path: str = "/") -> HTMLResponse:
 
         with os.scandir(target_path) as it:
             for entry in it:
-                if entry.is_dir() and not entry.name.startswith('.'):
+                if entry.is_dir() and not entry.name.startswith("."):
                     dirs.append({"name": entry.name, "path": entry.path})
     except Exception as e:
-        return HTMLResponse(f"<div style='color: var(--pico-del-color);'>Error accessing path: {html.escape(str(e))}</div>")
+        error_str = html.escape(str(e))
+        return HTMLResponse(
+            f"<div style='color: var(--pico-del-color);'>Error accessing path: {error_str}</div>"
+        )
 
     dirs.sort(key=lambda x: x["name"].lower())
 
     # Render an inline list of links that will load back into the modal
-    html_content = f"<div style='margin-bottom: 1rem;'><strong>Current Path:</strong> {html.escape(target_path)}</div>"
-    html_content += "<ul style='list-style: none; padding: 0; max-height: 200px; overflow-y: auto; border: 1px solid var(--pico-muted-border-color); border-radius: 0.25rem; padding: 0.5rem;'>"
+    escaped_path = html.escape(target_path)
+    html_content = (
+        f"<div style='margin-bottom: 1rem;'><strong>Current Path:</strong> {escaped_path}</div>"
+    )
+
+    html_content += (
+        "<ul style='list-style: none; padding: 0; max-height: 200px; "
+        "overflow-y: auto; border: 1px solid var(--pico-muted-border-color); "
+        "border-radius: 0.25rem; padding: 0.5rem;'>"
+    )
+
     for d in dirs:
+        escaped_name = html.escape(d["name"])
         html_content += f"""
         <li style='margin-bottom: 0.25rem;'>
-            <a href="#" hx-get="/settings/browse?path={d['path']}" hx-target="#directory-browser-content" style="text-decoration: none;">
-                📁 {html.escape(d['name'])}
+            <a href="#" hx-get="/settings/browse?path={d["path"]}"
+               hx-target="#directory-browser-content" style="text-decoration: none;">
+                📁 {escaped_name}
             </a>
         </li>
         """
@@ -414,8 +429,15 @@ def browse_directories(request: Request, path: str = "/") -> HTMLResponse:
 
     html_content += f"""
     <div style='margin-top: 1rem; display: flex; justify-content: flex-end; gap: 0.5rem;'>
-        <button type="button" class="secondary" onclick="document.getElementById('directory-modal').removeAttribute('open');">Cancel</button>
-        <button type="button" onclick="document.getElementById('local_target_url').value = '{target_path}'; document.getElementById('directory-modal').removeAttribute('open');">Select Directory</button>
+        <button type="button" class="secondary"
+                onclick="document.getElementById('directory-modal').removeAttribute('open');">
+            Cancel
+        </button>
+        <button type="button"
+                onclick="document.getElementById('local_target_url').value = '{target_path}';
+                         document.getElementById('directory-modal').removeAttribute('open');">
+            Select Directory
+        </button>
     </div>
     """
 
@@ -447,13 +469,13 @@ def test_settings(
 
     import html
     from src.worker.llm_scraper import get_page_html
-    from src.worker.thingiverse_api import fetch_thingiverse_collections
 
     success = False
     error_msg = ""
     try:
         if service_name == "local":
             import os
+
             if os.path.isdir(target_url):
                 success = True
             else:
@@ -466,16 +488,19 @@ def test_settings(
             # or just rely on the fact that if it returns [], we can't be sure it succeeded
             # if we have no items. Let's make a raw request.
             import requests
+
             headers = {"Authorization": f"Bearer {credential}"}
-            response = requests.get("https://api.thingiverse.com/users/me", headers=headers, timeout=10)
+            response = requests.get(
+                "https://api.thingiverse.com/users/me", headers=headers, timeout=10
+            )
             response.raise_for_status()
             success = True
         else:
             # Playwright test
-            html = get_page_html(service_name, target_url, credential)
+            fetched_html = get_page_html(service_name, target_url, credential)
             # A successful fetch implies the URL was reached and Playwright didn't crash.
             # Empty HTML means either demo-mode mock fallback failed or Playwright crashed.
-            if html:
+            if fetched_html:
                 # Basic sanity check: look for evidence it isn't just an access denied page.
                 # Verifying we got a payload and no exceptions is enough for a "quick" test.
                 success = True

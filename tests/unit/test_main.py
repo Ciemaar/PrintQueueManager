@@ -5,6 +5,7 @@ from datetime import datetime
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from unittest.mock import patch, MagicMock
 from src.app.main import app
 from src.app.database import Base, get_db
 from src.app.models import PrintJob, PrintStatus, ServiceConfig
@@ -277,10 +278,6 @@ def test_test_settings_exception_handling():
         assert b"Timeout Error" in response.content
 
 
-from fastapi.testclient import TestClient
-from src.app.main import app
-from unittest.mock import patch, MagicMock
-
 def test_browse_directories_success():
     """Test the /settings/browse endpoint returns directories correctly."""
     client = TestClient(app)
@@ -368,10 +365,7 @@ def test_test_settings_db_credential_fallback():
     """Verify test_settings falls back to the database credential if none is provided."""
     db = TestingSessionLocal()
     existing = ServiceConfig(
-        service_name="minihoarder",
-        enabled=1,
-        target_url="old_url",
-        credential="db_secret_cookie"
+        service_name="minihoarder", enabled=1, target_url="old_url", credential="db_secret_cookie"
     )
     db.add(existing)
     db.commit()
@@ -461,6 +455,7 @@ def test_test_settings_success():
     )
     assert response.status_code == 200
 
+
 def test_test_settings_failure_no_url():
     """Verify testing requires a target url."""
     response = client.post(
@@ -469,10 +464,11 @@ def test_test_settings_failure_no_url():
             "service_name": "makerworld",
             "target_url": "",
             "credential": "test_session_cookie",
-        }
+        },
     )
     assert response.status_code == 200
     assert b"Target URL is required" in response.content
+
 
 def test_test_settings_thingiverse_api():
     """Verify testing Thingiverse hits the API path."""
@@ -482,6 +478,6 @@ def test_test_settings_thingiverse_api():
             "service_name": "thingiverse",
             "target_url": "http://my-target.com",
             "credential": "test_session_cookie",
-        }
+        },
     )
     assert response.status_code == 200

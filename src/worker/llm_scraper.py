@@ -112,7 +112,9 @@ def get_page_html(source: str, url: str, credential: str = "") -> str:
                 # If it times out, we catch it and grab the content anyway.
                 page.goto(url, wait_until="networkidle", timeout=15000)
             except PlaywrightTimeoutError:
-                logger.warning(f"Timeout waiting for networkidle on {url}. Proceeding with current DOM.")
+                logger.warning(
+                    f"Timeout waiting for networkidle on {url}. Proceeding with current DOM."
+                )
 
             content = str(page.content())
             browser.close()
