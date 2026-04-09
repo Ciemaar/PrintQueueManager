@@ -153,8 +153,6 @@ def test_reorder_job():
     db.close()
 
 
-
-
 def test_reorder_job_same_priority():
     """Verify that reordering a job between two jobs with the same priority works."""
     db = TestingSessionLocal()
