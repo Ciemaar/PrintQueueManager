@@ -388,7 +388,7 @@ def browse_directories(request: Request, path: str = "/") -> HTMLResponse:
     try:
         # parent directory link
         parent_path = os.path.dirname(target_path)
-        if target_path != "/":
+        if target_path != parent_path:
             dirs.append({"name": "..", "path": parent_path})
 
         with os.scandir(target_path) as it:

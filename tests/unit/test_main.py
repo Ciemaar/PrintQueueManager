@@ -310,7 +310,12 @@ def test_browse_directories_root():
     client = TestClient(app)
     with patch("os.scandir") as mock_scandir:
         mock_scandir.return_value.__enter__.return_value = []
-        response = client.get("/settings/browse?path=/")
+
+        import os
+
+        root_dir = os.path.abspath("/")
+
+        response = client.get(f"/settings/browse?path={root_dir}")
         assert response.status_code == 200
         assert ".." not in response.text
 
