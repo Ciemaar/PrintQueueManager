@@ -101,10 +101,10 @@ This section compares autonomous agentic coding tools to evaluate which one best
 ## Background Job Orchestration & Task Queues
 
 **Current:** `Celery`
-**Alternatives:** `RQ`, `Huey`, `Dramatiq`, `Temporal`
-**Decision:** **Migrate to `RQ` (Redis Queue) or `Dramatiq`.**
+**Alternatives:** `RQ`, `Huey`, `Dramatiq`, `Temporal`, `TaskIQ`
+**Decision:** **Migrate to `TaskIQ` or `RQ` (Redis Queue).**
 
-- _Reasoning:_ While Celery is the de facto standard for distributed task processing in Python, its feature richness brings significant complexity and operational overhead. PrintQueueManager is designed as a local-first application for deployment via Docker Compose on user hardware, prioritizing simplicity.
+- _Reasoning:_ While Celery is the de facto standard for distributed task processing in Python, its feature richness brings significant complexity and operational overhead. PrintQueueManager is designed as a local-first application for deployment via Docker Compose on user hardware, prioritizing simplicity and deep integration with FastAPI and async Python.
   - **Celery:**
     - _Supporting:_ Massive ecosystem, supports complex task routing (canvas, chords), highly resilient under scale, and supports cross-language tasks via AMQP.
     - _Opposing:_ Steep learning curve, verbose and error-prone configuration, suboptimal defaults (e.g., worker prefetching can cause lost jobs on crash without careful setup), and widely considered overkill for a single-node local application.
@@ -120,8 +120,11 @@ This section compares autonomous agentic coding tools to evaluate which one best
   - **Temporal:**
     - _Supporting:_ A highly advanced workflow engine that solves many of Celery's reliability issues (native transactional workflows, exponential retries by default, no lost jobs, strong versioning, and built-in async/await support).
     - _Opposing:_ Requires running the Temporal Server (a complex distributed system involving Go, Cassandra/PostgreSQL, and Elasticsearch/OpenSearch), which fundamentally violates the "Local Inference First" and lightweight Docker Compose goals of PrintQueueManager.
+  - **TaskIQ:**
+    - _Supporting:_ Built explicitly for modern async Python. It has native synergy with FastAPI, including out-of-the-box dependency injection and type hinting. It is essentially an "asyncio Celery implementation" that supports Redis and RabbitMQ natively.
+    - _Opposing:_ Relatively newer than Celery or RQ, meaning a smaller ecosystem and fewer StackOverflow answers. Does not support purely synchronous web applications well (not an issue for FastAPI).
 
-- _Action:_ Given that we already use Redis, **RQ** is the simplest drop-in replacement that drastically reduces cognitive and operational load while serving our basic async needs. Alternatively, **Dramatiq** is a strong modern choice if higher performance or better built-in reliability is needed. We propose a spike to migrate from Celery to RQ.
+- _Action:_ Given our reliance on FastAPI, async Python (for non-blocking local LLM HTTP requests), and Redis, **TaskIQ** is the ideal modern choice that matches our framework stack perfectly. Alternatively, **RQ** is the simplest drop-in replacement if a strictly synchronous API is preferred. We propose a spike to migrate from Celery to TaskIQ.
 
 ## Message Brokers
 
