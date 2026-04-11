@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 FROM python:3.14-slim
+=======
+FROM python:3.13-slim
+>>>>>>> 6894f48 (chore(merge): ensure alignment with main branch)
 
 WORKDIR /app
 
@@ -11,6 +15,7 @@ RUN apt-get update \
         libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
+<<<<<<< HEAD
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 # Copy the dependency files first to leverage Docker layer caching
@@ -37,3 +42,14 @@ USER appuser
 ENV PATH="/app/.venv/bin:$PATH"
 
 CMD ["uvicorn", "src.app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+=======
+COPY . /app/
+
+RUN pip install --upgrade uv
+RUN uv sync --no-dev
+
+RUN uv run playwright install chromium
+RUN uv run playwright install-deps chromium
+
+CMD ["uv", "run", "uvicorn", "src.app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+>>>>>>> 6894f48 (chore(merge): ensure alignment with main branch)

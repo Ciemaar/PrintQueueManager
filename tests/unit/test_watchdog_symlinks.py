@@ -19,14 +19,14 @@ def test_on_created_symlink_valid(caplog, tmp_path):
     symlink_file.symlink_to(target_file)
 
     try:
-        with caplog.at_level(logging.DEBUG):
-            handler = PrintQueueEventHandler()
-            mock_event = MagicMock()
-            mock_event.is_directory = False
-            mock_event.event_type = "created"
-            mock_event.src_path = str(symlink_file)
+        handler = PrintQueueEventHandler()
+        mock_event = MagicMock()
+        mock_event.is_directory = False
+        mock_event.event_type = "created"
+        mock_event.src_path = str(symlink_file)
 
-            with patch.object(handler, "_add_to_queue") as mock_add:
+        with patch.object(handler, "_add_to_queue") as mock_add:
+            with caplog.at_level(logging.DEBUG):
                 handler.on_created(mock_event)
 
                 assert "Detected valid 3D file: link.stl" in caplog.text
@@ -44,14 +44,14 @@ def test_on_created_symlink_broken(caplog, tmp_path):
     broken_symlink.symlink_to(tmp_path / "does_not_exist.stl")
 
     try:
-        with caplog.at_level(logging.DEBUG):
-            handler = PrintQueueEventHandler()
-            mock_event = MagicMock()
-            mock_event.is_directory = False
-            mock_event.event_type = "created"
-            mock_event.src_path = str(broken_symlink)
+        handler = PrintQueueEventHandler()
+        mock_event = MagicMock()
+        mock_event.is_directory = False
+        mock_event.event_type = "created"
+        mock_event.src_path = str(broken_symlink)
 
-            with patch.object(handler, "_add_to_queue") as mock_add:
+        with patch.object(handler, "_add_to_queue") as mock_add:
+            with caplog.at_level(logging.DEBUG):
                 handler.on_created(mock_event)
 
                 assert "Detected broken symlink: broken.stl" in caplog.text

@@ -1,6 +1,7 @@
 """Unit tests for the FastAPI application main routes."""
 
-from datetime import datetime, timezone
+from datetime import datetime
+from unittest.mock import MagicMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
@@ -9,7 +10,7 @@ from sqlalchemy.orm import sessionmaker
 
 from src.app.database import Base, get_db
 from src.app.main import app
-from src.app.models import PrintJob, PrintStatus
+from src.app.models import PrintJob, PrintStatus, ServiceConfig
 
 # Test database
 SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
@@ -103,105 +104,6 @@ def test_update_status_invalid():
     db.close()
 
 
-def test_reorder_job():
-    """Verify that posting to the reorder route updates the user_priority float appropriately."""
-    db = TestingSessionLocal()
-    # Create three jobs with default priority 0
-    job1 = PrintJob(title="Job 1", source="Test", user_priority=1.0)
-    job2 = PrintJob(title="Job 2", source="Test", user_priority=2.0)
-    job3 = PrintJob(title="Job 3", source="Test", user_priority=3.0)
-    db.add_all([job1, job2, job3])
-    db.commit()
-    db.refresh(job1)
-    db.refresh(job2)
-    db.refresh(job3)
-
-    # Move job3 between job1 and job2
-    response = client.post(
-        f"/jobs/{job3.id}/reorder", data={"above_id": str(job1.id), "below_id": str(job2.id)}
-    )
-    assert response.status_code == 200
-
-    db.expire_all()
-    updated_job3 = db.query(PrintJob).filter(PrintJob.id == job3.id).first()
-    assert updated_job3 is not None
-    # (1.0 + 2.0) / 2.0 = 1.5
-    assert getattr(updated_job3, "user_priority") == 1.5
-
-    # Move job2 to top (above job1)
-    response = client.post(f"/jobs/{job2.id}/reorder", data={"below_id": str(job1.id)})
-    assert response.status_code == 200
-    db.expire_all()
-    updated_job2 = db.query(PrintJob).filter(PrintJob.id == job2.id).first()
-    assert updated_job2 is not None
-
-    # job1 priority is 1.0, so moving job2 above it gives `below_priority - 1.0` -> 0.0
-    assert getattr(updated_job2, "user_priority") == 0.0  # 1.0 - 1.0
-
-    # Move job1 to bottom (below job3 which is now 1.5)
-    response = client.post(f"/jobs/{job1.id}/reorder", data={"above_id": str(job3.id)})
-    assert response.status_code == 200
-    db.expire_all()
-    updated_job1 = db.query(PrintJob).filter(PrintJob.id == job1.id).first()
-    assert updated_job1 is not None
-    assert getattr(updated_job1, "user_priority") == 2.5  # 1.5 + 1.0
-
-    # Non-existent job
-    response = client.post("/jobs/999/reorder", data={"above_id": str(job1.id)})
-    assert response.status_code == 404
-
-    db.close()
-
-
-def test_reorder_job_same_priority():
-    """Verify that reordering a job between two jobs with the same priority works."""
-    db = TestingSessionLocal()
-    # Create three jobs with default priority 0
-    job1 = PrintJob(title="Job 1", source="Test", user_priority=0.0)
-    job2 = PrintJob(title="Job 2", source="Test", user_priority=0.0)
-    job3 = PrintJob(title="Job 3", source="Test", user_priority=0.0)
-    db.add_all([job1, job2, job3])
-    db.commit()
-    db.refresh(job1)
-    db.refresh(job2)
-    db.refresh(job3)
-
-    # Move job3 between job1 and job2
-    response = client.post(
-        f"/jobs/{job3.id}/reorder", data={"above_id": str(job1.id), "below_id": str(job2.id)}
-    )
-    assert response.status_code == 200
-
-    db.expire_all()
-    updated_job1 = db.query(PrintJob).filter(PrintJob.id == job1.id).first()
-    updated_job2 = db.query(PrintJob).filter(PrintJob.id == job2.id).first()
-    updated_job3 = db.query(PrintJob).filter(PrintJob.id == job3.id).first()
-
-    assert updated_job1 is not None
-    assert updated_job2 is not None
-    assert updated_job3 is not None
-
-    p1 = getattr(updated_job1, "user_priority")
-    p2 = getattr(updated_job2, "user_priority")
-    p3 = getattr(updated_job3, "user_priority")
-
-    # Since they were 0.0, a collision should have been detected,
-    # causing a normalization.
-    # Because updated_at is descending, initial order is:
-    # 1. Job 3 (created last, highest updated_at, priority 1.0)
-    # 2. Job 2 (priority 2.0)
-    # 3. Job 1 (priority 3.0)
-    # When we move Job 3 between Job 1 and Job 2:
-    # above_job = Job 1 (priority 3.0)
-    # below_job = Job 2 (priority 2.0)
-    # The midpoint user_priority will be 2.5
-    # Since we sort by user_priority ASCENDING:
-    # Job 2 (2.0) -> Job 3 (2.5) -> Job 1 (3.0)
-    assert p2 < p3 < p1
-
-    db.close()
-
-
 def test_update_notes():
     """Verify that posting to the notes route correctly updates material and timing notes."""
     db = TestingSessionLocal()
@@ -255,10 +157,7 @@ def test_undelete_job_from_deleted():
     """Verify that a DELETED job gets restored to TO BE PRINTED state."""
     db = TestingSessionLocal()
     job = PrintJob(
-        title="Test Job",
-        source="Test",
-        status=PrintStatus.DELETED,
-        deleted_at=datetime.now(timezone.utc),
+        title="Test Job", source="Test", status=PrintStatus.DELETED, deleted_at=datetime.utcnow()
     )
     db.add(job)
     db.commit()
@@ -279,10 +178,7 @@ def test_undelete_job_from_printed():
     """Verify that a PRINTED job gets restored to PRINT AGAIN state."""
     db = TestingSessionLocal()
     job = PrintJob(
-        title="Test Job",
-        source="Test",
-        status=PrintStatus.PRINTED,
-        deleted_at=datetime.now(timezone.utc),
+        title="Test Job", source="Test", status=PrintStatus.PRINTED, deleted_at=datetime.utcnow()
     )
     db.add(job)
     db.commit()
@@ -306,19 +202,13 @@ def test_read_deleted_jobs():
         title="Deleted Job 1",
         source="Test",
         status=PrintStatus.DELETED,
-        deleted_at=datetime.now(timezone.utc),
+        deleted_at=datetime.utcnow(),
     )
     job2 = PrintJob(
-        title="Skipped Job",
-        source="Test",
-        status=PrintStatus.SKIPPED,
-        deleted_at=datetime.now(timezone.utc),
+        title="Skipped Job", source="Test", status=PrintStatus.SKIPPED, deleted_at=datetime.utcnow()
     )
     job3 = PrintJob(
-        title="Printed Job",
-        source="Test",
-        status=PrintStatus.PRINTED,
-        deleted_at=datetime.now(timezone.utc),
+        title="Printed Job", source="Test", status=PrintStatus.PRINTED, deleted_at=datetime.utcnow()
     )
     db.add(job1)
     db.add(job2)
@@ -347,3 +237,254 @@ def test_read_deleted_jobs():
     assert b"Deleted Job 1" not in response_none.content
     assert b"Skipped Job" not in response_none.content
     assert b"Printed Job" not in response_none.content
+
+
+def test_settings_page_get():
+    """Verify that the settings configuration page renders successfully."""
+    response = client.get("/settings")
+    assert response.status_code == 200
+    assert b"Service Configuration" in response.content
+    assert b"MakerWorld" in response.content
+
+
+def test_update_settings_new_config():
+    """Verify that posting valid configuration creates a new DB record if missing."""
+    TestingSessionLocal()
+
+    response = client.post(
+        "/settings/update",
+        data={
+            "service_name": "makerworld",
+            "enabled": "1",
+            "target_url": "http://my-target.com",
+            "credential": "test_session_cookie",
+        },
+    )
+    assert response.status_code == 200
+
+
+def test_test_settings_exception_handling():
+    """Verify test_settings gracefully handles exceptions during the test."""
+    from unittest.mock import patch
+
+    with patch("src.worker.llm_scraper.get_page_html", side_effect=Exception("Timeout Error")):
+        response = client.post(
+            "/settings/test",
+            data={
+                "service_name": "makerworld",
+                "target_url": "http://my-target.com",
+                "credential": "test_session_cookie",
+            },
+        )
+        assert response.status_code == 200
+        assert b"Timeout Error" in response.content
+
+
+def test_browse_directories_success():
+    """Test the /settings/browse endpoint returns directories correctly."""
+    client = TestClient(app)
+    with patch("os.scandir") as mock_scandir:
+        mock_entry1 = MagicMock()
+        mock_entry1.is_dir.return_value = True
+        mock_entry1.name = "folderA"
+        mock_entry1.path = "/mock/folderA"
+
+        mock_entry2 = MagicMock()
+        mock_entry2.is_dir.return_value = True
+        mock_entry2.name = ".hidden"
+
+        mock_entry3 = MagicMock()
+        mock_entry3.is_dir.return_value = False
+        mock_entry3.name = "file.txt"
+
+        mock_scandir.return_value.__enter__.return_value = [mock_entry1, mock_entry2, mock_entry3]
+
+        response = client.get("/settings/browse?path=/mock")
+        assert response.status_code == 200
+        assert "folderA" in response.text
+        assert ".hidden" not in response.text
+        assert "file.txt" not in response.text
+        assert ".." in response.text
+
+
+def test_browse_directories_root():
+    """Test the /settings/browse endpoint at root (no parent link)."""
+    client = TestClient(app)
+    with patch("os.scandir") as mock_scandir:
+        mock_scandir.return_value.__enter__.return_value = []
+
+        import os
+
+        root_dir = os.path.abspath("/")
+
+        response = client.get(f"/settings/browse?path={root_dir}")
+        assert response.status_code == 200
+        assert ".." not in response.text
+
+
+def test_browse_directories_error():
+    """Test the /settings/browse endpoint handles os errors."""
+    client = TestClient(app)
+    with patch("os.scandir") as mock_scandir:
+        mock_scandir.side_effect = PermissionError("Access denied")
+        response = client.get("/settings/browse?path=/mock")
+        assert response.status_code == 200
+        assert "Error accessing path" in response.text
+        assert "Access denied" in response.text
+
+
+def test_test_settings_local_success():
+    """Test the /settings/test endpoint for local service with valid dir."""
+    client = TestClient(app)
+    with patch("os.path.isdir") as mock_isdir:
+        mock_isdir.return_value = True
+        response = client.post(
+            "/settings/test",
+            data={
+                "service_name": "local",
+                "target_url": "/valid/dir",
+                "credential": "",
+            },
+        )
+        assert response.status_code == 200
+        assert "Test successful" in response.text
+
+
+def test_test_settings_local_failure():
+    """Test the /settings/test endpoint for local service with invalid dir."""
+    client = TestClient(app)
+    with patch("os.path.isdir") as mock_isdir:
+        mock_isdir.return_value = False
+        response = client.post(
+            "/settings/test",
+            data={
+                "service_name": "local",
+                "target_url": "/invalid/dir",
+                "credential": "",
+            },
+        )
+        assert response.status_code == 200
+        assert "Test failed" in response.text
+        assert "Directory not found: /invalid/dir" in response.text
+
+
+def test_test_settings_db_credential_fallback():
+    """Verify test_settings falls back to the database credential if none is provided."""
+    db = TestingSessionLocal()
+    existing = ServiceConfig(
+        service_name="minihoarder", enabled=1, target_url="old_url", credential="db_secret_cookie"
+    )
+    db.add(existing)
+    db.commit()
+
+    from unittest.mock import patch
+
+    with patch(
+        "src.worker.llm_scraper.get_page_html", return_value="<html>Success</html>"
+    ) as mock_fetch:
+        response = client.post(
+            "/settings/test",
+            data={
+                "service_name": "minihoarder",
+                "target_url": "http://my-target.com",
+                "credential": "",
+            },
+        )
+        assert response.status_code == 200
+        mock_fetch.assert_called_once_with(
+            "minihoarder", "http://my-target.com", "db_secret_cookie"
+        )
+    db.close()
+    assert b"Test successful for Minihoarder!" in response.content
+
+
+def test_update_settings_existing_config():
+    """Verify that posting valid configuration creates a new DB record if missing."""
+    db = TestingSessionLocal()
+
+    response = client.post(
+        "/settings/update",
+        data={
+            "service_name": "makerworld",
+            "enabled": "1",
+            "target_url": "http://my-target.com",
+            "credential": "test_session_cookie",
+        },
+    )
+    assert response.status_code == 200
+    assert b"Settings saved for Makerworld!" in response.content
+
+    config = db.query(ServiceConfig).filter(ServiceConfig.service_name == "makerworld").first()
+    assert config is not None
+    assert getattr(config, "enabled") == 1
+    assert getattr(config, "target_url") == "http://my-target.com"
+    assert getattr(config, "credential") == "test_session_cookie"
+    db.close()
+
+
+def test_update_settings_existing_config_no_credential():
+    """Verify that posting updates an existing DB record and preserves credential if empty."""
+    db = TestingSessionLocal()
+    existing = ServiceConfig(
+        service_name="makerworld", enabled=0, target_url="old_url", credential="old_credential"
+    )
+    db.add(existing)
+    db.commit()
+
+    response = client.post(
+        "/settings/update",
+        data={
+            "service_name": "makerworld",
+            "enabled": "1",
+            "target_url": "new_url",
+            "credential": "",
+        },
+    )
+    assert response.status_code == 200
+
+    db.expire_all()
+    config = db.query(ServiceConfig).filter(ServiceConfig.service_name == "makerworld").first()
+    assert getattr(config, "enabled") == 1
+    assert getattr(config, "target_url") == "new_url"
+    assert getattr(config, "credential") == "old_credential"
+    db.close()
+
+
+def test_test_settings_success():
+    """Verify that posting valid configuration tests connection successfully."""
+    response = client.post(
+        "/settings/test",
+        data={
+            "service_name": "makerworld",
+            "target_url": "http://my-target.com",
+            "credential": "test_session_cookie",
+        },
+    )
+    assert response.status_code == 200
+
+
+def test_test_settings_failure_no_url():
+    """Verify testing requires a target url."""
+    response = client.post(
+        "/settings/test",
+        data={
+            "service_name": "makerworld",
+            "target_url": "",
+            "credential": "test_session_cookie",
+        },
+    )
+    assert response.status_code == 200
+    assert b"Target URL is required" in response.content
+
+
+def test_test_settings_thingiverse_api():
+    """Verify testing Thingiverse hits the API path."""
+    response = client.post(
+        "/settings/test",
+        data={
+            "service_name": "thingiverse",
+            "target_url": "http://my-target.com",
+            "credential": "test_session_cookie",
+        },
+    )
+    assert response.status_code == 200

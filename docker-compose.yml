@@ -31,7 +31,11 @@ services:
 
   web:
     build: .
+<<<<<<< HEAD
     command: uvicorn src.app.main:app --host 0.0.0.0 --port 8000 --reload
+=======
+    command: uv run uvicorn src.app.main:app --host 0.0.0.0 --port 8000 --reload
+>>>>>>> 6894f48 (chore(merge): ensure alignment with main branch)
     volumes:
       - ./src:/app/src
     ports:
@@ -48,7 +52,11 @@ services:
 
   worker:
     build: .
+<<<<<<< HEAD
     command: watchfiles --filter default 'celery -A src.worker.celery_app worker --loglevel=info' ./src
+=======
+    command: uv run celery -A src.worker.celery_app worker --loglevel=info
+>>>>>>> 6894f48 (chore(merge): ensure alignment with main branch)
     volumes:
       - ./src:/app/src
       - ./watched_folder:/watched_folder
@@ -65,7 +73,11 @@ services:
 
   beat:
     build: .
+<<<<<<< HEAD
     command: watchfiles --filter default 'celery -A src.worker.celery_app beat --loglevel=info' ./src
+=======
+    command: uv run celery -A src.worker.celery_app beat --loglevel=info
+>>>>>>> 6894f48 (chore(merge): ensure alignment with main branch)
     volumes:
       - ./src:/app/src
     environment:
@@ -80,7 +92,11 @@ services:
 
   watchdog:
     build: .
+<<<<<<< HEAD
     command: watchfiles --filter default 'python -m src.watchdog.main' ./src
+=======
+    command: uv run python -m src.watchdog.main
+>>>>>>> 6894f48 (chore(merge): ensure alignment with main branch)
     volumes:
       - ./src:/app/src
       - ./watched_folder:/watched_folder
