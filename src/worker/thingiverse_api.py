@@ -5,8 +5,8 @@ from typing import Any, List
 
 import httpx
 
+from src.app import database
 from src.app.config import settings
-from src.app.database import engine, transactional_session
 from src.app.models import Base, PrintJob
 
 from .llm_scraper import ExtractedModelInfo
@@ -37,10 +37,10 @@ def fetch_thingiverse_collections() -> List[dict[str, Any]]:
         data = response.json()
 
         # Initialize DB
-        Base.metadata.create_all(bind=engine)
+        Base.metadata.create_all(bind=database.engine)
 
         try:
-            with transactional_session() as db:
+            with database.transactional_session() as db:
                 for item in data:
                     model_url = str(
                         item.get("url", f"https://www.thingiverse.com/thing:{item.get('id')}")

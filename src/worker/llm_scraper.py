@@ -8,8 +8,8 @@ from playwright.sync_api import sync_playwright
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent
 
+from src.app import database
 from src.app.config import settings
-from src.app.database import engine, transactional_session
 from src.app.models import Base, PrintJob
 
 logger = logging.getLogger(__name__)
@@ -116,7 +116,7 @@ def get_page_html(source: str, url: str) -> str:
 
 def run_scraper(source: str, url: str) -> List[dict[str, Any]]:
     """Run the LLM agent against a URL and store the results in the database."""
-    Base.metadata.create_all(bind=engine)
+    Base.metadata.create_all(bind=database.engine)
 
     logger.info(f"Fetching live HTML for {source} at {url}...")
     html_content = get_page_html(source, url)
@@ -148,7 +148,7 @@ def run_scraper(source: str, url: str) -> List[dict[str, Any]]:
 
     saved_items: List[dict[str, Any]] = []
     try:
-        with transactional_session() as db:
+        with database.transactional_session() as db:
             for model in data:
                 existing = db.query(PrintJob).filter(PrintJob.source_url == model.url).first()
                 if not existing:
