@@ -19,6 +19,14 @@ with patch("src.app.database.engine", engine):
 
 
 @pytest.fixture(autouse=True)
+def mock_db_logic():
+    """Ensure database globals are mocked to use the SQLite test database for all tests."""
+    with patch("src.app.database.SessionLocal", TestingSessionLocal), \
+         patch("src.app.database.engine", engine):
+        yield
+
+
+@pytest.fixture(autouse=True)
 def setup_db():
     """Set up and tear down the test database schema before/after each test execution."""
     Base.metadata.create_all(bind=engine)
