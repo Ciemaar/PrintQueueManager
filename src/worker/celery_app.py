@@ -8,7 +8,7 @@ from typing import Any, List
 from celery import Celery
 
 from src.app.config import settings
-from src.app.database import transactional_session
+from src.app.database import SessionLocal, transactional_session  # noqa: F401
 from src.app.logging_config import setup_logging
 from src.app.models import PrintJob
 
