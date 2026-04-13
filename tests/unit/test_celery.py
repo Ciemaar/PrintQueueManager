@@ -171,3 +171,48 @@ def test_sync_local(mock_session, mock_settings, tmp_path):
     assert mock_db.add.call_count == 4
     mock_db.commit.assert_called_once()
     mock_db.close.assert_called_once()
+
+
+@patch("src.worker.celery_app.settings")
+@patch("src.worker.celery_app.SessionLocal")
+def test_sync_local_db_query_error(mock_session, mock_settings, tmp_path):
+    """Verify that a database error during the query phase triggers a rollback."""
+    mock_settings.watch_directory = str(tmp_path)
+    mock_db = MagicMock()
+    mock_session.return_value = mock_db
+
+    # Simulate an error when querying for known paths
+    mock_db.query.side_effect = Exception("Database query failed")
+
+    result = sync_local()
+
+    assert result == []
+    mock_db.rollback.assert_called_once()
+    mock_db.close.assert_called_once()
+
+
+@patch("src.worker.celery_app.settings")
+@patch("src.worker.celery_app.SessionLocal")
+def test_sync_local_db_commit_error(mock_session, mock_settings, tmp_path):
+    """Verify that a database error during the commit phase triggers a rollback."""
+    mock_settings.watch_directory = str(tmp_path)
+    mock_db = MagicMock()
+    mock_session.return_value = mock_db
+
+    # Create a physical file to ensure we attempt a commit
+    new_file = tmp_path / "new.stl"
+    new_file.write_text("dummy content")
+
+    # Mock the query to return empty (no known paths)
+    mock_db.query.return_value.filter.return_value.__iter__.return_value = []
+
+    # Simulate an error during commit
+    mock_db.commit.side_effect = Exception("Database commit failed")
+
+    result = sync_local()
+
+    # Even if commit fails, the function returns the list of files it *tried* to add
+    # before the exception was raised.
+    assert len(result) == 1
+    mock_db.rollback.assert_called_once()
+    mock_db.close.assert_called_once()
