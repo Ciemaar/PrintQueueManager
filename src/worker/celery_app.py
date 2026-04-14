@@ -265,8 +265,11 @@ def generate_local_thumbnails() -> int:
             if success:
                 # Update the job with the new URL
                 job.thumbnail_url = get_thumbnail_path(file_path)  # type: ignore
-                db.commit()
                 generated_count += 1
+            else:
+                # If rendering fails (e.g. corrupted file), mark it so we don't retry forever
+                job.thumbnail_url = "error"  # type: ignore
+            db.commit()
 
         if generated_count > 0:
             logger.info(f"Generated {generated_count} new thumbnails.")
