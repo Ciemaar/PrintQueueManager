@@ -6,10 +6,6 @@
     <title>Local 3D Print Queue Manager</title>
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
-<<<<<<< HEAD
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
-=======
->>>>>>> 6894f48 (chore(merge): ensure alignment with main branch)
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
     <style>
         .status-PRINTED { text-decoration: line-through; opacity: 0.7; }
@@ -71,67 +67,12 @@
             opacity: 0.4;
             background-color: var(--pico-secondary-background);
         }
-<<<<<<< HEAD
-
-        .drag-handle {
-            cursor: grab;
-            color: var(--pico-h1-color);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 2.5rem;
-            transition: color 0.2s ease, transform 0.2s ease;
-        }
-
-        .drag-handle:hover {
-            color: var(--pico-primary);
-            transform: scale(1.1);
-        }
-
-        .drag-handle:active {
-            cursor: grabbing;
-            transform: scale(0.95);
-        }
-
-        .sortable-ghost {
-            opacity: 0.4;
-            background-color: var(--pico-secondary-background);
-        }
-=======
->>>>>>> 6894f48 (chore(merge): ensure alignment with main branch)
     </style>
 </head>
 <body>
     <main class="container">
         <header>
-<<<<<<< HEAD
-            <nav>
-                <ul>
-                    <li>
-                        <hgroup>
-                            <h1>Local 3D Print Queue Manager</h1>
-                            <p>Aggregating models from Local, MakerWorld, Printables, and more.</p>
-                        </hgroup>
-                    </li>
-                </ul>
-                <ul>
-                    <li><a href="/" class="secondary">Main View</a></li>
-                    <li><a href="/deleted" class="secondary">Deleted Jobs</a></li>
-                </ul>
-            </nav>
-
-            <section aria-label="Manual Sync Triggers" style="margin-top: 1.5rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                <button class="outline secondary" hx-post="/sync/local" hx-swap="innerHTML" hx-target="#sync-feedback">Sync Local</button>
-                <button class="outline secondary" hx-post="/sync/makerworld" hx-swap="innerHTML" hx-target="#sync-feedback">Sync MakerWorld</button>
-                <button class="outline secondary" hx-post="/sync/printables" hx-swap="innerHTML" hx-target="#sync-feedback">Sync Printables</button>
-                <button class="outline secondary" hx-post="/sync/thingiverse" hx-swap="innerHTML" hx-target="#sync-feedback">Sync Thingiverse</button>
-                <button class="outline secondary" hx-post="/sync/cults3d" hx-swap="innerHTML" hx-target="#sync-feedback">Sync Cults3D</button>
-                <button class="outline secondary" hx-post="/sync/minihoarder" hx-swap="innerHTML" hx-target="#sync-feedback">Sync Minihoarder</button>
-            </section>
-            <div id="sync-feedback" style="min-height: 2rem; margin-top: 0.5rem;"></div>
-=======
             {% include 'nav.html' with context %}
->>>>>>> 6894f48 (chore(merge): ensure alignment with main branch)
         </header>
 
         <article>
@@ -147,10 +88,6 @@
                 <table role="grid">
                     <thead>
                         <tr>
-<<<<<<< HEAD
-                            <th scope="col" style="width: 3rem;"></th>
-=======
->>>>>>> 6894f48 (chore(merge): ensure alignment with main branch)
                             <th scope="col" style="width: 3rem;"></th>
                             <th scope="col">Thumbnail</th>
                             <th scope="col">Title</th>
@@ -167,45 +104,6 @@
             </figure>
         </article>
     </main>
-<<<<<<< HEAD
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            var el = document.getElementById('job-list');
-            var sortable = Sortable.create(el, {
-                handle: '.drag-handle',
-                animation: 150,
-                onEnd: function (evt) {
-                    const itemEl = evt.item;
-                    const jobId = itemEl.getAttribute('data-job-id');
-
-                    const prevEl = itemEl.previousElementSibling;
-                    const nextEl = itemEl.nextElementSibling;
-
-                    const aboveId = prevEl ? prevEl.getAttribute('data-job-id') : '';
-                    const belowId = nextEl ? nextEl.getAttribute('data-job-id') : '';
-
-                    // Use fetch to post the new order
-                    const formData = new FormData();
-                    if (aboveId) formData.append('above_id', aboveId);
-                    if (belowId) formData.append('below_id', belowId);
-
-                    fetch(`/jobs/${jobId}/reorder`, {
-                        method: 'POST',
-                        body: formData
-                    }).then(response => {
-                        if (!response.ok) {
-                            console.error('Failed to update job order');
-                        }
-                    }).catch(err => {
-                        console.error('Error updating job order', err);
-                    });
-                }
-            });
-        });
-    </script>
-=======
->>>>>>> 6894f48 (chore(merge): ensure alignment with main branch)
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
@@ -243,5 +141,4 @@
         });
     </script>
 </body>
-
 </html>

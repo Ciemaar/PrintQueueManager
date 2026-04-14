@@ -53,6 +53,7 @@ class PrintJob(Base):
     )
     deleted_at = Column(DateTime, nullable=True)
 
+
 class ServiceConfig(Base):
     """Represents the configuration for an external model source."""
 
