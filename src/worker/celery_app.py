@@ -7,8 +7,8 @@ from typing import Any, List
 
 from celery import Celery
 
-from src.app import database
 from src.app.config import settings
+from src.app.database import SessionLocal, transactional_session  # noqa: F401
 from src.app.logging_config import setup_logging
 from src.app.models import PrintJob
 
@@ -145,7 +145,7 @@ def sync_local() -> List[dict[str, Any]]:
 
     added_files = []
     try:
-        with database.transactional_session() as db:
+        with transactional_session() as db:
             logger.debug(f"Scanning directory: {watch_path} recursively")
 
             # Get a set of all currently known local file paths to avoid N queries
