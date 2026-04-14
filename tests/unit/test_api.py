@@ -4,36 +4,18 @@ from unittest.mock import MagicMock, patch
 
 import httpx
 import pytest
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 
-# Mock the database before importing the API code
-SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
-engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-with patch("src.app.database.engine", engine):
-    with patch("src.app.database.SessionLocal", TestingSessionLocal):
-        from src.app.models import Base
-        from src.worker.thingiverse_api import fetch_thingiverse_collections
-
-
-@pytest.fixture(autouse=True)
-def mock_db_logic():
-    """Ensure database globals are mocked to use the SQLite test database for all tests."""
-    with (
-        patch("src.app.database.SessionLocal", TestingSessionLocal),
-        patch("src.app.database.engine", engine),
-    ):
-        yield
+from src.app import database
+from src.app.models import Base
+from src.worker.thingiverse_api import fetch_thingiverse_collections
 
 
 @pytest.fixture(autouse=True)
 def setup_db():
     """Set up and tear down the test database schema before/after each test execution."""
-    Base.metadata.create_all(bind=engine)
+    Base.metadata.create_all(bind=database.engine)
     yield
-    Base.metadata.drop_all(bind=engine)
+    Base.metadata.drop_all(bind=database.engine)
 
 
 @patch("src.worker.thingiverse_api.settings")
@@ -130,7 +112,7 @@ def test_fetch_thingiverse_db_error(mock_settings, mock_get):
     mock_response.json.return_value = [{"id": 123, "name": "API Vase"}]
     mock_get.return_value = mock_response
 
-    with patch("src.worker.thingiverse_api.transactional_session") as mock_transactional_session:
+    with patch("src.app.database.transactional_session") as mock_transactional_session:
         mock_db = MagicMock()
         mock_transactional_session.return_value.__enter__.return_value = mock_db
         mock_db.query.side_effect = Exception("DB Error")

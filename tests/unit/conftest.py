@@ -1,7 +1,9 @@
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+
 from src.app import database
+
 
 @pytest.fixture(scope="session", autouse=True)
 def force_sqlite_db():
@@ -15,6 +17,7 @@ def force_sqlite_db():
 
     # Ensure tables are created
     from src.app.models import Base
+
     Base.metadata.create_all(bind=engine)
 
     yield engine

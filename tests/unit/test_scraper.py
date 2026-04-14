@@ -3,36 +3,18 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 
-# Mock the database before importing
-SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
-engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-with patch("src.app.database.engine", engine):
-    with patch("src.app.database.SessionLocal", TestingSessionLocal):
-        from src.app.models import Base
-        from src.worker.llm_scraper import ExtractedModelInfo, get_page_html, run_scraper
-
-
-@pytest.fixture(autouse=True)
-def mock_db_logic():
-    """Ensure database globals are mocked to use the SQLite test database for all tests."""
-    with (
-        patch("src.app.database.SessionLocal", TestingSessionLocal),
-        patch("src.app.database.engine", engine),
-    ):
-        yield
+from src.app import database
+from src.app.models import Base
+from src.worker.llm_scraper import ExtractedModelInfo, get_page_html, run_scraper
 
 
 @pytest.fixture(autouse=True)
 def setup_db():
     """Set up and tear down the test database schema before/after each test."""
-    Base.metadata.create_all(bind=engine)
+    Base.metadata.create_all(bind=database.engine)
     yield
-    Base.metadata.drop_all(bind=engine)
+    Base.metadata.drop_all(bind=database.engine)
 
 
 @patch("src.worker.llm_scraper.settings")
@@ -138,7 +120,7 @@ def test_run_scraper_db_error(mock_get_html, mock_run_sync):
         ExtractedModelInfo(title="LLM Vase", url="http://url.com", thumbnail=None, author=None)
     ]
 
-    with patch("src.worker.llm_scraper.transactional_session") as mock_transactional_session:
+    with patch("src.app.database.transactional_session") as mock_transactional_session:
         mock_db = MagicMock()
         mock_transactional_session.return_value.__enter__.return_value = mock_db
         # Simulate failure within the transactional block.
