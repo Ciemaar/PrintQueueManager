@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any, List
 
 from celery import Celery
+from sqlalchemy.exc import SQLAlchemyError
 from celery.schedules import crontab
 
 from src.app.config import settings
@@ -272,8 +273,8 @@ def generate_local_thumbnails() -> int:
         else:
             logger.info("No new thumbnails needed.")
 
-    except Exception as e:
-        logger.error(f"Error generating thumbnails: {e}")
+    except SQLAlchemyError as e:
+        logger.exception(f"Error generating thumbnails: {e}")
         db.rollback()
     finally:
         db.close()

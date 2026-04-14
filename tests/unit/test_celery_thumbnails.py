@@ -38,9 +38,10 @@ def test_generate_local_thumbnails_success(mock_generate, mock_path, mock_sessio
 @patch("src.worker.celery_app.SessionLocal")
 def test_generate_local_thumbnails_exception(mock_session):
     """Test exception handling during thumbnail generation loop."""
+    from sqlalchemy.exc import SQLAlchemyError
     mock_db = MagicMock()
     mock_session.return_value = mock_db
-    mock_db.query.side_effect = Exception("DB Error")
+    mock_db.query.side_effect = SQLAlchemyError("DB Error")
 
     count = generate_local_thumbnails()
 
