@@ -1,4 +1,9 @@
-name: Python Tests and Coverage
+import sys
+
+with open(".github/workflows/test.yml", "r") as f:
+    content = f.read()
+
+new_content = """name: Python Tests and Coverage
 
 on:
   push:
@@ -54,3 +59,7 @@ jobs:
       with:
         file: ./coverage.xml
         fail_ci_if_error: false
+"""
+
+with open(".github/workflows/test.yml", "w") as f:
+    f.write(new_content)

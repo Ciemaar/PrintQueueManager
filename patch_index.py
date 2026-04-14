@@ -1,0 +1,146 @@
+with open("src/app/templates/index.html", "w") as f:
+    f.write("""<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Local 3D Print Queue Manager</title>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <style>
+        .status-PRINTED { text-decoration: line-through; opacity: 0.7; }
+        .status-SKIPPED { opacity: 0.5; }
+
+        table img {
+            border-radius: 0.5rem;
+            object-fit: cover;
+            max-width: 80px;
+            max-height: 80px;
+        }
+
+        .no-img {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 80px;
+            height: 80px;
+            background-color: var(--pico-muted-border-color);
+            color: var(--pico-h1-color);
+            border-radius: 0.5rem;
+            font-size: 0.8rem;
+        }
+
+        .source-badge {
+            background-color: var(--pico-primary-background);
+            color: var(--pico-primary-inverse);
+            padding: 0.25rem 0.5rem;
+            border-radius: 1rem;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .actions-col {
+            min-width: 120px;
+        }
+
+        .drag-handle {
+            cursor: grab;
+            color: var(--pico-h1-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 2.5rem;
+            transition: color 0.2s ease, transform 0.2s ease;
+        }
+
+        .drag-handle:hover {
+            color: var(--pico-primary);
+            transform: scale(1.1);
+        }
+
+        .drag-handle:active {
+            cursor: grabbing;
+            transform: scale(0.95);
+        }
+
+        .sortable-ghost {
+            opacity: 0.4;
+            background-color: var(--pico-secondary-background);
+        }
+    </style>
+</head>
+<body>
+    <main class="container">
+        <header>
+            {% include 'nav.html' with context %}
+        </header>
+
+        <article>
+            <div style="margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                <label for="show-printed">
+                    <input type="checkbox" id="show-printed" name="show_printed" value="true"
+                           {% if show_printed %}checked{% endif %}
+                           hx-get="/" hx-target="#job-list" hx-swap="innerHTML" />
+                    Show PRINTED Jobs
+                </label>
+            </div>
+            <figure>
+                <table role="grid">
+                    <thead>
+                        <tr>
+                            <th scope="col" style="width: 3rem;"></th>
+                            <th scope="col">Thumbnail</th>
+                            <th scope="col">Title</th>
+                            <th scope="col">Source</th>
+                            <th scope="col">Status</th>
+                            <th scope="col">Notes</th>
+                            <th scope="col" class="actions-col">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="job-list">
+                        {% include 'job_list.html' %}
+                    </tbody>
+                </table>
+            </figure>
+        </article>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var el = document.getElementById('job-list');
+            var sortable = Sortable.create(el, {
+                handle: '.drag-handle',
+                animation: 150,
+                onEnd: function (evt) {
+                    const itemEl = evt.item;
+                    const jobId = itemEl.getAttribute('data-job-id');
+
+                    const prevEl = itemEl.previousElementSibling;
+                    const nextEl = itemEl.nextElementSibling;
+
+                    const aboveId = prevEl ? prevEl.getAttribute('data-job-id') : '';
+                    const belowId = nextEl ? nextEl.getAttribute('data-job-id') : '';
+
+                    // Use fetch to post the new order
+                    const formData = new FormData();
+                    if (aboveId) formData.append('above_id', aboveId);
+                    if (belowId) formData.append('below_id', belowId);
+
+                    fetch(`/jobs/${jobId}/reorder`, {
+                        method: 'POST',
+                        body: formData
+                    }).then(response => {
+                        if (!response.ok) {
+                            console.error('Failed to update job order');
+                        }
+                    }).catch(err => {
+                        console.error('Error updating job order', err);
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
+""")

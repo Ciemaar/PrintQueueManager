@@ -44,21 +44,21 @@ scraper_agent: Agent[Any, ScrapedPageData] = Agent(
 )
 
 
-def get_page_html(source: str, url: str) -> str:
+def get_page_html(source: str, url: str, credential: str = "") -> str:
     """Use Playwright to fetch dynamic HTML, injecting session cookies if available."""
     cookie_str = ""
     domain = ""
     if source == "makerworld":
-        cookie_str = settings.makerworld_cookie
+        cookie_str = credential or settings.makerworld_cookie
         domain = "makerworld.com"
     elif source == "printables":
-        cookie_str = settings.printables_cookie
+        cookie_str = credential or settings.printables_cookie
         domain = ".printables.com"
     elif source == "cults3d":
-        cookie_str = settings.cults3d_cookie
+        cookie_str = credential or settings.cults3d_cookie
         domain = "cults3d.com"
     elif source == "minihoarder":
-        cookie_str = settings.minihoarder_cookie
+        cookie_str = credential or settings.minihoarder_cookie
         domain = "www.minihoarder.com"
     else:
         cookie_str = ""
@@ -114,12 +114,12 @@ def get_page_html(source: str, url: str) -> str:
         return ""
 
 
-def run_scraper(source: str, url: str) -> List[dict[str, Any]]:
+def run_scraper(source: str, url: str, credential: str = "") -> List[dict[str, Any]]:
     """Run the LLM agent against a URL and store the results in the database."""
     Base.metadata.create_all(bind=engine)
 
     logger.info(f"Fetching live HTML for {source} at {url}...")
-    html_content = get_page_html(source, url)
+    html_content = get_page_html(source, url, credential)
 
     if not html_content:
         return []
