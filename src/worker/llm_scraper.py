@@ -7,6 +7,7 @@ from typing import Any, List, Optional
 from playwright.sync_api import sync_playwright
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent
+from sqlalchemy.orm import Session
 
 from src.app.config import settings
 from src.app.database import SessionLocal, engine
@@ -119,7 +120,9 @@ def _get_fallback_data(source: str) -> list[ExtractedModelInfo]:
     ]
 
 
-def _save_extracted_model(db: SessionLocal, source: str, model: ExtractedModelInfo) -> dict | None:
+def _save_extracted_model(
+    db: Session, source: str, model: ExtractedModelInfo
+) -> dict[str, Any] | None:
     """Save an extracted model if it doesn't already exist in the database."""
     if db.query(PrintJob).filter(PrintJob.source_url == model.url).first():
         return None

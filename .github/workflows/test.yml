@@ -17,7 +17,7 @@ jobs:
     steps:
     - uses: actions/checkout@v6
     - name: Install uv and set up Python
-      uses: astral-sh/setup-uv@v5
+      uses: astral-sh/setup-uv@v7
       with:
         python-version: "3.14"
         enable-cache: true
@@ -35,11 +35,11 @@ jobs:
     - name: Install Playwright system dependencies (Ubuntu)
       if: runner.os == 'Linux'
       run: |
-        playwright install --with-deps chromium
+        uv run playwright install --with-deps chromium
     - name: Install Playwright system dependencies (Windows/macOS)
       if: runner.os != 'Linux'
       run: |
-        playwright install chromium
+        uv run playwright install chromium
     - name: Check for outdated dependencies
       run: |
         uv pip list --outdated
