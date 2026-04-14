@@ -64,13 +64,19 @@ If you look at our `docker-compose.yml`, you will see three distinct services ma
 
 ### Triggering a Task Manually
 
-If you ever need to trigger a background task manually from inside your web application or a Python shell, you can call `.send()` on the task function:
+If you ever need to trigger a background task manually from inside your web application or a Python shell, you can call `.send()` on the task function. For example, here is how we trigger a task from a FastAPI web server endpoint when a user clicks "Sync Now":
 
 ```python
+from fastapi import APIRouter
 from src.worker.dramatiq_app import sync_makerworld
 
-# This drops the task into Redis and returns immediately!
-sync_makerworld.send()
+router = APIRouter()
+
+@router.post("/sync/makerworld")
+def trigger_sync():
+    # This drops the task into Redis and returns immediately!
+    sync_makerworld.send()
+    return {"message": "Synchronization started in the background!"}
 ```
 
 By offloading this logic, our FastAPI interface remains incredibly fast and responsive, regardless of how complex the web scraping agents become.
