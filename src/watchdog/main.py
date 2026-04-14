@@ -8,8 +8,8 @@ from typing import Any
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
+from src.app import database
 from src.app.config import settings
-from src.app.database import engine, transactional_session
 from src.app.logging_config import setup_logging
 from src.app.models import Base, PrintJob
 
@@ -54,7 +54,7 @@ class PrintQueueEventHandler(FileSystemEventHandler):
         file size in bytes in the flexible JSONB metadata column.
         """
         try:
-            with transactional_session() as db:
+            with database.transactional_session() as db:
                 # Check if file already exists
                 existing_job = db.query(PrintJob).filter(PrintJob.file_path == file_path).first()
                 if existing_job:
@@ -87,7 +87,7 @@ def main() -> None:
     while listening for OS filesystem events.
     """
     # Initialize DB tables
-    Base.metadata.create_all(bind=engine)
+    Base.metadata.create_all(bind=database.engine)
 
     path = settings.watch_directory
     if not os.path.exists(path):
