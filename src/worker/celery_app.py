@@ -129,6 +129,33 @@ def sync_minihoarder() -> List[dict[str, Any]]:
     return result
 
 
+def _scan_local_directory(watch_path: Path) -> List[dict[str, Any]]:
+    """Scan the directory for 3D files and return their metadata."""
+    logger.debug(f"Scanning directory: {watch_path} recursively")
+    discovered = []
+    for file_path in watch_path.rglob("*"):
+        if (file_path.is_file() or file_path.is_symlink()) and file_path.suffix.lower() in {
+            ".stl",
+            ".3mf",
+        }:
+            is_broken_symlink = file_path.is_symlink() and not file_path.exists()
+            file_size = 0 if is_broken_symlink else file_path.stat().st_size
+
+            metadata = {"size_bytes": file_size}
+            if is_broken_symlink:
+                metadata["is_broken_symlink"] = True
+
+            discovered.append(
+                {
+                    "title": file_path.name,
+                    "file_path": str(file_path),
+                    "metadata": metadata,
+                    "is_broken_symlink": is_broken_symlink,
+                }
+            )
+    return discovered
+
+
 @celery_app.task(name="sync_local")
 def sync_local() -> List[dict[str, Any]]:
     """
@@ -145,40 +172,29 @@ def sync_local() -> List[dict[str, Any]]:
     added_files = []
     db = SessionLocal()
     try:
-        logger.debug(f"Scanning directory: {watch_path} recursively")
-
         # Get a set of all currently known local file paths to avoid N queries
         known_paths = {
             job.file_path for job in db.query(PrintJob.file_path).filter(PrintJob.source == "Local")
         }
 
-        for file_path in watch_path.rglob("*"):
-            if (file_path.is_file() or file_path.is_symlink()) and file_path.suffix.lower() in {
-                ".stl",
-                ".3mf",
-            }:
-                if str(file_path) in known_paths:
-                    continue
+        discovered_files = _scan_local_directory(watch_path)
 
-                is_broken_symlink = file_path.is_symlink() and not file_path.exists()
+        for file_info in discovered_files:
+            file_path_str = file_info["file_path"]
+            if file_path_str in known_paths:
+                continue
 
-                status_log = "broken symlink" if is_broken_symlink else "new 3D file"
-                logger.debug(f"Discovered {status_log}: {file_path.name} at {file_path}")
+            status_log = "broken symlink" if file_info["is_broken_symlink"] else "new 3D file"
+            logger.debug(f"Discovered {status_log}: {file_info['title']} at {file_path_str}")
 
-                # If the symlink is broken, we cannot stat() it directly.
-                file_size = 0 if is_broken_symlink else file_path.stat().st_size
-                metadata = {"size_bytes": file_size}
-                if is_broken_symlink:
-                    metadata["is_broken_symlink"] = True
-
-                new_job = PrintJob(
-                    title=file_path.name,
-                    source="Local",
-                    file_path=str(file_path),
-                    metadata_json=metadata,
-                )
-                db.add(new_job)
-                added_files.append({"title": file_path.name, "file_path": str(file_path)})
+            new_job = PrintJob(
+                title=file_info["title"],
+                source="Local",
+                file_path=file_path_str,
+                metadata_json=file_info["metadata"],
+            )
+            db.add(new_job)
+            added_files.append({"title": file_info["title"], "file_path": file_path_str})
 
         if added_files:
             db.commit()
