@@ -41,13 +41,25 @@ def fetch_thingiverse_collections() -> List[dict[str, Any]]:
         db = SessionLocal()
 
         try:
+            # Map URLs to their corresponding items to handle batching
+            url_map = {}
             for item in data:
                 model_url = str(
                     item.get("url", f"https://www.thingiverse.com/thing:{item.get('id')}")
                 )
+                if model_url and model_url not in url_map:
+                    url_map[model_url] = item
 
-                existing = db.query(PrintJob).filter(PrintJob.source_url == model_url).first()
-                if not existing:
+            # Batch query for existing source_urls
+            existing_urls = {
+                url
+                for (url,) in db.query(PrintJob.source_url)
+                .filter(PrintJob.source_url.in_(list(url_map.keys())))
+                .all()
+            }
+
+            for model_url, item in url_map.items():
+                if model_url not in existing_urls:
                     new_job = PrintJob(
                         title=str(item.get("name", "Unknown Thingiverse Model")),
                         source="thingiverse",
@@ -57,6 +69,8 @@ def fetch_thingiverse_collections() -> List[dict[str, Any]]:
                         metadata_json={"extracted_via": "official_api", "raw_api_data": item},
                     )
                     db.add(new_job)
+                    # Add to existing_urls to prevent duplicates within the batch
+                    existing_urls.add(model_url)
 
                     extracted = ExtractedModelInfo(
                         title=str(new_job.title),
