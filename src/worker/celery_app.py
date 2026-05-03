@@ -6,6 +6,7 @@ from typing import Any, List
 
 from celery import Celery
 from celery.schedules import crontab
+from sqlalchemy.exc import SQLAlchemyError
 
 from src.app.config import settings
 from src.app.database import SessionLocal
@@ -14,6 +15,7 @@ from src.app.models import PrintJob, PrintStatus
 
 from .llm_scraper import run_scraper
 from .thingiverse_api import fetch_thingiverse_collections
+from .thumbnail_generator import generate_thumbnail, get_thumbnail_file_path, get_thumbnail_path
 
 setup_logging()
 logger = logging.getLogger(__name__)
@@ -46,6 +48,10 @@ def setup_periodic_tasks(sender: Any, **kwargs: Any) -> None:
     )
     sender.add_periodic_task(
         settings.minihoarder_sync_interval, sync_minihoarder.s(), name="sync_minihoarder_periodic"
+    )
+    # Run thumbnail generation periodically, e.g., every 5 minutes (300 seconds)
+    sender.add_periodic_task(
+        300, generate_local_thumbnails.s(), name="generate_local_thumbnails_periodic"
     )
     # Run the priority normalization task daily at midnight UTC
     sender.add_periodic_task(
@@ -223,3 +229,57 @@ def normalize_priorities() -> None:
         except Exception as e:
             logger.error(f"Failed to normalize priorities: {e}")
             db.rollback()
+
+
+@celery_app.task(name="generate_local_thumbnails")
+def generate_local_thumbnails() -> int:
+    """Generate thumbnails for local files that do not have one yet."""
+    logger.info("Checking for missing local thumbnails...")
+    db = SessionLocal()
+    generated_count = 0
+    try:
+        # Find all Local print jobs that don't have a thumbnail
+        jobs = (
+            db.query(PrintJob)
+            .filter(
+                PrintJob.source == "Local",
+                PrintJob.thumbnail_url.is_(None),  # type: ignore
+                PrintJob.file_path.isnot(None),  # type: ignore
+            )
+            .all()
+        )
+
+        for job in jobs:
+            file_path = str(job.file_path) if job.file_path is not None else None
+            if not file_path:
+                continue
+
+            path_obj = Path(file_path)
+            if not path_obj.exists() or not path_obj.is_file():
+                continue
+
+            expected_thumb_file = get_thumbnail_file_path(file_path)
+
+            # Generate the thumbnail
+            success = generate_thumbnail(file_path, expected_thumb_file)
+            if success:
+                # Update the job with the new URL
+                job.thumbnail_url = get_thumbnail_path(file_path)  # type: ignore
+                generated_count += 1
+            else:
+                # If rendering fails (e.g. corrupted file), mark it so we don't retry forever
+                job.thumbnail_url = "error"  # type: ignore
+            db.commit()
+
+        if generated_count > 0:
+            logger.info(f"Generated {generated_count} new thumbnails.")
+        else:
+            logger.info("No new thumbnails needed.")
+
+    except SQLAlchemyError as e:
+        logger.exception(f"Error generating thumbnails: {e}")
+        db.rollback()
+    finally:
+        db.close()
+
+    return generated_count
