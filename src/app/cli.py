@@ -6,7 +6,7 @@ import click
 import uvicorn
 
 from src.app.logging_config import setup_logging
-from src.watchdog.main import main as watchdog_main
+from src.watchdog_service.main import main as watchdog_main
 
 logger = logging.getLogger(__name__)
 

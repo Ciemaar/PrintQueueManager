@@ -80,7 +80,7 @@ services:
 
   watchdog:
     build: .
-    command: watchfiles --filter default 'python -m src.watchdog.main' ./src
+    command: watchfiles --filter default 'python -m src.watchdog_service.main' ./src
     volumes:
       - ./src:/app/src
       - ./watched_folder:/watched_folder

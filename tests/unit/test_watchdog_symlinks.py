@@ -2,7 +2,7 @@ import logging
 from unittest.mock import MagicMock, patch
 
 from src.app.config import settings
-from src.watchdog.main import PrintQueueEventHandler
+from src.watchdog_service.main import PrintQueueEventHandler
 
 
 def test_on_created_symlink_valid(caplog, tmp_path):
