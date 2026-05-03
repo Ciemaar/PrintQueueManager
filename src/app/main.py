@@ -1,6 +1,8 @@
 """FastAPI application entrypoint and route definitions."""
 
+import html
 import logging
+import os
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from typing import Optional
@@ -12,7 +14,7 @@ from sqlalchemy.orm import Session
 
 from src.app.database import Base, SessionLocal, engine, get_db
 from src.app.logging_config import setup_logging
-from src.app.models import PrintJob, PrintStatus
+from src.app.models import PrintJob, PrintStatus, ServiceConfig
 from src.worker.celery_app import (
     sync_cults3d,
     sync_local,
@@ -35,8 +37,6 @@ async def lifespan(app: FastAPI):
 
     # Run Alembic migrations programmatically
     try:
-        import os
-
         import alembic.command
         import alembic.config
 
@@ -349,8 +349,6 @@ def trigger_sync(platform: str) -> HTMLResponse:
 @app.get("/settings", response_class=HTMLResponse)
 def settings_page(request: Request, db: Session = Depends(get_db)) -> HTMLResponse:
     """Render the configuration settings page for all platform integrations."""
-    from src.app.models import ServiceConfig
-
     service_defs = {
         "local": {
             "display_name": "Local Directory",
@@ -439,8 +437,6 @@ def update_settings(
     db: Session = Depends(get_db),
 ) -> HTMLResponse:
     """Update configuration settings for a specific service."""
-    from src.app.models import ServiceConfig
-
     config = db.query(ServiceConfig).filter(ServiceConfig.service_name == service_name).first()
     if not config:
         config = ServiceConfig(service_name=service_name)
@@ -468,9 +464,6 @@ def update_settings(
 @app.get("/settings/browse", response_class=HTMLResponse)
 def browse_directories(request: Request, path: str = "/") -> HTMLResponse:
     """Return an HTML snippet of subdirectories within the given path."""
-    import html
-    import os
-
     # Simple security constraint to keep it absolute and avoid jumping around too much wildly,
     # though it's an admin internal tool.
     target_path = os.path.abspath(path)
@@ -544,8 +537,6 @@ def test_settings(
     db: Session = Depends(get_db),
 ) -> HTMLResponse:
     """Test configuration settings synchronously by running a fast HTTP/Playwright fetch."""
-    from src.app.models import ServiceConfig
-
     # If the credential field is empty (masked), fall back to checking the DB
     if not credential:
         config = db.query(ServiceConfig).filter(ServiceConfig.service_name == service_name).first()
@@ -560,16 +551,12 @@ def test_settings(
             f"Failed: Target URL is required to test {service_name.capitalize()}.</div>"
         )
 
-    import html
-
     from src.worker.llm_scraper import get_page_html
 
     success = False
     error_msg = ""
     try:
         if service_name == "local":
-            import os
-
             if os.path.isdir(target_url):
                 success = True
             else:

@@ -48,7 +48,21 @@ We rely on `tox` for automation. Running `tox` will check the code quality acros
 ```bash
 # Run all static analysis
 tox -e ruff,pyright
+
+# Run tests with coverage
+PYTHONPATH=. uv run pytest tests/
 ```
+
+### Running Tests in PyCharm
+
+To run `pytest` tests locally inside the PyCharm IDE:
+
+1. Open **Settings / Preferences** (`Ctrl+Alt+S` or `Cmd+,`).
+2. Navigate to **Project > Python Interpreter**. Ensure your Project Interpreter is set to the `.venv` directory created by `uv`.
+3. Go to **Tools > Python Integrated Tools**.
+4. Set the **Default test runner** to `pytest`.
+5. Ensure PyCharm recognizes the `src` directory as sources. Right-click the `src` folder in the Project Explorer, choose **Mark Directory as > Sources Root**. (This handles the `PYTHONPATH` requirement automatically inside the IDE).
+6. You can now right-click any test file (e.g., `tests/unit/test_api.py`) or the `tests` directory and select **Run 'pytest in ...'** or click the green play arrows next to individual test functions.
 
 ## Integrating a New 3D Platform
 
