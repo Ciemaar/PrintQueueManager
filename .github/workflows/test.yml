@@ -17,7 +17,7 @@ jobs:
     steps:
     - uses: actions/checkout@v6
     - name: Install uv and set up Python
-      uses: astral-sh/setup-uv@v7
+      uses: astral-sh/setup-uv@v5
       with:
         python-version: "3.14"
         enable-cache: true
@@ -26,25 +26,26 @@ jobs:
     - name: Install dependencies
       run: |
         uv sync --all-extras --dev
+        echo "$PWD/.venv/bin" >> $GITHUB_PATH
     - name: Install Playwright system dependencies (Ubuntu)
       if: runner.os == 'Linux'
       run: |
-        uv run playwright install --with-deps chromium
+        playwright install --with-deps chromium
     - name: Install Playwright system dependencies (Windows/macOS)
       if: runner.os != 'Linux'
       run: |
-        uv run playwright install chromium
+        playwright install chromium
     - name: Check for outdated dependencies
       run: |
         uv pip list --outdated
     - name: Run linting and type checking
       run: |
-        uv run tox -e ruff,pyright
+        tox -e ruff,pyright
     - name: Run tests with coverage
       env:
         PYTHONPATH: .
       run: |
-        uv run pytest tests/ --cov=src --cov-fail-under=85 --cov-report=xml
+        pytest tests/ --cov=src --cov-fail-under=85 --cov-report=xml
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v6
       with:

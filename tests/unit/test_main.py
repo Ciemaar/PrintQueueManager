@@ -1,6 +1,6 @@
 """Unit tests for the FastAPI application main routes."""
 
-from datetime import datetime, timezone
+from datetime import datetime
 
 import pytest
 from fastapi.testclient import TestClient
@@ -103,105 +103,6 @@ def test_update_status_invalid():
     db.close()
 
 
-def test_reorder_job():
-    """Verify that posting to the reorder route updates the user_priority float appropriately."""
-    db = TestingSessionLocal()
-    # Create three jobs with default priority 0
-    job1 = PrintJob(title="Job 1", source="Test", user_priority=1.0)
-    job2 = PrintJob(title="Job 2", source="Test", user_priority=2.0)
-    job3 = PrintJob(title="Job 3", source="Test", user_priority=3.0)
-    db.add_all([job1, job2, job3])
-    db.commit()
-    db.refresh(job1)
-    db.refresh(job2)
-    db.refresh(job3)
-
-    # Move job3 between job1 and job2
-    response = client.post(
-        f"/jobs/{job3.id}/reorder", data={"above_id": str(job1.id), "below_id": str(job2.id)}
-    )
-    assert response.status_code == 200
-
-    db.expire_all()
-    updated_job3 = db.query(PrintJob).filter(PrintJob.id == job3.id).first()
-    assert updated_job3 is not None
-    # (1.0 + 2.0) / 2.0 = 1.5
-    assert getattr(updated_job3, "user_priority") == 1.5
-
-    # Move job2 to top (above job1)
-    response = client.post(f"/jobs/{job2.id}/reorder", data={"below_id": str(job1.id)})
-    assert response.status_code == 200
-    db.expire_all()
-    updated_job2 = db.query(PrintJob).filter(PrintJob.id == job2.id).first()
-    assert updated_job2 is not None
-
-    # job1 priority is 1.0, so moving job2 above it gives `below_priority - 1.0` -> 0.0
-    assert getattr(updated_job2, "user_priority") == 0.0  # 1.0 - 1.0
-
-    # Move job1 to bottom (below job3 which is now 1.5)
-    response = client.post(f"/jobs/{job1.id}/reorder", data={"above_id": str(job3.id)})
-    assert response.status_code == 200
-    db.expire_all()
-    updated_job1 = db.query(PrintJob).filter(PrintJob.id == job1.id).first()
-    assert updated_job1 is not None
-    assert getattr(updated_job1, "user_priority") == 2.5  # 1.5 + 1.0
-
-    # Non-existent job
-    response = client.post("/jobs/999/reorder", data={"above_id": str(job1.id)})
-    assert response.status_code == 404
-
-    db.close()
-
-
-def test_reorder_job_same_priority():
-    """Verify that reordering a job between two jobs with the same priority works."""
-    db = TestingSessionLocal()
-    # Create three jobs with default priority 0
-    job1 = PrintJob(title="Job 1", source="Test", user_priority=0.0)
-    job2 = PrintJob(title="Job 2", source="Test", user_priority=0.0)
-    job3 = PrintJob(title="Job 3", source="Test", user_priority=0.0)
-    db.add_all([job1, job2, job3])
-    db.commit()
-    db.refresh(job1)
-    db.refresh(job2)
-    db.refresh(job3)
-
-    # Move job3 between job1 and job2
-    response = client.post(
-        f"/jobs/{job3.id}/reorder", data={"above_id": str(job1.id), "below_id": str(job2.id)}
-    )
-    assert response.status_code == 200
-
-    db.expire_all()
-    updated_job1 = db.query(PrintJob).filter(PrintJob.id == job1.id).first()
-    updated_job2 = db.query(PrintJob).filter(PrintJob.id == job2.id).first()
-    updated_job3 = db.query(PrintJob).filter(PrintJob.id == job3.id).first()
-
-    assert updated_job1 is not None
-    assert updated_job2 is not None
-    assert updated_job3 is not None
-
-    p1 = getattr(updated_job1, "user_priority")
-    p2 = getattr(updated_job2, "user_priority")
-    p3 = getattr(updated_job3, "user_priority")
-
-    # Since they were 0.0, a collision should have been detected,
-    # causing a normalization.
-    # Because updated_at is descending, initial order is:
-    # 1. Job 3 (created last, highest updated_at, priority 1.0)
-    # 2. Job 2 (priority 2.0)
-    # 3. Job 1 (priority 3.0)
-    # When we move Job 3 between Job 1 and Job 2:
-    # above_job = Job 1 (priority 3.0)
-    # below_job = Job 2 (priority 2.0)
-    # The midpoint user_priority will be 2.5
-    # Since we sort by user_priority ASCENDING:
-    # Job 2 (2.0) -> Job 3 (2.5) -> Job 1 (3.0)
-    assert p2 < p3 < p1
-
-    db.close()
-
-
 def test_update_notes():
     """Verify that posting to the notes route correctly updates material and timing notes."""
     db = TestingSessionLocal()
@@ -255,10 +156,7 @@ def test_undelete_job_from_deleted():
     """Verify that a DELETED job gets restored to TO BE PRINTED state."""
     db = TestingSessionLocal()
     job = PrintJob(
-        title="Test Job",
-        source="Test",
-        status=PrintStatus.DELETED,
-        deleted_at=datetime.now(timezone.utc),
+        title="Test Job", source="Test", status=PrintStatus.DELETED, deleted_at=datetime.utcnow()
     )
     db.add(job)
     db.commit()
@@ -279,10 +177,7 @@ def test_undelete_job_from_printed():
     """Verify that a PRINTED job gets restored to PRINT AGAIN state."""
     db = TestingSessionLocal()
     job = PrintJob(
-        title="Test Job",
-        source="Test",
-        status=PrintStatus.PRINTED,
-        deleted_at=datetime.now(timezone.utc),
+        title="Test Job", source="Test", status=PrintStatus.PRINTED, deleted_at=datetime.utcnow()
     )
     db.add(job)
     db.commit()
@@ -306,19 +201,13 @@ def test_read_deleted_jobs():
         title="Deleted Job 1",
         source="Test",
         status=PrintStatus.DELETED,
-        deleted_at=datetime.now(timezone.utc),
+        deleted_at=datetime.utcnow(),
     )
     job2 = PrintJob(
-        title="Skipped Job",
-        source="Test",
-        status=PrintStatus.SKIPPED,
-        deleted_at=datetime.now(timezone.utc),
+        title="Skipped Job", source="Test", status=PrintStatus.SKIPPED, deleted_at=datetime.utcnow()
     )
     job3 = PrintJob(
-        title="Printed Job",
-        source="Test",
-        status=PrintStatus.PRINTED,
-        deleted_at=datetime.now(timezone.utc),
+        title="Printed Job", source="Test", status=PrintStatus.PRINTED, deleted_at=datetime.utcnow()
     )
     db.add(job1)
     db.add(job2)

@@ -1,17 +1,17 @@
 """Celery worker configuration and scheduled tasks for external data sync."""
 
 import logging
+import time
 from pathlib import Path
 from typing import Any, List
 
 from celery import Celery
 from sqlalchemy.exc import SQLAlchemyError
-from celery.schedules import crontab
 
 from src.app.config import settings
 from src.app.database import SessionLocal
 from src.app.logging_config import setup_logging
-from src.app.models import PrintJob, PrintStatus
+from src.app.models import PrintJob
 
 from .llm_scraper import run_scraper
 from .thingiverse_api import fetch_thingiverse_collections
@@ -53,10 +53,6 @@ def setup_periodic_tasks(sender: Any, **kwargs: Any) -> None:
     sender.add_periodic_task(
         300, generate_local_thumbnails.s(), name="generate_local_thumbnails_periodic"
     )
-    # Run the priority normalization task daily at midnight UTC
-    sender.add_periodic_task(
-        crontab(minute="0", hour="0"), normalize_priorities.s(), name="normalize_priorities_daily"
-    )
 
 
 @celery_app.task(name="sync_makerworld")
@@ -68,6 +64,7 @@ def sync_makerworld() -> List[dict[str, Any]]:
     and leverages the local Pydantic AI agent to extract model attributes.
     """
     logger.info("Starting MakerWorld synchronization via Ollama agent...")
+    time.sleep(2)
     result = run_scraper("makerworld", "https://makerworld.com/en/user/likes")
     logger.info(f"Sync complete. Found {len(result)} models.")
     return result
@@ -82,6 +79,7 @@ def sync_printables() -> List[dict[str, Any]]:
     and leverages the local Pydantic AI agent to extract model attributes.
     """
     logger.info("Starting Printables synchronization via Ollama agent...")
+    time.sleep(2)
     result = run_scraper("printables", "https://www.printables.com/user/collections")
     logger.info(f"Sync complete. Found {len(result)} models.")
     return result
@@ -97,6 +95,7 @@ def sync_thingiverse() -> List[dict[str, Any]]:
     Playwright and the local LLM agent to scrape the user's public collections page.
     """
     logger.info("Starting Thingiverse synchronization via Official API...")
+    time.sleep(2)
     # Prefer API logic for structured Thingiverse data.
     # If a token isn't provided, `fetch_thingiverse_collections` simply returns `[]`.
     result = fetch_thingiverse_collections()
@@ -116,6 +115,7 @@ def sync_cults3d() -> List[dict[str, Any]]:
     and leverages the local Pydantic AI agent to extract model attributes.
     """
     logger.info("Starting Cults3D synchronization via Ollama agent...")
+    time.sleep(2)
     result = run_scraper("cults3d", "https://cults3d.com/en/users/collections")
     logger.info(f"Sync complete. Found {len(result)} models.")
     return result
@@ -130,6 +130,7 @@ def sync_minihoarder() -> List[dict[str, Any]]:
     and leverages the local Pydantic AI agent to extract model attributes.
     """
     logger.info("Starting Minihoarder synchronization via Ollama agent...")
+    time.sleep(2)
     result = run_scraper("minihoarder", "https://www.minihoarder.com/library/")
     logger.info(f"Sync complete. Found {len(result)} models.")
     return result
@@ -198,37 +199,6 @@ def sync_local() -> List[dict[str, Any]]:
         db.close()
 
     return added_files
-
-
-@celery_app.task(name="normalize_priorities")
-def normalize_priorities() -> None:
-    """
-    Normalize the user_priority values for all active PrintJobs.
-
-    This helps prevent precision loss from continuously halving user_priority
-    floats when moving items between other items. It reassigns priorities as
-    sequential integers (1.0, 2.0, 3.0, etc.) based on their current order.
-    """
-    logger.info("Starting daily normalization of PrintJob priorities.")
-    with SessionLocal() as db:
-        try:
-            # Fetch all active jobs in their current sorted order
-            jobs = (
-                db.query(PrintJob)
-                .filter(PrintJob.status != PrintStatus.DELETED)
-                .order_by(PrintJob.user_priority.asc().nullsfirst(), PrintJob.updated_at.desc())
-                .all()
-            )
-
-            # Reassign sequential float priorities
-            for index, job in enumerate(jobs, start=1):
-                setattr(job, "user_priority", float(index))
-
-            db.commit()
-            logger.info(f"Successfully normalized priorities for {len(jobs)} active jobs.")
-        except Exception as e:
-            logger.error(f"Failed to normalize priorities: {e}")
-            db.rollback()
 
 
 @celery_app.task(name="generate_local_thumbnails")

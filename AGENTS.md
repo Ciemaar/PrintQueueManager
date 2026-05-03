@@ -12,7 +12,6 @@ Welcome! If you are an AI assistant working on this repository, please read thes
 ## Coding Conventions
 
 - **Types:** Use Python type hints (`pyright` is enforced). Use `typing.Any` or `Optional` sparingly, and try to be as specific as possible.
-- **Ternary Operators:** Never use the `x or y` shortcut syntax for non-boolean results (e.g., `value or 0.0`). Python evaluates values like `0.0` or `""` as falsy, leading to unintended behavior. Instead, always use explicit ternary operations like `x if x is not None else y`.
 - **Linters:** The repository uses `ruff` for formatting and linting. You must resolve all warnings.
 - **Database:** Use PostgreSQL `JSONB` columns in SQLAlchemy models for unstructured data storage (e.g., raw API responses, agent metadata) to ensure future flexibility without frequent schema migrations.
 - **Logging vs. Print:** Always use the Python `logging` module instead of `print()` statements for debugging and output. Use `logger.info()`, `logger.debug()`, `logger.error()`, etc. The root logger is configured to default to `INFO`, and will switch to `DEBUG` when the application is run in verbose mode.
