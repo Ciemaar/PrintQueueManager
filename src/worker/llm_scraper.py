@@ -149,9 +149,15 @@ def run_scraper(source: str, url: str) -> List[dict[str, Any]]:
     db = SessionLocal()
     saved_items: List[dict[str, Any]] = []
     try:
+        # Batch query existing URLs to avoid N+1 queries
+        urls = [model.url for model in data if model.url]
+        existing_urls = {
+            url
+            for (url,) in db.query(PrintJob.source_url).filter(PrintJob.source_url.in_(urls)).all()
+        }
+
         for model in data:
-            existing = db.query(PrintJob).filter(PrintJob.source_url == model.url).first()
-            if not existing:
+            if model.url and model.url not in existing_urls:
                 new_job = PrintJob(
                     title=model.title,
                     source=source,
@@ -162,6 +168,8 @@ def run_scraper(source: str, url: str) -> List[dict[str, Any]]:
                 )
                 db.add(new_job)
                 saved_items.append(model.model_dump())
+                # Add to set to avoid duplicates within the same batch
+                existing_urls.add(model.url)
         db.commit()
     except Exception as e:
         logger.error(f"Database error saving models: {e}")

@@ -41,13 +41,24 @@ def fetch_thingiverse_collections() -> List[dict[str, Any]]:
         db = SessionLocal()
 
         try:
+            # Batch query existing URLs to avoid N+1 queries
+            urls = [
+                str(item.get("url", f"https://www.thingiverse.com/thing:{item.get('id')}"))
+                for item in data
+            ]
+            existing_urls = {
+                url
+                for (url,) in db.query(PrintJob.source_url)
+                .filter(PrintJob.source_url.in_(urls))
+                .all()
+            }
+
             for item in data:
                 model_url = str(
                     item.get("url", f"https://www.thingiverse.com/thing:{item.get('id')}")
                 )
 
-                existing = db.query(PrintJob).filter(PrintJob.source_url == model_url).first()
-                if not existing:
+                if model_url not in existing_urls:
                     new_job = PrintJob(
                         title=str(item.get("name", "Unknown Thingiverse Model")),
                         source="thingiverse",
@@ -65,6 +76,8 @@ def fetch_thingiverse_collections() -> List[dict[str, Any]]:
                         author=str(new_job.author),
                     )
                     saved_items.append(extracted.model_dump())
+                    # Add to set to avoid duplicates within the same batch
+                    existing_urls.add(model_url)
             db.commit()
             logger.info(f"Successfully synced {len(saved_items)} models from Thingiverse API.")
         except Exception as e:
