@@ -129,15 +129,16 @@ def sync_minihoarder() -> List[dict[str, Any]]:
     return result
 
 
-def _scan_local_directory(watch_path: Path) -> List[dict[str, Any]]:
-    """Scan the directory for 3D files and return their metadata."""
-    logger.debug(f"Scanning directory: {watch_path} recursively")
+def scan_local_directory(
+    watch_path: Path, extensions: tuple[str, ...] = (".stl", ".3mf")
+) -> List[dict[str, Any]]:
+    """Scan the directory for files matching extensions and return their metadata."""
+    logger.debug(f"Scanning directory: {watch_path} recursively for {extensions}")
     discovered = []
     for file_path in watch_path.rglob("*"):
-        if (file_path.is_file() or file_path.is_symlink()) and file_path.suffix.lower() in {
-            ".stl",
-            ".3mf",
-        }:
+        if (
+            file_path.is_file() or file_path.is_symlink()
+        ) and file_path.suffix.lower() in extensions:
             is_broken_symlink = file_path.is_symlink() and not file_path.exists()
             file_size = 0 if is_broken_symlink else file_path.stat().st_size
 
@@ -177,7 +178,7 @@ def sync_local() -> List[dict[str, Any]]:
             job.file_path for job in db.query(PrintJob.file_path).filter(PrintJob.source == "Local")
         }
 
-        discovered_files = _scan_local_directory(watch_path)
+        discovered_files = scan_local_directory(watch_path)
 
         for file_info in discovered_files:
             file_path_str = file_info["file_path"]
