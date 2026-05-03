@@ -37,6 +37,7 @@ async def lifespan(app: FastAPI):
 
     # Run Alembic migrations programmatically
     try:
+        logger.info("Starting database migrations check...")
         import alembic.command
         import alembic.config
 
@@ -44,15 +45,25 @@ async def lifespan(app: FastAPI):
         alembic_ini_path = os.path.join(project_root, "alembic.ini")
         alembic_dir = os.path.join(project_root, "alembic")
 
+        logger.debug(f"Alembic INI path: {alembic_ini_path}")
+        logger.debug(f"Alembic directory: {alembic_dir}")
+
         alembic_cfg = alembic.config.Config(alembic_ini_path)
         alembic_cfg.set_main_option("script_location", alembic_dir)
 
+        logger.info("Executing alembic upgrade head...")
         alembic.command.upgrade(alembic_cfg, "head")
+        logger.info("Database migrations completed successfully.")
     except Exception as e:
-        print(f"Failed to run database migrations: {e}")
+        logger.error(f"Failed to run database migrations: {e}")
+        # Log the traceback for debugging
+        import traceback
+
+        logger.error(traceback.format_exc())
 
     # Normalize priorities synchronously so the first page load has valid integer sorting
     try:
+        logger.info("Normalizing job priorities...")
         db = SessionLocal()
         _normalize_priorities_sync(db)
         db.close()

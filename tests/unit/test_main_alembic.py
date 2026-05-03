@@ -34,5 +34,5 @@ async def test_startup_event_exceptions(mock_sync, mock_upgrade, mock_create, ca
     mock_upgrade.assert_called_once()
     mock_sync.assert_called_once()
     out, err = capfd.readouterr()
-    assert "Failed to run database migrations: Alembic failed" in out
+    assert "Failed to run database migrations: Alembic failed" in caplog.text
     assert "Failed to trigger initial sync_local task: Celery failed" in caplog.text
