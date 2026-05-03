@@ -87,6 +87,7 @@ def fetch_thingiverse_collections() -> List[dict[str, Any]]:
         except Exception as e:
             logger.error(f"Database error saving Thingiverse models: {e}")
             db.rollback()
+            saved_items.clear()
         finally:
             db.close()
 
