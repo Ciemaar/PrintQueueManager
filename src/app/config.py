@@ -6,7 +6,7 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     """Application settings, loaded from environment variables."""
 
-    database_url: str = "postgresql://printqueue:password@localhost:5432/printqueue"
+    database_url: str = "postgresql://localhost:5432/printqueue"
     redis_url: str = "redis://localhost:6379/0"
     ollama_host: str = "http://localhost:11434"
     watch_directory: str = "./watched_folder"

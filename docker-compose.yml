@@ -5,7 +5,7 @@ services:
     image: postgres:15
     environment:
       POSTGRES_USER: printqueue
-      POSTGRES_PASSWORD: password
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-}
       POSTGRES_DB: printqueue
     ports:
       - "5432:5432"
@@ -37,7 +37,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=postgresql://printqueue:password@db:5432/printqueue
+      - DATABASE_URL=${DATABASE_URL:-postgresql://printqueue@db:5432/printqueue}
       - REDIS_URL=redis://redis:6379/0
       - OLLAMA_HOST=http://ollama:11434
     depends_on:
@@ -53,7 +53,7 @@ services:
       - ./src:/app/src
       - ./watched_folder:/watched_folder
     environment:
-      - DATABASE_URL=postgresql://printqueue:password@db:5432/printqueue
+      - DATABASE_URL=${DATABASE_URL:-postgresql://printqueue@db:5432/printqueue}
       - REDIS_URL=redis://redis:6379/0
       - OLLAMA_HOST=http://ollama:11434
       - WATCH_DIRECTORY=/watched_folder
@@ -69,7 +69,7 @@ services:
     volumes:
       - ./src:/app/src
     environment:
-      - DATABASE_URL=postgresql://printqueue:password@db:5432/printqueue
+      - DATABASE_URL=${DATABASE_URL:-postgresql://printqueue@db:5432/printqueue}
       - REDIS_URL=redis://redis:6379/0
       - OLLAMA_HOST=http://ollama:11434
     depends_on:
@@ -85,7 +85,7 @@ services:
       - ./src:/app/src
       - ./watched_folder:/watched_folder
     environment:
-      - DATABASE_URL=postgresql://printqueue:password@db:5432/printqueue
+      - DATABASE_URL=${DATABASE_URL:-postgresql://printqueue@db:5432/printqueue}
       - WATCH_DIRECTORY=/watched_folder
     depends_on:
       db:
