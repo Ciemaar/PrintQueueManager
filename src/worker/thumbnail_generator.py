@@ -28,7 +28,7 @@ def _start_xvfb() -> None:
 
 
 def generate_thumbnail(
-    file_path: str, thumbnail_path: str | Path, resolution: tuple[int, int] | None = None
+    file_path: Path, thumbnail_path: Path, resolution: tuple[int, int] | None = None
 ) -> bool:
     """
     Generate a thumbnail for a given 3D file (.stl, .3mf) using trimesh.
@@ -43,7 +43,7 @@ def generate_thumbnail(
     try:
         # Load the mesh
         logger.debug(f"Loading mesh for thumbnail generation: {file_path}")
-        mesh = trimesh.load(file_path)
+        mesh = trimesh.load(str(file_path))
 
         # If it's a scene (like from some 3mf files), dump to a single mesh
         if type(mesh).__name__ == "Scene":
@@ -64,13 +64,13 @@ def generate_thumbnail(
         return False
 
 
-def get_thumbnail_path(file_path: str) -> str:
+def get_thumbnail_path(file_path: Path) -> Path:
     """Get the expected thumbnail path relative to static dir."""
-    file_hash = hashlib.md5(file_path.encode()).hexdigest()
-    return f"/static/thumbnails/{file_hash}.png"
+    file_hash = hashlib.md5(str(file_path).encode()).hexdigest()
+    return Path(f"/static/thumbnails/{file_hash}.png")
 
 
-def get_thumbnail_file_path(file_path: str) -> Path:
+def get_thumbnail_file_path(file_path: Path) -> Path:
     """Get the expected thumbnail path on the file system."""
-    file_hash = hashlib.md5(file_path.encode()).hexdigest()
+    file_hash = hashlib.md5(str(file_path).encode()).hexdigest()
     return THUMBNAILS_DIR / f"{file_hash}.png"

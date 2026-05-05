@@ -10,14 +10,14 @@ from src.worker.thumbnail_generator import (
 
 def test_get_thumbnail_path():
     """Verify the expected web path for a given file thumbnail."""
-    path = get_thumbnail_path("/test/file.stl")
-    assert path.startswith("/static/thumbnails/")
-    assert path.endswith(".png")
+    path = get_thumbnail_path(Path("/test/file.stl"))
+    assert str(path).startswith("/static/thumbnails/")
+    assert str(path).endswith(".png")
 
 
 def test_get_thumbnail_file_path():
     """Verify the expected local file path for a thumbnail."""
-    path = get_thumbnail_file_path("/test/file.stl")
+    path = get_thumbnail_file_path(Path("/test/file.stl"))
     assert isinstance(path, Path)
     assert path.name.endswith(".png")
 
@@ -38,12 +38,12 @@ def test_generate_thumbnail_success(mock_open, mock_scene_cls, mock_load):
     mock_scene.save_image.return_value = b"image_data"
     mock_scene_cls.return_value = mock_scene
 
-    result = generate_thumbnail("/test/file.stl", "out.png")
+    result = generate_thumbnail(Path("/test/file.stl"), Path("out.png"))
 
     assert result is True
-    mock_load.assert_called_once_with("/test/file.stl")
+    mock_load.assert_called_once_with(str(Path("/test/file.stl")))
     mock_scene.save_image.assert_called_once()
-    mock_open.assert_called_once_with("out.png", "wb")
+    mock_open.assert_called_once_with(Path("out.png"), "wb")
 
 
 @patch("src.worker.thumbnail_generator.trimesh.load")
@@ -51,7 +51,7 @@ def test_generate_thumbnail_failure(mock_load):
     """Test thumbnail generation gracefully handles exceptions."""
     mock_load.side_effect = Exception("Load failed")
 
-    result = generate_thumbnail("/test/file.stl", "out.png")
+    result = generate_thumbnail(Path("/test/file.stl"), Path("out.png"))
 
     assert result is False
-    mock_load.assert_called_once_with("/test/file.stl")
+    mock_load.assert_called_once_with(str(Path("/test/file.stl")))

@@ -1,5 +1,7 @@
 """Configuration settings for the Print Queue Manager application."""
 
+from pathlib import Path
+
 from pydantic_settings import BaseSettings
 
 
@@ -27,7 +29,7 @@ class Settings(BaseSettings):
     minihoarder_sync_interval: float = 604800.0
 
     # Thumbnails
-    thumbnails_dir: str = "src/app/static/thumbnails"
+    thumbnails_dir: Path = Path("src/app/static/thumbnails")
 
     # Debugging
     verbose: bool = False

@@ -250,7 +250,7 @@ def generate_local_thumbnails() -> int:
         )
 
         for job in jobs:
-            file_path = str(job.file_path) if job.file_path is not None else None
+            file_path = job.file_path
             if not file_path:
                 continue
 
@@ -258,13 +258,13 @@ def generate_local_thumbnails() -> int:
             if not path_obj.exists() or not path_obj.is_file():
                 continue
 
-            expected_thumb_file = get_thumbnail_file_path(file_path)
+            expected_thumb_file = get_thumbnail_file_path(path_obj)
 
             # Generate the thumbnail
-            success = generate_thumbnail(file_path, expected_thumb_file)
+            success = generate_thumbnail(path_obj, expected_thumb_file)
             if success:
                 # Update the job with the new URL
-                job.thumbnail_url = get_thumbnail_path(file_path)  # type: ignore
+                job.thumbnail_url = str(get_thumbnail_path(path_obj))  # type: ignore
                 generated_count += 1
             else:
                 # If rendering fails (e.g. corrupted file), mark it so we don't retry forever
