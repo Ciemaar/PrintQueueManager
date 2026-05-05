@@ -250,7 +250,7 @@ def generate_local_thumbnails() -> int:
         )
 
         for job in jobs:
-            file_path = job.file_path
+            file_path = str(job.file_path) if job.file_path is not None else None
             if not file_path:
                 continue
 
