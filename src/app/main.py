@@ -12,7 +12,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
-from src.app.database import Base, SessionLocal, engine, get_db
+from src.app.database import SessionLocal, get_db
 from src.app.logging_config import setup_logging
 from src.app.models import PrintJob, PrintStatus, ServiceConfig
 from src.worker.celery_app import (
@@ -33,7 +33,7 @@ setup_logging()
 async def lifespan(app: FastAPI):
     """Create database tables on application startup, run migrations, and trigger local sync."""
     # Base.metadata.create_all handles creating new tables if they don't exist
-    Base.metadata.create_all(bind=engine)
+    # Base.metadata.create_all(bind=engine)  # Handled by Alembic instead
 
     # Run Alembic migrations programmatically
     try:

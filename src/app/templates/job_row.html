@@ -51,61 +51,7 @@
       >
         <option
           value="TO BE PRINTED"
-          {%
-          if
-          job.status.value=""
-          ="TO BE PRINTED"
-          %}selected{%
-          endif
-          %}
-        >
-          TO BE PRINTED
-        </option>
-        <option
-          value="PRINT IN PROGRESS"
-          {%
-          if
-          job.status.value=""
-          ="PRINT IN PROGRESS"
-          %}selected{%
-          endif
-          %}
-        >
-          PRINT IN PROGRESS
-        </option>
-        <option
-          value="PRINT AGAIN"
-          {%
-          if
-          job.status.value=""
-          ="PRINT AGAIN"
-          %}selected{%
-          endif
-          %}
-        >
-          PRINT AGAIN
-        </option>
-        <option
-          value="PRINTED"
-          {%
-          if
-          job.status.value=""
-          ="PRINTED"
-          %}selected{%
-          endif
-          %}
-        >
-          PRINTED
-        </option>
-        <option
-          value="SKIPPED"
-          {%
-          if
-          job.status.value=""
-          ="SKIPPED"
-          %}selected{%
-          endif
-          %}
+          {% if job.status.value == 'SKIPPED' %}selected{% endif %}
         >
           SKIPPED
         </option>

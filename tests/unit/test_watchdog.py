@@ -103,15 +103,14 @@ def test_add_to_queue_exception_handling(mock_session_local):
 
 @patch("src.watchdog_service.main.time.sleep", side_effect=KeyboardInterrupt)
 @patch("src.watchdog_service.main.Observer")
-@patch("src.watchdog_service.main.Base.metadata.create_all")
-def test_main_watchdog_loop(mock_create_all, mock_observer_class, mock_sleep):
+def test_main_watchdog_loop(mock_observer_class, mock_sleep):
     """Verify the main loop starts and stops the observer correctly."""
     mock_observer = MagicMock()
     mock_observer_class.return_value = mock_observer
 
     main()
 
-    mock_create_all.assert_called_once()
+    # # mock_create_all.assert_called_once()
     mock_observer.start.assert_called_once()
     mock_observer.stop.assert_called_once()
     mock_observer.join.assert_called_once()

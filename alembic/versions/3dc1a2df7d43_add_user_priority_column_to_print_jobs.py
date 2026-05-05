@@ -28,8 +28,13 @@ def upgrade() -> None:
     # Backfill existing records with a default priority of 0.0
     op.execute("UPDATE print_jobs SET user_priority = 0.0 WHERE user_priority IS NULL")
 
-    # Now that data is backfilled, we can safely make the column non-nullable
-    op.alter_column("print_jobs", "user_priority", nullable=False)
+    # Now that data is backfilled, we can safely make the column non-nullable.
+    # SQLite does not support ALTER COLUMN directly. For simplicity, we only
+    # perform the ALTER COLUMN if not using SQLite. In production (Postgres),
+    # this will enforce the constraint.
+    bind = op.get_bind()
+    if bind.engine.name != "sqlite":
+        op.alter_column("print_jobs", "user_priority", nullable=False)
     # ### end Alembic commands ###
 
 

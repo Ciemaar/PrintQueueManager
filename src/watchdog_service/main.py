@@ -10,9 +10,9 @@ from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
 from src.app.config import settings
-from src.app.database import SessionLocal, engine
+from src.app.database import SessionLocal
 from src.app.logging_config import setup_logging
-from src.app.models import Base, PrintJob
+from src.app.models import PrintJob
 
 setup_logging()
 logger = logging.getLogger(__name__)
@@ -92,7 +92,7 @@ def main() -> None:
     while listening for OS filesystem events.
     """
     # Initialize DB tables
-    Base.metadata.create_all(bind=engine)
+    # Base.metadata.create_all(bind=engine)  # Handled by Alembic instead
 
     path = settings.watch_directory
     if not os.path.exists(path):
