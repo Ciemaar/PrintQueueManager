@@ -6,9 +6,11 @@ from typing import Any, cast
 
 import trimesh
 
+from src.app.config import settings
+
 logger = logging.getLogger(__name__)
 
-THUMBNAILS_DIR = Path("src/app/static/thumbnails")
+THUMBNAILS_DIR = Path(settings.thumbnails_dir)
 THUMBNAILS_DIR.mkdir(parents=True, exist_ok=True)
 
 
@@ -26,7 +28,7 @@ def _start_xvfb() -> None:
 
 
 def generate_thumbnail(
-    file_path: str, thumbnail_path: str | Path, resolution: list[int] | None = None
+    file_path: str, thumbnail_path: str | Path, resolution: tuple[int, int] | None = None
 ) -> bool:
     """
     Generate a thumbnail for a given 3D file (.stl, .3mf) using trimesh.
@@ -34,7 +36,7 @@ def generate_thumbnail(
     Returns True if successful, False otherwise.
     """
     if resolution is None:
-        resolution = [400, 400]
+        resolution = (400, 400)
 
     _start_xvfb()
 
