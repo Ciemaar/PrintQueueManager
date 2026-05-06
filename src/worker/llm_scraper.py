@@ -44,7 +44,7 @@ scraper_agent: Agent[Any, ScrapedPageData] = Agent(
 )
 
 
-def get_page_html(source: str, url: str, credential: str = "") -> str:
+def get_page_html(source: str, url: str, credential: str = "", raise_errors: bool = False) -> str:
     """Use Playwright to fetch dynamic HTML, injecting session cookies if available."""
     cookie_str = ""
     domain = ""
@@ -111,6 +111,8 @@ def get_page_html(source: str, url: str, credential: str = "") -> str:
             return content
     except Exception as e:
         logger.error(f"Failed to fetch {url} using Playwright: {e}")
+        if raise_errors:
+            raise e
         return ""
 
 

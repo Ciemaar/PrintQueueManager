@@ -586,12 +586,18 @@ def test_settings(
             success = True
         else:
             # Playwright test
-            fetched_html = get_page_html(service_name, target_url, credential)
-            if fetched_html:
-                success = True
-            else:
+            try:
+                fetched_html = get_page_html(
+                    service_name, target_url, credential, raise_errors=True
+                )
+                if fetched_html:
+                    success = True
+                else:
+                    success = False
+                    error_msg = "Could not fetch page. Playwright returned empty content."
+            except Exception as e:
                 success = False
-                error_msg = "Could not fetch page. Playwright returned empty content or crashed."
+                error_msg = f"Playwright Error: {e}"
     except Exception as e:
         success = False
         error_msg = html.escape(str(e))
