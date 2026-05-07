@@ -150,7 +150,7 @@ def run_scraper(source: str, url: str) -> List[dict[str, Any]]:
     saved_items: List[dict[str, Any]] = []
     try:
         # Batch query existing URLs to avoid N+1 queries
-        urls = [model.url for model in data if model.url]
+        urls = {model.url for model in data if model.url}
         existing_urls = set()
 
         if urls:
@@ -161,8 +161,11 @@ def run_scraper(source: str, url: str) -> List[dict[str, Any]]:
                 .all()
             }
 
+        new_urls = urls - existing_urls
+        seen_urls = set()
+
         for model in data:
-            if model.url and model.url not in existing_urls:
+            if model.url and model.url in new_urls and model.url not in seen_urls:
                 new_job = PrintJob(
                     title=model.title,
                     source=source,
@@ -174,7 +177,7 @@ def run_scraper(source: str, url: str) -> List[dict[str, Any]]:
                 db.add(new_job)
                 saved_items.append(model.model_dump())
                 # Add to set to avoid duplicates within the same batch
-                existing_urls.add(model.url)
+                seen_urls.add(model.url)
         db.commit()
     except Exception as e:
         logger.error(f"Database error saving models: {e}")
