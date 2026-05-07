@@ -42,10 +42,10 @@ def fetch_thingiverse_collections() -> List[dict[str, Any]]:
 
         try:
             # Batch query existing URLs to avoid N+1 queries
-            urls = [
+            urls = {
                 str(item.get("url", f"https://www.thingiverse.com/thing:{item.get('id')}"))
                 for item in data
-            ]
+            }
 
             existing_urls = set()
             if urls:
@@ -56,12 +56,15 @@ def fetch_thingiverse_collections() -> List[dict[str, Any]]:
                     .all()
                 }
 
+            new_urls = urls - existing_urls
+            seen_urls = set()
+
             for item in data:
                 model_url = str(
                     item.get("url", f"https://www.thingiverse.com/thing:{item.get('id')}")
                 )
 
-                if model_url not in existing_urls:
+                if model_url in new_urls and model_url not in seen_urls:
                     new_job = PrintJob(
                         title=str(item.get("name", "Unknown Thingiverse Model")),
                         source="thingiverse",
@@ -73,7 +76,7 @@ def fetch_thingiverse_collections() -> List[dict[str, Any]]:
                     db.add(new_job)
 
                     # Add to set to avoid duplicates within the same batch
-                    existing_urls.add(model_url)
+                    seen_urls.add(model_url)
 
                     extracted = ExtractedModelInfo(
                         title=str(new_job.title),
