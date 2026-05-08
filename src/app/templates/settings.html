@@ -65,7 +65,7 @@
           border-radius: 0.25rem;
         "
       >
-        Testing configuration, please wait...
+        ⏳ Processing request, please wait...
       </div>
 
       <!-- Directory Picker Modal -->
@@ -184,6 +184,7 @@
               hx-post="/sync/{{ service_name }}"
               hx-target="#save-feedback"
               hx-swap="innerHTML"
+              hx-indicator="#global-indicator"
               {% if not details.config.target_url or (details.config.target_url == details.example_url) %}disabled{% endif %}
             >
               Sync {{ details.display_name }} Now

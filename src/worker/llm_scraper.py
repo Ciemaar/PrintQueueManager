@@ -4,6 +4,7 @@ import logging
 import os
 from typing import Any, List, Optional
 
+from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 from playwright.sync_api import sync_playwright
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent
@@ -60,6 +61,9 @@ def get_page_html(source: str, url: str, credential: str = "", raise_errors: boo
     elif source == "minihoarder":
         cookie_str = credential or settings.minihoarder_cookie
         domain = "www.minihoarder.com"
+    elif source == "myminifactory":
+        cookie_str = credential or getattr(settings, "myminifactory_cookie", "")
+        domain = "www.myminifactory.com"
     else:
         cookie_str = ""
         domain = ""
@@ -105,7 +109,15 @@ def get_page_html(source: str, url: str, credential: str = "", raise_errors: boo
                 )
 
             page = context.new_page()
-            page.goto(url, wait_until="networkidle")
+            try:
+                # Use a 15 second timeout. Many modern sites never reach pure "networkidle"
+                # due to analytics polling, so we catch it and use whatever DOM rendered.
+                page.goto(url, wait_until="networkidle", timeout=15000)
+            except PlaywrightTimeoutError:
+                logger.warning(
+                    f"Timeout waiting for networkidle on {url}. Proceeding with current DOM state."
+                )
+
             content = str(page.content())
             browser.close()
             return content
