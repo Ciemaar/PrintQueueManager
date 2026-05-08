@@ -135,6 +135,20 @@ def sync_minihoarder() -> List[dict[str, Any]]:
     return result
 
 
+@celery_app.task(name="sync_myminifactory")
+def sync_myminifactory() -> List[dict[str, Any]]:
+    """
+    Fetch the user's purchased/downloaded library from MyMiniFactory.
+
+    Uses Playwright and session cookies to access the private user library,
+    and leverages the local Pydantic AI agent to extract model attributes.
+    """
+    logger.info("Starting MyMiniFactory synchronization via Ollama agent...")
+    time.sleep(2)
+    result = run_scraper("myminifactory", "https://www.myminifactory.com/library")
+    logger.info(f"Sync complete. Found {len(result)} models.")
+    return result
+
 @celery_app.task(name="sync_local")
 def sync_local() -> List[dict[str, Any]]:
     """

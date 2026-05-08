@@ -20,6 +20,7 @@ from src.worker.celery_app import (
     sync_local,
     sync_makerworld,
     sync_minihoarder,
+    sync_myminifactory,
     sync_printables,
     sync_thingiverse,
 )
@@ -341,6 +342,7 @@ def trigger_sync(platform: str) -> HTMLResponse:
         "thingiverse": sync_thingiverse,
         "cults3d": sync_cults3d,
         "minihoarder": sync_minihoarder,
+        "myminifactory": sync_myminifactory,
         "local": sync_local,
     }
 
@@ -607,7 +609,7 @@ def test_settings(
             f'<div class="sync-toast" style="color: var(--pico-ins-color); '
             f"font-weight: bold; margin-bottom: 1rem; padding: 0.5rem; "
             f'background: var(--pico-ins-background); border-radius: 0.25rem;">'
-            f"Test successful for {service_name.capitalize()}! Connection verified.</div>"
+            f"✅ Test successful for {service_name.capitalize()}! Connection verified.</div>"
         )
     else:
         return HTMLResponse(
