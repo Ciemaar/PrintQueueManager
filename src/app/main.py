@@ -610,6 +610,9 @@ def test_settings(
             f"font-weight: bold; margin-bottom: 1rem; padding: 0.5rem; "
             f'background: var(--pico-ins-background); border-radius: 0.25rem;">'
             f"✅ Test successful for {service_name.capitalize()}! Connection verified.</div>"
+            f'<span id="status-indicator-{service_name}" hx-swap-oob="true" '
+            f'style="color: var(--pico-ins-color); font-size: 1.2rem; "'
+            f'margin-left: 0.5rem;">✅</span>'
         )
     else:
         return HTMLResponse(
@@ -617,4 +620,7 @@ def test_settings(
             f"font-weight: bold; margin-bottom: 1rem; padding: 0.5rem; "
             f'background: var(--pico-del-background); border-radius: 0.25rem;">'
             f"Test failed for {service_name.capitalize()}. {error_msg}</div>"
+            f'<span id="status-indicator-{service_name}" hx-swap-oob="true" '
+            f'style="color: var(--pico-del-color); font-size: 1.2rem; "'
+            f'margin-left: 0.5rem;">❌</span>'
         )

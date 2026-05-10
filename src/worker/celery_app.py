@@ -149,6 +149,7 @@ def sync_myminifactory() -> List[dict[str, Any]]:
     logger.info(f"Sync complete. Found {len(result)} models.")
     return result
 
+
 @celery_app.task(name="sync_local")
 def sync_local() -> List[dict[str, Any]]:
     """

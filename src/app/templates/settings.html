@@ -96,7 +96,7 @@
         >
           <input type="hidden" name="service_name" value="{{ service_name }}" />
           <div class="service-header">
-            <h2>{{ details.display_name }}</h2>
+            <h2>{{ details.display_name }} <span id="status-indicator-{{ service_name }}"></span></h2>
             <label>
               <input
                 type="checkbox"
