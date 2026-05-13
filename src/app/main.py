@@ -590,7 +590,7 @@ def test_settings(
             # Playwright test
             try:
                 fetched_html = get_page_html(
-                    service_name, target_url, credential, raise_errors=True
+                    service_name, target_url
                 )
                 if fetched_html:
                     success = True
