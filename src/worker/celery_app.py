@@ -1,6 +1,7 @@
 """Celery worker configuration and scheduled tasks for external data sync."""
 
 import logging
+import time
 from pathlib import Path
 from typing import Any, List
 
@@ -62,6 +63,7 @@ def sync_makerworld() -> List[dict[str, Any]]:
     and leverages the local Pydantic AI agent to extract model attributes.
     """
     logger.info("Starting MakerWorld synchronization via Ollama agent...")
+    time.sleep(2)
     result = run_scraper("makerworld", "https://makerworld.com/en/user/likes")
     logger.info(f"Sync complete. Found {len(result)} models.")
     return result
@@ -76,6 +78,7 @@ def sync_printables() -> List[dict[str, Any]]:
     and leverages the local Pydantic AI agent to extract model attributes.
     """
     logger.info("Starting Printables synchronization via Ollama agent...")
+    time.sleep(2)
     result = run_scraper("printables", "https://www.printables.com/user/collections")
     logger.info(f"Sync complete. Found {len(result)} models.")
     return result
@@ -91,6 +94,7 @@ def sync_thingiverse() -> List[dict[str, Any]]:
     Playwright and the local LLM agent to scrape the user's public collections page.
     """
     logger.info("Starting Thingiverse synchronization via Official API...")
+    time.sleep(2)
     # Prefer API logic for structured Thingiverse data.
     # If a token isn't provided, `fetch_thingiverse_collections` simply returns `[]`.
     result = fetch_thingiverse_collections()
@@ -110,6 +114,7 @@ def sync_cults3d() -> List[dict[str, Any]]:
     and leverages the local Pydantic AI agent to extract model attributes.
     """
     logger.info("Starting Cults3D synchronization via Ollama agent...")
+    time.sleep(2)
     result = run_scraper("cults3d", "https://cults3d.com/en/users/collections")
     logger.info(f"Sync complete. Found {len(result)} models.")
     return result
@@ -124,7 +129,23 @@ def sync_minihoarder() -> List[dict[str, Any]]:
     and leverages the local Pydantic AI agent to extract model attributes.
     """
     logger.info("Starting Minihoarder synchronization via Ollama agent...")
+    time.sleep(2)
     result = run_scraper("minihoarder", "https://www.minihoarder.com/library/")
+    logger.info(f"Sync complete. Found {len(result)} models.")
+    return result
+
+
+@celery_app.task(name="sync_myminifactory")
+def sync_myminifactory() -> List[dict[str, Any]]:
+    """
+    Fetch the user's purchased/downloaded library from MyMiniFactory.
+
+    Uses Playwright and session cookies to access the private user library,
+    and leverages the local Pydantic AI agent to extract model attributes.
+    """
+    logger.info("Starting MyMiniFactory synchronization via Ollama agent...")
+    time.sleep(2)
+    result = run_scraper("myminifactory", "https://www.myminifactory.com/library")
     logger.info(f"Sync complete. Found {len(result)} models.")
     return result
 

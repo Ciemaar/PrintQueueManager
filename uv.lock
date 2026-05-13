@@ -2468,6 +2468,7 @@ dev = [
 [package.dev-dependencies]
 dev = [
     { name = "pyright" },
+    { name = "pytest-cov" },
 ]
 
 [package.metadata]
@@ -2502,7 +2503,10 @@ requires-dist = [
 provides-extras = ["dev"]
 
 [package.metadata.requires-dev]
-dev = [{ name = "pyright", specifier = ">=1.1.408" }]
+dev = [
+    { name = "pyright", specifier = ">=1.1.408" },
+    { name = "pytest-cov", specifier = ">=7.1.0" },
+]
 
 [[package]]
 name = "prompt-toolkit"
