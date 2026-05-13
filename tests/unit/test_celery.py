@@ -2,7 +2,6 @@
 
 from unittest.mock import MagicMock, patch
 
-from src.app.models import PrintStatus
 from src.worker.celery_app import (
     normalize_priorities,
     setup_periodic_tasks,
