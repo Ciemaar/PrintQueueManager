@@ -3,6 +3,7 @@
 from unittest.mock import MagicMock, patch
 
 from src.worker.celery_app import (
+    normalize_priorities,
     setup_periodic_tasks,
     sync_cults3d,
     sync_local,
@@ -171,3 +172,47 @@ def test_sync_local(mock_session, mock_settings, tmp_path):
     assert mock_db.add.call_count == 4
     mock_db.commit.assert_called_once()
     mock_db.close.assert_called_once()
+
+
+@patch("src.worker.celery_app.SessionLocal")
+def test_normalize_priorities_success(mock_session_local):
+    """Verify that priorities are reassigned as sequential floats."""
+    mock_db = MagicMock()
+    mock_session_local.return_value.__enter__.return_value = mock_db
+
+    # Create mock jobs
+    job1 = MagicMock()
+    job2 = MagicMock()
+    # Setup the chain: query().filter().order_by().all()
+    mock_query = mock_db.query.return_value
+    mock_filter = mock_query.filter.return_value
+    mock_order = mock_filter.order_by.return_value
+    mock_order.all.return_value = [job1, job2]
+
+    normalize_priorities()
+
+    # Verify sequential priorities starting from 1.0
+    assert job1.user_priority == 1.0
+    assert job2.user_priority == 2.0
+    mock_db.commit.assert_called_once()
+
+    # Verify query calls
+    mock_db.query.assert_called()
+    # Check that it filters out deleted jobs
+    filter_args = mock_query.filter.call_args[0][0]
+    # In SQLAlchemy this is usually a BinaryExpression
+    assert "status != 'DELETED'" in str(filter_args) or "status != :status_1" in str(filter_args)
+    assert mock_filter.order_by.called
+
+
+@patch("src.worker.celery_app.SessionLocal")
+def test_normalize_priorities_exception(mock_session_local):
+    """Verify that database exceptions trigger a rollback."""
+    mock_db = MagicMock()
+    mock_session_local.return_value.__enter__.return_value = mock_db
+    mock_db.query.side_effect = Exception("DB Error")
+
+    # The task should catch the exception, log it, and rollback
+    normalize_priorities()
+
+    mock_db.rollback.assert_called_once()
