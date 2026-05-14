@@ -1,7 +1,9 @@
 from fastapi.testclient import TestClient
+
 from src.app.main import app
 
 client = TestClient(app)
+
 
 def test_trigger_sync_xss():
     """Verify that the trigger_sync endpoint escapes user input to prevent XSS."""
