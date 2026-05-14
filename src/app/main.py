@@ -1,5 +1,6 @@
 """FastAPI application entrypoint and route definitions."""
 
+import html
 import logging
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
@@ -335,12 +336,12 @@ def trigger_sync(platform: str) -> HTMLResponse:
     task = tasks.get(platform.lower())
     if task:
         task.delay()
-        msg = f"Sync started for {platform.capitalize()}!"
+        msg = f"Sync started for {html.escape(platform.capitalize())}!"
         return HTMLResponse(
             f'<div class="sync-toast" style="color: var(--pico-primary); '
             f'font-weight: bold; margin-bottom: 1rem;">{msg}</div>'
         )
     return HTMLResponse(
         f'<div class="sync-toast" style="color: var(--pico-del-color); '
-        f'font-weight: bold; margin-bottom: 1rem;">Unknown platform: {platform}</div>'
+        f'font-weight: bold; margin-bottom: 1rem;">Unknown platform: {html.escape(platform)}</div>'
     )
