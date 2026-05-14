@@ -1,3 +1,6 @@
+import html
+import urllib.parse
+
 from fastapi.testclient import TestClient
 
 from src.app.main import app
@@ -7,10 +10,12 @@ client = TestClient(app)
 
 def test_trigger_sync_xss():
     """Verify that the trigger_sync endpoint escapes user input to prevent XSS."""
-    malicious_input = "<script>alert('xss')</script>"
-    response = client.post(f"/sync/{malicious_input}")
+    # Use a payload that is safe in a URL path if encoded but still requires escaping
+    malicious_input = "xss&<"
+    encoded_input = urllib.parse.quote(malicious_input)
+    response = client.post(f"/sync/{encoded_input}")
+
     assert response.status_code == 200
-    # If not escaped, the response would contain the raw script tag
-    # If escaped, it should contain &lt;script&gt;
-    assert b"<script>" not in response.content
-    assert b"&lt;script&gt;" in response.content
+    expected = html.escape(malicious_input)
+    assert expected in response.text
+    assert malicious_input not in response.text
