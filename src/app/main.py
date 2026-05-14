@@ -589,9 +589,7 @@ def test_settings(
         else:
             # Playwright test
             try:
-                fetched_html = get_page_html(
-                    service_name, target_url
-                )
+                fetched_html = get_page_html(service_name, target_url)
                 if fetched_html:
                     success = True
                 else:
@@ -611,8 +609,8 @@ def test_settings(
             f'background: var(--pico-ins-background); border-radius: 0.25rem;">'
             f"✅ Test successful for {service_name.capitalize()}! Connection verified.</div>"
             f'<span id="status-indicator-{service_name}" hx-swap-oob="true" '
-            f'style="color: var(--pico-ins-color); font-size: 1.2rem; "'
-            f'margin-left: 0.5rem;">✅</span>'
+            f'style="color: var(--pico-ins-color); font-size: 1.2rem; margin-left: 0.5rem;">'
+            f'✅</span>'
         )
     else:
         return HTMLResponse(

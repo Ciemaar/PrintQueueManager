@@ -82,7 +82,7 @@ ignore = [
 ]
 
 [tool.pytest.ini_options]
-addopts = "-v --cov=src --cov-report=term-missing --cov-fail-under=85"
+addopts = "-v"
 testpaths = ["tests"]
 asyncio_mode = "auto"
 
@@ -100,6 +100,7 @@ isolated_build = True
 [testenv]
 runner = uv-venv-lock-runner
 extras = dev
+setenv = PYTHONPATH = {toxinidir}
 commands =
     pytest tests/ --cov=src --cov-fail-under=85
 
@@ -113,6 +114,7 @@ commands =
 [testenv:pyright]
 allowlist_externals = pyright
 extras = dev
+setenv = PYTHONPATH = {toxinidir}
 deps =
     pyright
 commands = pyright src/ tests/
