@@ -610,7 +610,7 @@ def test_settings(
             f"✅ Test successful for {service_name.capitalize()}! Connection verified.</div>"
             f'<span id="status-indicator-{service_name}" hx-swap-oob="true" '
             f'style="color: var(--pico-ins-color); font-size: 1.2rem; margin-left: 0.5rem;">'
-            f'✅</span>'
+            f"✅</span>"
         )
     else:
         return HTMLResponse(
