@@ -55,12 +55,8 @@ async def lifespan(app: FastAPI):
         logger.info("Executing alembic upgrade head...")
         alembic.command.upgrade(alembic_cfg, "head")
         logger.info("Database migrations completed successfully.")
-    except Exception as e:
-        logger.error(f"Failed to run database migrations: {e}")
-        # Log the traceback for debugging
-        import traceback
-
-        logger.error(traceback.format_exc())
+    except Exception:
+        logger.exception("Failed to run database migrations")
 
     # Normalize priorities synchronously so the first page load has valid integer sorting
     try:
