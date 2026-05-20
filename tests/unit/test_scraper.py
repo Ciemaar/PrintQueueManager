@@ -160,9 +160,12 @@ def test_get_scraper_agent_ollama_default(mock_settings, mock_agent_class):
 
 
 @patch("src.worker.llm_scraper.AsyncOpenAI")
+@patch("pydantic_ai.models.openai.OpenAIModel")
 @patch("src.worker.llm_scraper.Agent")
 @patch("src.worker.llm_scraper.settings")
-def test_get_scraper_agent_openrouter(mock_settings, mock_agent_class, mock_async_openai):
+def test_get_scraper_agent_openrouter(
+    mock_settings, mock_agent_class, mock_openai_model, mock_async_openai
+):
     """Verify get_scraper_agent configures OpenRouter provider properly."""
     from src.worker.llm_scraper import get_scraper_agent
 
@@ -183,9 +186,12 @@ def test_get_scraper_agent_openrouter(mock_settings, mock_agent_class, mock_asyn
 
 
 @patch("src.worker.llm_scraper.AsyncOpenAI")
+@patch("pydantic_ai.models.openai.OpenAIModel")
 @patch("src.worker.llm_scraper.Agent")
 @patch("src.worker.llm_scraper.settings")
-def test_get_scraper_agent_alibaba(mock_settings, mock_agent_class, mock_async_openai):
+def test_get_scraper_agent_alibaba(
+    mock_settings, mock_agent_class, mock_openai_model, mock_async_openai
+):
     """Verify get_scraper_agent configures Alibaba provider properly."""
     from src.worker.llm_scraper import get_scraper_agent
 
