@@ -160,11 +160,11 @@ def test_get_scraper_agent_ollama_default(mock_settings, mock_agent_class):
 
 
 @patch("src.worker.llm_scraper.AsyncOpenAI")
-@patch("pydantic_ai.models.openai.OpenAIModel")
+
 @patch("src.worker.llm_scraper.Agent")
 @patch("src.worker.llm_scraper.settings")
 def test_get_scraper_agent_openrouter(
-    mock_settings, mock_agent_class, mock_openai_model, mock_async_openai
+    mock_settings, mock_agent_class, mock_async_openai
 ):
     """Verify get_scraper_agent configures OpenRouter provider properly."""
     from src.worker.llm_scraper import get_scraper_agent
@@ -177,20 +177,18 @@ def test_get_scraper_agent_openrouter(
     mock_async_openai.assert_called_once_with(
         base_url="https://openrouter.ai/api/v1", api_key="secret123"
     )
+
     mock_agent_class.assert_called_once()
     assert mock_agent_class.call_args[0][0] == "openai:gpt-4o"
-    assert (
-        mock_agent_class.call_args[1]["model_settings"]["openai_client"]
-        == mock_async_openai.return_value
-    )
+    assert mock_agent_class.call_args[1]["model_settings"]["openai_client"] == mock_async_openai.return_value
 
 
 @patch("src.worker.llm_scraper.AsyncOpenAI")
-@patch("pydantic_ai.models.openai.OpenAIModel")
+
 @patch("src.worker.llm_scraper.Agent")
 @patch("src.worker.llm_scraper.settings")
 def test_get_scraper_agent_alibaba(
-    mock_settings, mock_agent_class, mock_openai_model, mock_async_openai
+    mock_settings, mock_agent_class, mock_async_openai
 ):
     """Verify get_scraper_agent configures Alibaba provider properly."""
     from src.worker.llm_scraper import get_scraper_agent
@@ -203,9 +201,7 @@ def test_get_scraper_agent_alibaba(
     mock_async_openai.assert_called_once_with(
         base_url="https://dashscope.aliyuncs.com/compatible-mode/v1", api_key="ali_secret123"
     )
+
     mock_agent_class.assert_called_once()
     assert mock_agent_class.call_args[0][0] == "openai:qwen-turbo"
-    assert (
-        mock_agent_class.call_args[1]["model_settings"]["openai_client"]
-        == mock_async_openai.return_value
-    )
+    assert mock_agent_class.call_args[1]["model_settings"]["openai_client"] == mock_async_openai.return_value
