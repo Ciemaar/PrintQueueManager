@@ -69,12 +69,17 @@ def get_scraper_agent(source: str) -> Agent[Any, ScrapedPageData]:
             api_key=api_key,
         )
 
+        from pydantic_ai.models.openai import OpenAIChatModel
+        from pydantic_ai.providers.openai import OpenAIProvider
+
+        provider = OpenAIProvider(openai_client=client)
+        model = OpenAIChatModel(model_name, provider=provider)
+
         return Agent(
-            f"openai:{model_name}",
-            model_settings={"openai_client": client},  # type: ignore
+            model,
             output_type=ScrapedPageData,
             system_prompt=system_prompt,
-        )  # type: ignore
+        )
     elif provider_prefix == "alibaba":
         api_key = settings.alibaba_api_key.get_secret_value() if settings.alibaba_api_key else ""
         if not api_key:
@@ -85,12 +90,17 @@ def get_scraper_agent(source: str) -> Agent[Any, ScrapedPageData]:
             api_key=api_key,
         )
 
+        from pydantic_ai.models.openai import OpenAIChatModel
+        from pydantic_ai.providers.openai import OpenAIProvider
+
+        provider = OpenAIProvider(openai_client=client)
+        model = OpenAIChatModel(model_name, provider=provider)
+
         return Agent(
-            f"openai:{model_name}",
-            model_settings={"openai_client": client},  # type: ignore
+            model,
             output_type=ScrapedPageData,
             system_prompt=system_prompt,
-        )  # type: ignore
+        )
     else:
         # Default to Ollama
         return Agent(
