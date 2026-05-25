@@ -561,6 +561,9 @@ def test_settings(
             f"Failed: Target URL is required to test {service_name.capitalize()}.</div>"
         )
 
+    # We defer the import of get_page_html because it has heavy dependencies
+    # (Playwright, Pydantic-AI) and can cause circular import issues or slow down
+    # the startup of the main FastAPI app if imported at the top level.
     from src.worker.llm_scraper import get_page_html
 
     success = False
@@ -574,7 +577,7 @@ def test_settings(
                 error_msg = f"Directory not found: {target_url}"
         elif service_name == "thingiverse":
             # API test
-            import requests
+            import requests  # Inline import avoids requiring requests for unrelated tasks
 
             headers = {"Authorization": f"Bearer {credential}"}
             response = requests.get(
