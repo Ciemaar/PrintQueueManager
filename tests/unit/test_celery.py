@@ -171,3 +171,38 @@ def test_sync_local(mock_session, mock_settings, tmp_path):
     assert mock_db.add.call_count == 4
     mock_db.commit.assert_called_once()
     mock_db.close.assert_called_once()
+
+@patch("src.worker.celery_app.settings")
+@patch("src.worker.celery_app.SessionLocal")
+def test_sync_local_error_rollback(mock_session, mock_settings, tmp_path):
+    """Verify that sync_local rolls back the session and closes it on error."""
+    # Point settings.watch_directory to the temporary py.test directory
+    mock_settings.watch_directory = str(tmp_path)
+    mock_settings.verbose = False
+
+    mock_db = MagicMock()
+    mock_session.return_value = mock_db
+
+    # Create a physical file inside the temp directory so added_files is not empty
+    new_file = tmp_path / "new.stl"
+    new_file.write_text("dummy stl content")
+
+    # Mocking the behavior in sync_local which queries the db to return an empty set
+    class MockFilter:
+        def filter(self, *args, **kwargs):
+            return []
+
+    mock_db.query.return_value = MockFilter()
+
+    # Simulate an error during commit
+    mock_db.commit.side_effect = Exception("Database error during commit")
+
+    result = sync_local()
+
+    # Even if it fails, added_files was already populated before commit
+    assert len(result) == 1
+
+    # Assert that rollback was called due to the exception
+    mock_db.rollback.assert_called_once()
+    # Assert that the session was closed in the finally block
+    mock_db.close.assert_called_once()
