@@ -24,6 +24,7 @@ def test_generate_local_thumbnails_success(mock_generate, mock_path, mock_sessio
     mock_path_instance = MagicMock()
     mock_path_instance.exists.return_value = True
     mock_path_instance.is_file.return_value = True
+    mock_path_instance.as_posix.return_value = "/path/to/file.stl"
     mock_path.return_value = mock_path_instance
 
     mock_generate.return_value = True
