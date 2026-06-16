@@ -223,3 +223,17 @@ def normalize_priorities() -> None:
         except Exception as e:
             logger.error(f"Failed to normalize priorities: {e}")
             db.rollback()
+
+
+@celery_app.task(name="sync_myminifactory")
+def sync_myminifactory() -> List[dict[str, Any]]:
+    """
+    Fetch the user's purchased/downloaded library from MyMiniFactory.
+
+    Uses Playwright and session cookies to access the private user library,
+    and leverages the local Pydantic AI agent to extract model attributes.
+    """
+    logger.info("Starting MyMiniFactory synchronization via Ollama agent...")
+    result = run_scraper("myminifactory", "https://www.myminifactory.com/library")
+    logger.info(f"Sync complete. Found {len(result)} models.")
+    return result

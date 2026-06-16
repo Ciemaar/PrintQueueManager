@@ -114,7 +114,7 @@ def get_page_html(source: str, url: str) -> str:
         return ""
 
 
-def run_scraper(source: str, url: str) -> List[dict[str, Any]]:
+def run_scraper(source: str, url: str, limit: int | None = None) -> List[dict[str, Any]]:
     """Run the LLM agent against a URL and store the results in the database."""
     Base.metadata.create_all(bind=engine)
 

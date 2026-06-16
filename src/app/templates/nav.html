@@ -1,0 +1,36 @@
+<nav>
+  <ul>
+    <li>
+      <hgroup>
+        <h1>{{ page_title | default('Local 3D Print Queue Manager') }}</h1>
+        <p>
+          {{ page_subtitle | default('Aggregating models from Local, MakerWorld,
+          Printables, and more.') }}
+        </p>
+      </hgroup>
+    </li>
+  </ul>
+  <ul>
+    <li>
+      <a
+        href="/"
+        class="{% if request.url.path == '/' %}primary{% else %}secondary{% endif %}"
+        >Main View</a
+      >
+    </li>
+    <li>
+      <a
+        href="/deleted"
+        class="{% if request.url.path == '/deleted' %}primary{% else %}secondary{% endif %}"
+        >Deleted Jobs</a
+      >
+    </li>
+    <li>
+      <a
+        href="/settings"
+        class="{% if request.url.path == '/settings' %}primary{% else %}secondary{% endif %}"
+        >Settings</a
+      >
+    </li>
+  </ul>
+</nav>
