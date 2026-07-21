@@ -1,4 +1,3 @@
-import pytest
 """Test module for the Celery worker scheduled tasks."""
 
 from unittest.mock import MagicMock, patch
@@ -225,14 +224,14 @@ def test_sync_local_db_query_error(mock_session_local, mock_settings, tmp_path):
     """Verify that a database error during the query phase triggers a rollback."""
     mock_settings.watch_directory = str(tmp_path)
     mock_db = MagicMock()
-    mock_session_local.return_value.__enter__.return_value = mock_db
+    mock_session_local.return_value = mock_db
 
     # Simulate an error when querying for known paths
     mock_db.query.side_effect = Exception("Database query failed")
 
     sync_local()
-
-    pass
+    mock_db.rollback.assert_called_once()
+    mock_db.close.assert_called_once()
 
 
 @patch("src.worker.celery_app.settings")
@@ -241,7 +240,7 @@ def test_sync_local_db_commit_error(mock_session_local, mock_settings, tmp_path)
     """Verify that a database error during the commit phase triggers a rollback."""
     mock_settings.watch_directory = str(tmp_path)
     mock_db = MagicMock()
-    mock_session_local.return_value.__enter__.return_value = mock_db
+    mock_session_local.return_value = mock_db
 
     # Create a physical file to ensure we attempt a commit
     new_file = tmp_path / "new.stl"
@@ -254,5 +253,5 @@ def test_sync_local_db_commit_error(mock_session_local, mock_settings, tmp_path)
     mock_db.commit.side_effect = Exception("Database commit failed")
 
     sync_local()
-
-    pass
+    mock_db.rollback.assert_called_once()
+    mock_db.close.assert_called_once()
