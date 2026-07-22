@@ -21,7 +21,7 @@ def test_setup_periodic_tasks():
     """Ensure all expected periodic synchronization tasks are registered."""
     sender_mock = MagicMock()
     setup_periodic_tasks(sender=sender_mock)
-    assert sender_mock.add_periodic_task.call_count == 6
+    assert sender_mock.add_periodic_task.call_count == 7
 
 
 @patch("src.worker.celery_app.run_scraper")
