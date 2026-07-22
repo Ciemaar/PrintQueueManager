@@ -12,7 +12,7 @@ def test_template_resolution_from_different_cwd(tmp_path):
 
     script_content = f"""
 import sys
-sys.path.insert(0, '{project_root}')
+sys.path.insert(0, {repr(project_root)})
 
 import os
 # Ensure we use an in-memory SQLite DB by patching the get_db dependency
