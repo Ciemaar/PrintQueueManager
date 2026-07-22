@@ -59,7 +59,7 @@ def test_get_page_html_with_cookie(mock_settings, mock_sync_playwright):
 
     assert html == "<html>Live Page</html>"
     mock_context.add_cookies.assert_called_once()
-    mock_page.goto.assert_called_with("http://test.com", wait_until="networkidle")
+    mock_page.goto.assert_called_with("http://test.com", wait_until="networkidle", timeout=15000)
 
 
 @patch("src.worker.llm_scraper.sync_playwright")

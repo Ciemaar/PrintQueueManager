@@ -4,6 +4,7 @@ import logging
 import os
 from typing import Any, List, Optional
 
+from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 from playwright.sync_api import sync_playwright
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent
@@ -44,22 +45,25 @@ scraper_agent: Agent[Any, ScrapedPageData] = Agent(
 )
 
 
-def get_page_html(source: str, url: str) -> str:
+def get_page_html(source: str, url: str, credential: str = "", raise_errors: bool = False) -> str:
     """Use Playwright to fetch dynamic HTML, injecting session cookies if available."""
     cookie_str = ""
     domain = ""
     if source == "makerworld":
-        cookie_str = settings.makerworld_cookie
+        cookie_str = credential or settings.makerworld_cookie
         domain = "makerworld.com"
     elif source == "printables":
-        cookie_str = settings.printables_cookie
+        cookie_str = credential or settings.printables_cookie
         domain = ".printables.com"
     elif source == "cults3d":
-        cookie_str = settings.cults3d_cookie
+        cookie_str = credential or settings.cults3d_cookie
         domain = "cults3d.com"
     elif source == "minihoarder":
-        cookie_str = settings.minihoarder_cookie
+        cookie_str = credential or settings.minihoarder_cookie
         domain = "www.minihoarder.com"
+    elif source == "myminifactory":
+        cookie_str = credential or getattr(settings, "myminifactory_cookie", "")
+        domain = "www.myminifactory.com"
     else:
         cookie_str = ""
         domain = ""
@@ -105,21 +109,31 @@ def get_page_html(source: str, url: str) -> str:
                 )
 
             page = context.new_page()
-            page.goto(url, wait_until="networkidle")
+            try:
+                # Use a 15 second timeout. Many modern sites never reach pure "networkidle"
+                # due to analytics polling, so we catch it and use whatever DOM rendered.
+                page.goto(url, wait_until="networkidle", timeout=15000)
+            except PlaywrightTimeoutError:
+                logger.warning(
+                    f"Timeout waiting for networkidle on {url}. Proceeding with current DOM state."
+                )
+
             content = str(page.content())
             browser.close()
             return content
     except Exception as e:
         logger.error(f"Failed to fetch {url} using Playwright: {e}")
+        if raise_errors:
+            raise e
         return ""
 
 
-def run_scraper(source: str, url: str) -> List[dict[str, Any]]:
+def run_scraper(source: str, url: str, credential: str = "") -> List[dict[str, Any]]:
     """Run the LLM agent against a URL and store the results in the database."""
     Base.metadata.create_all(bind=engine)
 
     logger.info(f"Fetching live HTML for {source} at {url}...")
-    html_content = get_page_html(source, url)
+    html_content = get_page_html(source, url, credential)
 
     if not html_content:
         return []

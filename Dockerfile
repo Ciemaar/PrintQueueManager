@@ -19,8 +19,16 @@ COPY ./src /app/src/
 COPY alembic.ini ./
 COPY ./alembic /app/alembic/
 
+
 # Install dependencies before installing the project
 RUN uv sync --frozen --no-install-project --no-dev
+
+# Ensure playwright installs globally and can be read by appuser
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+RUN uv run playwright install chromium \
+    && uv run playwright install-deps chromium \
+    && chmod -R 755 /ms-playwright
+
 
 # Now copy the source code and install the project itself
 COPY ./src /app/src/

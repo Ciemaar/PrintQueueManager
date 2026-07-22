@@ -2,6 +2,7 @@
 
 import html
 import logging
+import os
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from typing import Optional
@@ -13,7 +14,7 @@ from sqlalchemy.orm import Session
 
 from src.app.database import Base, SessionLocal, engine, get_db
 from src.app.logging_config import setup_logging
-from src.app.models import PrintJob, PrintStatus
+from src.app.models import PrintJob, PrintStatus, ServiceConfig
 from src.worker.celery_app import (
     sync_cults3d,
     sync_local,
@@ -70,7 +71,8 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Print Queue Manager", lifespan=lifespan)
 
-templates = Jinja2Templates(directory="src/app/templates")
+current_dir = os.path.dirname(os.path.abspath(__file__))
+templates = Jinja2Templates(directory=os.path.join(current_dir, "templates"))
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -345,3 +347,266 @@ def trigger_sync(platform: str) -> HTMLResponse:
         f'<div class="sync-toast" style="color: var(--pico-del-color); '
         f'font-weight: bold; margin-bottom: 1rem;">Unknown platform: {html.escape(platform)}</div>'
     )
+
+
+@app.get("/settings", response_class=HTMLResponse)
+def settings_page(request: Request, db: Session = Depends(get_db)) -> HTMLResponse:
+    """Render the configuration settings page for all platform integrations."""
+    service_defs = {
+        "local": {
+            "display_name": "Local Directory",
+            "instructions": "Specify an absolute path to a local directory containing 3D models.",
+            "example_url": "/path/to/your/3d_models",
+            "credential_placeholder": "Not required",
+        },
+        "makerworld": {
+            "display_name": "MakerWorld",
+            "instructions": (
+                "Log in to MakerWorld. Open Developer Tools (F12) > Application > Cookies, "
+                "and locate the <code>TAsessionID</code> cookie."
+            ),
+            "example_url": "https://makerworld.com/en/u/username/collections",
+            "credential_placeholder": "Paste TAsessionID cookie here",
+        },
+        "printables": {
+            "display_name": "Printables",
+            "instructions": (
+                "Log in to Printables. Open Developer Tools and locate the "
+                "<code>nette-samesite</code> cookie."
+            ),
+            "example_url": "https://www.printables.com/user/collections",
+            "credential_placeholder": "Paste nette-samesite cookie here",
+        },
+        "thingiverse": {
+            "display_name": "Thingiverse",
+            "instructions": (
+                "Log in to Thingiverse and generate a Bearer API token, "
+                "or use the Developer Tools to find your session token."
+            ),
+            "example_url": "https://www.thingiverse.com/user/collections",
+            "credential_placeholder": "Paste API token here",
+        },
+        "cults3d": {
+            "display_name": "Cults3D",
+            "instructions": (
+                "Log in to Cults3D. Open Developer Tools and locate the "
+                "<code>_session_id</code> cookie."
+            ),
+            "example_url": "https://cults3d.com/en/users/collections",
+            "credential_placeholder": "Paste _session_id cookie here",
+        },
+        "minihoarder": {
+            "display_name": "Minihoarder",
+            "instructions": (
+                "Log in to Minihoarder. Open Developer Tools and locate "
+                "the <code>PHPSESSID</code> cookie for your library."
+            ),
+            "example_url": "https://www.minihoarder.com/library/",
+            "credential_placeholder": "Paste PHPSESSID cookie here",
+        },
+        "myminifactory": {
+            "display_name": "MyMiniFactory",
+            "instructions": (
+                "Log in to MyMiniFactory. Open Developer Tools and locate the appropriate session "
+                "cookie (e.g. <code>PHPSESSID</code> or <code>myminifactory_session</code>)."
+            ),
+            "example_url": "https://www.myminifactory.com/library",
+            "credential_placeholder": "Paste session cookie here",
+        },
+    }
+
+    services = {}
+    for name, details in service_defs.items():
+        config = db.query(ServiceConfig).filter(ServiceConfig.service_name == name).first()
+        if not config:
+            config = ServiceConfig(
+                service_name=name, enabled=0, credential="", target_url=details["example_url"]
+            )
+        details["config"] = config
+        services[name] = details
+
+    return templates.TemplateResponse(
+        request=request, name="settings.html", context={"services": services}
+    )  # type: ignore
+
+
+@app.post("/settings/update", response_class=HTMLResponse)
+def update_settings(
+    request: Request,
+    service_name: str = Form(...),
+    enabled: int = Form(0),
+    target_url: str = Form(""),
+    credential: str = Form(""),
+    db: Session = Depends(get_db),
+) -> HTMLResponse:
+    """Update configuration settings for a specific service."""
+    config = db.query(ServiceConfig).filter(ServiceConfig.service_name == service_name).first()
+    if not config:
+        config = ServiceConfig(service_name=service_name)
+        db.add(config)
+
+    config.enabled = enabled  # type: ignore
+    config.target_url = target_url  # type: ignore
+
+    # Update credential only if a new value is provided,
+    # otherwise keep the existing one to support the masked input UI.
+    if credential:
+        config.credential = credential  # type: ignore
+
+    db.commit()
+
+    return HTMLResponse(
+        f'<div class="sync-toast" style="color: var(--pico-primary); '
+        f"font-weight: bold; margin-bottom: 1rem; padding: 0.5rem; "
+        f'background: var(--pico-primary-background); border-radius: 0.25rem;">'
+        f"Settings saved for {html.escape(service_name).capitalize()}!</div>",
+        headers={"HX-Refresh": "true"},
+    )
+
+
+@app.get("/settings/browse", response_class=HTMLResponse)
+def browse_directories(request: Request, path: str = "/") -> HTMLResponse:
+    """Return an HTML snippet of subdirectories within the given path."""
+    # Simple security constraint to keep it absolute and avoid jumping around too much wildly,
+    # though it's an admin internal tool.
+    target_path = os.path.abspath(path)
+
+    dirs = []
+    try:
+        # parent directory link
+        parent_path = os.path.dirname(target_path)
+        if target_path != parent_path:
+            dirs.append({"name": "..", "path": parent_path})
+
+        with os.scandir(target_path) as it:
+            for entry in it:
+                if entry.is_dir() and not entry.name.startswith("."):
+                    dirs.append({"name": entry.name, "path": entry.path})
+    except Exception as e:
+        error_str = html.escape(str(e))
+        return HTMLResponse(
+            f"<div style='color: var(--pico-del-color);'>Error accessing path: {error_str}</div>"
+        )
+
+    dirs.sort(key=lambda x: x["name"].lower())
+
+    # Render an inline list of links that will load back into the modal
+    escaped_path = html.escape(target_path)
+    html_content = (
+        f"<div style='margin-bottom: 1rem;'><strong>Current Path:</strong> {escaped_path}</div>"
+    )
+
+    html_content += (
+        "<ul style='list-style: none; padding: 0; max-height: 200px; "
+        "overflow-y: auto; border: 1px solid var(--pico-muted-border-color); "
+        "border-radius: 0.25rem; padding: 0.5rem;'>"
+    )
+
+    for d in dirs:
+        escaped_name = html.escape(d["name"])
+        html_content += f"""
+        <li style='margin-bottom: 0.25rem;'>
+            <a href="#" hx-get="/settings/browse?path={d["path"]}"
+               hx-target="#directory-browser-content" style="text-decoration: none;">
+                📁 {escaped_name}
+            </a>
+        </li>
+        """
+    html_content += "</ul>"
+
+    html_content += f"""
+    <div style='margin-top: 1rem; display: flex; justify-content: flex-end; gap: 0.5rem;'>
+        <button type="button" class="secondary"
+                onclick="document.getElementById('directory-modal').removeAttribute('open');">
+            Cancel
+        </button>
+        <button type="button"
+                onclick="document.getElementById('local_target_url').value = '{escaped_path}';
+                         document.getElementById('directory-modal').removeAttribute('open');">
+            Select Directory
+        </button>
+    </div>
+    """
+
+    return HTMLResponse(html_content)
+
+
+@app.post("/settings/test", response_class=HTMLResponse)
+def test_settings(
+    request: Request,
+    service_name: str = Form(...),
+    target_url: str = Form(""),
+    credential: str = Form(""),
+    db: Session = Depends(get_db),
+) -> HTMLResponse:
+    """Test configuration settings synchronously by running a fast HTTP/Playwright fetch."""
+    # If the credential field is empty (masked), fall back to checking the DB
+    if not credential:
+        config = db.query(ServiceConfig).filter(ServiceConfig.service_name == service_name).first()
+        if config and getattr(config, "credential", None):
+            credential = str(config.credential)
+
+    if not target_url:
+        return HTMLResponse(
+            f'<div class="sync-toast" style="color: var(--pico-del-color); '
+            f"font-weight: bold; margin-bottom: 1rem; padding: 0.5rem; "
+            f'background: var(--pico-del-background); border-radius: 0.25rem;">'
+            f"Failed: Target URL is required to test "
+            f"{html.escape(service_name).capitalize()}.</div>"
+        )
+
+    success = False
+    error_msg = ""
+    try:
+        if service_name == "local":
+            if os.path.isdir(target_url):
+                success = True
+            else:
+                success = False
+                error_msg = f"Directory not found: {target_url}"
+        elif service_name == "thingiverse":
+            # API test
+            import requests  # Inline import avoids requiring requests for unrelated tasks
+
+            headers = {"Authorization": f"Bearer {credential}"}
+            response = requests.get(
+                "https://api.thingiverse.com/users/me", headers=headers, timeout=10
+            )
+            response.raise_for_status()
+            success = True
+        else:
+            from src.worker.llm_scraper import run_scraper
+
+            try:
+                # Use limit=1 to verify connection and parsing without processing the full library
+                _ = run_scraper(service_name, target_url, credential=credential)
+                # Even if result is empty, if it didn't throw an error, connection was successful
+                success = True
+            except Exception as e:
+                success = False
+                error_msg = f"Playwright/Agent Error: {e}"
+    except Exception as e:
+        success = False
+        error_msg = html.escape(str(e))
+
+    if success:
+        return HTMLResponse(
+            f'<div class="sync-toast" style="color: var(--pico-ins-color); '
+            f"font-weight: bold; margin-bottom: 1rem; padding: 0.5rem; "
+            f'background: var(--pico-ins-background); border-radius: 0.25rem;">'
+            f"✅ Test successful for "
+            f"{html.escape(service_name).capitalize()}! Connection verified.</div>"
+            f'<span id="status-indicator-{service_name}" hx-swap-oob="true" '
+            f'style="color: var(--pico-ins-color); font-size: 1.2rem; margin-left: 0.5rem;">'
+            f"✅</span>"
+        )
+    else:
+        return HTMLResponse(
+            f'<div class="sync-toast" style="color: var(--pico-del-color); '
+            f"font-weight: bold; margin-bottom: 1rem; padding: 0.5rem; "
+            f'background: var(--pico-del-background); border-radius: 0.25rem;">'
+            f"Test failed for {html.escape(service_name).capitalize()}. {error_msg}</div>"
+            f'<span id="status-indicator-{service_name}" hx-swap-oob="true" '
+            f'style="color: var(--pico-del-color); font-size: 1.2rem; "'
+            f'margin-left: 0.5rem;">❌</span>'
+        )

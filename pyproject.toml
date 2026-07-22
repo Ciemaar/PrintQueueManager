@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=82.0.1", "wheel"]
+requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -82,7 +82,7 @@ ignore = [
 ]
 
 [tool.pytest.ini_options]
-addopts = "-v --cov=src --cov-report=term-missing --cov-fail-under=85"
+addopts = "-v --cov=src --cov-report=term-missing --cov-fail-under=90"
 testpaths = ["tests"]
 asyncio_mode = "auto"
 
@@ -101,7 +101,7 @@ isolated_build = True
 runner = uv-venv-lock-runner
 extras = dev
 commands =
-    pytest tests/ --cov=src --cov-fail-under=85
+    pytest tests/ --cov=src --cov-fail-under=90
 
 [testenv:ruff]
 allowlist_externals = ruff

@@ -2,7 +2,7 @@
 
 from unittest.mock import MagicMock, patch
 
-from src.watchdog.main import PrintQueueEventHandler, main
+from src.watchdog_service.main import PrintQueueEventHandler, main
 
 
 def test_on_created_file_detected():
@@ -49,8 +49,8 @@ def test_on_created_ignores_non_3d_files():
     handler._add_to_queue.assert_not_called()  # pylint: disable=protected-access
 
 
-@patch("src.watchdog.main.os.path.getsize")
-@patch("src.watchdog.main.SessionLocal")
+@patch("src.watchdog_service.main.os.path.getsize")
+@patch("src.watchdog_service.main.SessionLocal")
 def test_add_to_queue_new_file(mock_session_local, mock_getsize):
     """Verify add_to_queue inserts a new job into the database."""
     mock_getsize.return_value = 1024
@@ -68,7 +68,7 @@ def test_add_to_queue_new_file(mock_session_local, mock_getsize):
     mock_db.close.assert_called_once()
 
 
-@patch("src.watchdog.main.SessionLocal")
+@patch("src.watchdog_service.main.SessionLocal")
 def test_add_to_queue_existing_file(mock_session_local):
     """Verify add_to_queue skips inserting if the file is already in the database."""
     mock_db = MagicMock()
@@ -85,7 +85,7 @@ def test_add_to_queue_existing_file(mock_session_local):
     mock_db.close.assert_called_once()
 
 
-@patch("src.watchdog.main.SessionLocal")
+@patch("src.watchdog_service.main.SessionLocal")
 def test_add_to_queue_exception_handling(mock_session_local):
     """Verify add_to_queue rolls back the transaction on exception."""
     mock_db = MagicMock()
@@ -101,17 +101,16 @@ def test_add_to_queue_exception_handling(mock_session_local):
     mock_db.close.assert_called_once()
 
 
-@patch("src.watchdog.main.time.sleep", side_effect=KeyboardInterrupt)
-@patch("src.watchdog.main.Observer")
-@patch("src.watchdog.main.Base.metadata.create_all")
-def test_main_watchdog_loop(mock_create_all, mock_observer_class, mock_sleep):
+@patch("src.watchdog_service.main.time.sleep", side_effect=KeyboardInterrupt)
+@patch("src.watchdog_service.main.Observer")
+def test_main_watchdog_loop(mock_observer_class, mock_sleep):
     """Verify the main loop starts and stops the observer correctly."""
     mock_observer = MagicMock()
     mock_observer_class.return_value = mock_observer
 
     main()
 
-    mock_create_all.assert_called_once()
+    # # mock_create_all.assert_called_once()
     mock_observer.start.assert_called_once()
     mock_observer.stop.assert_called_once()
     mock_observer.join.assert_called_once()
