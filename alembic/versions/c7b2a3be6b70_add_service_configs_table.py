@@ -1,5 +1,5 @@
 """
-Add service configs table.
+Add service configs table
 
 Revision ID: c7b2a3be6b70
 Revises: 3dc1a2df7d43

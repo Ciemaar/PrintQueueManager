@@ -1,4 +1,3 @@
-
 """Celery worker configuration and scheduled tasks for external data sync."""
 
 import logging

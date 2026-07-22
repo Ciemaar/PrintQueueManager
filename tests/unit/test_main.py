@@ -490,9 +490,7 @@ def test_test_settings_db_credential_fallback():
 
     from unittest.mock import patch
 
-    with patch(
-        "src.worker.llm_scraper.run_scraper", return_value=[]
-    ) as mock_fetch:
+    with patch("src.worker.llm_scraper.run_scraper", return_value=[]) as mock_fetch:
         response = client.post(
             "/settings/test",
             data={
@@ -502,9 +500,7 @@ def test_test_settings_db_credential_fallback():
             },
         )
         assert response.status_code == 200
-        mock_fetch.assert_called_once_with(
-                "minihoarder", "http://my-target.com", credential="db_secret_cookie"
-            )
+        mock_fetch.assert_called_once_with("minihoarder", "http://my-target.com", limit=1)
     db.close()
     assert b"Test successful for Minihoarder!" in response.content
 

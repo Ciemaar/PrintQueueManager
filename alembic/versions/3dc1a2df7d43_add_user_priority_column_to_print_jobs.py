@@ -1,5 +1,5 @@
 """
-Add user_priority column to print_jobs.
+Add user_priority column to print_jobs
 
 Revision ID: 3dc1a2df7d43
 Revises: 0001
