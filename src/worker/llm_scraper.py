@@ -128,7 +128,9 @@ def get_page_html(source: str, url: str, credential: str = "", raise_errors: boo
         return ""
 
 
-def run_scraper(source: str, url: str, credential: str = "") -> List[dict[str, Any]]:
+def run_scraper(
+    source: str, url: str, credential: str = "", limit: int | None = None
+) -> List[dict[str, Any]]:
     """Run the LLM agent against a URL and store the results in the database."""
     Base.metadata.create_all(bind=engine)
 
@@ -163,6 +165,8 @@ def run_scraper(source: str, url: str, credential: str = "") -> List[dict[str, A
     db = SessionLocal()
     saved_items: List[dict[str, Any]] = []
     try:
+        if limit is not None:
+            data = data[:limit]
         for model in data:
             existing = db.query(PrintJob).filter(PrintJob.source_url == model.url).first()
             if not existing:

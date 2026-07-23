@@ -579,7 +579,7 @@ def test_settings(
 
             try:
                 # Use limit=1 to verify connection and parsing without processing the full library
-                _ = run_scraper(service_name, target_url, credential=credential)
+                _ = run_scraper(service_name, target_url, credential=credential, limit=1)
                 # Even if result is empty, if it didn't throw an error, connection was successful
                 success = True
             except Exception as e:

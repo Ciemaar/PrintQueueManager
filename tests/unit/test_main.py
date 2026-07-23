@@ -501,7 +501,7 @@ def test_test_settings_db_credential_fallback():
         )
         assert response.status_code == 200
         mock_fetch.assert_called_once_with(
-            "minihoarder", "http://my-target.com", credential="db_secret_cookie"
+            "minihoarder", "http://my-target.com", credential="db_secret_cookie", limit=1
         )
     db.close()
     assert b"Test successful for Minihoarder!" in response.content
