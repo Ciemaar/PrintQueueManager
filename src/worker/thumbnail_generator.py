@@ -19,12 +19,11 @@ def _start_xvfb() -> None:
     # Check if a display is already set and available
     if not os.environ.get("DISPLAY"):
         os.environ["DISPLAY"] = ":99"
-
-    # We try to launch Xvfb in the background. If it fails (e.g., already running),
-    # it's usually fine because the display is already active.
-    # Note: os.system runs synchronously, so we run it in background with &
-    cmd = "Xvfb :99 -screen 0 1024x768x24 -ac +extension GLX +render -noreset >/dev/null 2>&1 &"
-    os.system(cmd)
+        # We try to launch Xvfb in the background. If it fails (e.g., already running),
+        # it's usually fine because the display is already active.
+        # Note: os.system runs synchronously, so we run it in background with &
+        cmd = "Xvfb :99 -screen 0 1024x768x24 -ac +extension GLX +render -noreset >/dev/null 2>&1 &"
+        os.system(cmd)
 
 
 def generate_thumbnail(
@@ -64,10 +63,10 @@ def generate_thumbnail(
         return False
 
 
-def get_thumbnail_path(file_path: Path) -> Path:
+def get_thumbnail_path(file_path: Path) -> str:
     """Get the expected thumbnail path relative to static dir."""
     file_hash = hashlib.md5(str(file_path).encode()).hexdigest()
-    return Path(f"/static/thumbnails/{file_hash}.png")
+    return f"/static/thumbnails/{file_hash}.png"
 
 
 def get_thumbnail_file_path(file_path: Path) -> Path:

@@ -11,8 +11,8 @@ from src.worker.thumbnail_generator import (
 def test_get_thumbnail_path():
     """Verify the expected web path for a given file thumbnail."""
     path = get_thumbnail_path(Path("/test/file.stl"))
-    assert str(path).replace("\\", "/").startswith("/static/thumbnails/")
-    assert str(path).replace("\\", "/").endswith(".png")
+    assert str(path).startswith("/static/thumbnails/")
+    assert str(path).endswith(".png")
 
 
 def test_get_thumbnail_file_path():
