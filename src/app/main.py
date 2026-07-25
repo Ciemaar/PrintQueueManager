@@ -59,12 +59,12 @@ async def lifespan(app: FastAPI):
         _normalize_priorities_sync(db)
         db.close()
     except Exception as e:
-        logger.error(f"Failed to normalize priorities during startup: {e}")
+        logger.exception(f"Failed to normalize priorities during startup: {e}")
 
     try:
         sync_local.delay()
     except Exception as e:
-        logger.error(f"Failed to trigger initial sync_local task: {e}")
+        logger.exception(f"Failed to trigger initial sync_local task: {e}")
 
     yield
 
