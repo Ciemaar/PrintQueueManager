@@ -84,9 +84,9 @@ def test_run_scraper_empty_html(mock_get_html):
     assert result == []
 
 
-@patch("src.worker.llm_scraper.scraper_agent.run_sync")
+@patch("src.worker.llm_scraper.get_scraper_agent")
 @patch("src.worker.llm_scraper.get_page_html")
-def test_run_scraper_success(mock_get_html, mock_run_sync):
+def test_run_scraper_success(mock_get_html, mock_get_agent):
     """Verify run_scraper parses LLM output and saves to DB."""
     mock_get_html.return_value = "<html>Valid Data</html>"
 
@@ -94,7 +94,9 @@ def test_run_scraper_success(mock_get_html, mock_run_sync):
     mock_result.data.models = [
         ExtractedModelInfo(title="LLM Vase", url="http://url.com", thumbnail=None, author=None)
     ]
-    mock_run_sync.return_value = mock_result
+    mock_agent = MagicMock()
+    mock_agent.run_sync.return_value = mock_result
+    mock_get_agent.return_value = mock_agent
 
     result = run_scraper("test", "http://test.com")
 
@@ -106,12 +108,14 @@ def test_run_scraper_success(mock_get_html, mock_run_sync):
     assert len(result2) == 0
 
 
-@patch("src.worker.llm_scraper.scraper_agent.run_sync")
+@patch("src.worker.llm_scraper.get_scraper_agent")
 @patch("src.worker.llm_scraper.get_page_html")
-def test_run_scraper_llm_error(mock_get_html, mock_run_sync):
+def test_run_scraper_llm_error(mock_get_html, mock_get_agent):
     """Verify run_scraper uses fallback mock data if LLM throws an exception."""
     mock_get_html.return_value = "<html>Complex Data</html>"
-    mock_run_sync.side_effect = Exception("Ollama disconnected")
+    mock_agent = MagicMock()
+    mock_agent.run_sync.side_effect = Exception("Ollama disconnected")
+    mock_get_agent.return_value = mock_agent
 
     result = run_scraper("test", "http://test.com")
 
@@ -119,14 +123,16 @@ def test_run_scraper_llm_error(mock_get_html, mock_run_sync):
     assert "Mock Vase" in result[0]["title"]
 
 
-@patch("src.worker.llm_scraper.scraper_agent.run_sync")
+@patch("src.worker.llm_scraper.get_scraper_agent")
 @patch("src.worker.llm_scraper.get_page_html")
-def test_run_scraper_db_error(mock_get_html, mock_run_sync):
+def test_run_scraper_db_error(mock_get_html, mock_get_agent):
     """Verify run_scraper handles database commit errors safely."""
     mock_get_html.return_value = "<html>Valid Data</html>"
-    mock_run_sync.return_value.data.models = [
+    mock_agent = MagicMock()
+    mock_agent.run_sync.return_value.data.models = [
         ExtractedModelInfo(title="LLM Vase", url="http://url.com", thumbnail=None, author=None)
     ]
+    mock_get_agent.return_value = mock_agent
 
     with patch("src.worker.llm_scraper.SessionLocal") as mock_session_local:
         mock_db = MagicMock()
@@ -137,3 +143,71 @@ def test_run_scraper_db_error(mock_get_html, mock_run_sync):
 
         assert result == []  # Return logic should fail properly
         mock_db.rollback.assert_called_once()
+
+
+@patch("src.worker.llm_scraper.Agent")
+@patch("src.worker.llm_scraper.settings")
+def test_get_scraper_agent_ollama_default(mock_settings, mock_agent_class):
+    """Verify get_scraper_agent falls back to ollama by default."""
+    from src.worker.llm_scraper import get_scraper_agent
+
+    mock_settings.llm_model_mapping = {}
+
+    get_scraper_agent("unknown")
+
+    mock_agent_class.assert_called_once()
+    assert mock_agent_class.call_args[0][0] == "ollama:llama3.2"
+
+
+@patch("src.worker.llm_scraper.AsyncOpenAI")
+@patch("pydantic_ai.models.openai.OpenAIModel")
+@patch("src.worker.llm_scraper.Agent")
+@patch("src.worker.llm_scraper.settings")
+def test_get_scraper_agent_openrouter(
+    mock_settings, mock_agent_class, mock_openai_model, mock_async_openai
+):
+    """Verify get_scraper_agent configures OpenRouter provider properly."""
+    from src.worker.llm_scraper import get_scraper_agent
+
+    mock_settings.llm_model_mapping = {"scraper.test_source": "openrouter:gpt-4o"}
+    mock_settings.openrouter_api_key.get_secret_value.return_value = "secret123"
+
+    get_scraper_agent("test_source")
+
+    mock_async_openai.assert_called_once_with(
+        base_url="https://openrouter.ai/api/v1", api_key="secret123"
+    )
+
+    mock_openai_model.assert_called_once_with(
+        "gpt-4o", openai_client=mock_async_openai.return_value
+    )
+
+    mock_agent_class.assert_called_once()
+    assert mock_agent_class.call_args[0][0] == mock_openai_model.return_value
+
+
+@patch("src.worker.llm_scraper.AsyncOpenAI")
+@patch("pydantic_ai.models.openai.OpenAIModel")
+@patch("src.worker.llm_scraper.Agent")
+@patch("src.worker.llm_scraper.settings")
+def test_get_scraper_agent_alibaba(
+    mock_settings, mock_agent_class, mock_openai_model, mock_async_openai
+):
+    """Verify get_scraper_agent configures Alibaba provider properly."""
+    from src.worker.llm_scraper import get_scraper_agent
+
+    mock_settings.llm_model_mapping = {"scraper.test_source": "alibaba:qwen-turbo"}
+    mock_settings.alibaba_api_key.get_secret_value.return_value = "ali_secret123"
+
+    get_scraper_agent("test_source")
+
+    mock_async_openai.assert_called_once_with(
+        base_url="https://dashscope.aliyuncs.com/compatible-mode/v1", api_key="ali_secret123"
+    )
+
+    mock_openai_model.assert_called_once_with(
+        "qwen-turbo", openai_client=mock_async_openai.return_value
+    )
+
+    mock_agent_class.assert_called_once()
+    assert mock_agent_class.call_args[0][0] == mock_openai_model.return_value
