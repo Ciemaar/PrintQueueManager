@@ -180,9 +180,7 @@ def test_get_scraper_agent_openrouter(
     )
 
     mock_openai_provider.assert_called_once_with(openai_client=mock_async_openai.return_value)
-    mock_openai_model.assert_called_once_with(
-        "gpt-4o", provider=mock_openai_provider.return_value
-    )
+    mock_openai_model.assert_called_once_with("gpt-4o", provider=mock_openai_provider.return_value)
 
     mock_agent_class.assert_called_once()
     assert mock_agent_class.call_args[0][0] == mock_openai_model.return_value
