@@ -69,9 +69,11 @@ def get_scraper_agent(source: str) -> Agent[Any, ScrapedPageData]:
             api_key=api_key,
         )
 
-        from pydantic_ai.models.openai import OpenAIModel
+        from pydantic_ai.models.openai import OpenAIChatModel
+        from pydantic_ai.providers.openai import OpenAIProvider
 
-        model = OpenAIModel(model_name, openai_client=client)
+        provider = OpenAIProvider(openai_client=client)
+        model = OpenAIChatModel(model_name, provider=provider)
 
         return Agent(
             model,
@@ -88,9 +90,11 @@ def get_scraper_agent(source: str) -> Agent[Any, ScrapedPageData]:
             api_key=api_key,
         )
 
-        from pydantic_ai.models.openai import OpenAIModel
+        from pydantic_ai.models.openai import OpenAIChatModel
+        from pydantic_ai.providers.openai import OpenAIProvider
 
-        model = OpenAIModel(model_name, openai_client=client)
+        provider = OpenAIProvider(openai_client=client)
+        model = OpenAIChatModel(model_name, provider=provider)
 
         return Agent(
             model,
