@@ -1,8 +1,10 @@
 """FastAPI application entrypoint and route definitions."""
 
 import html
+import json
 import logging
 import os
+import urllib.parse
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from typing import Optional
@@ -506,7 +508,7 @@ def browse_directories(request: Request, path: str = "/") -> HTMLResponse:
         escaped_name = html.escape(d["name"])
         html_content += f"""
         <li style='margin-bottom: 0.25rem;'>
-            <a href="#" hx-get="/settings/browse?path={d["path"]}"
+            <a href="#" hx-get="/settings/browse?path={urllib.parse.quote(d["path"])}"
                hx-target="#directory-browser-content" style="text-decoration: none;">
                 📁 {escaped_name}
             </a>
@@ -521,8 +523,9 @@ def browse_directories(request: Request, path: str = "/") -> HTMLResponse:
             Cancel
         </button>
         <button type="button"
-                onclick="document.getElementById('local_target_url').value = '{escaped_path}';
-                         document.getElementById('directory-modal').removeAttribute('open');">
+                onclick='document.getElementById("local_target_url").value =\
+                  {json.dumps(target_path)};
+                         document.getElementById("directory-modal").removeAttribute("open");'>
             Select Directory
         </button>
     </div>
