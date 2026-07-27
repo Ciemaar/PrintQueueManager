@@ -179,3 +179,17 @@ This section compares autonomous agentic coding tools to evaluate which one best
     - _Opposing:_ Horizontal autoscaling of worker containers is unnecessary for a single-node, local-first system running on a single user's hardware.
 
 - _Action:_ Continue relying solely on `docker-compose.yml` for orchestration and local deployment.
+
+## 3D Thumbnail Generation
+
+**Current:** `trimesh` + `pyglet` (via `Xvfb`)
+**Alternatives:** `pyrender`, `pyvista`, `OpenSCAD`
+**Decision:** **Adopt `trimesh` with `pyglet` for headless software rendering.**
+
+- _Reasoning:_
+  - **`trimesh`**: Extremely robust for loading `.stl` and `.3mf` files. It has built-in scene rendering capabilities that leverage `pyglet`.
+  - **`pyglet`**: Provides a lightweight OpenGL windowing and multimedia library for Python. When combined with `Xvfb` (X virtual framebuffer) in our Docker container, it allows for completely headless, software-based 3D rendering without requiring a dedicated GPU or complex EGL/OSMesa setups.
+  - **`pyrender`**: A great modern alternative, but it often requires more complex headless OpenGL configurations (like `osmesa` or `egl`) which can be brittle to set up in minimal Docker environments.
+  - **`pyvista`**: Powerful for scientific 3D visualization, but heavy (relies on VTK) and similarly complicated to run headlessly without a Jupyter backend or OSMesa.
+  - **`OpenSCAD`**: Great for programmatic CAD, but overkill for simply taking a snapshot of an existing `.stl`.
+- _Action:_ Added `trimesh`, `pyglet<2`, `Pillow`, `numpy`, and `scipy` to our `uv` dependencies. Installed `xvfb` and `libgl1` in the Dockerfile to support background X11 rendering for the thumbnail generator.

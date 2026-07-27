@@ -4,8 +4,11 @@
           <path d="M2 3.5a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11a.5.5 0 0 1-.5-.5zm0 4a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11a.5.5 0 0 1-.5-.5zm0 4a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11a.5.5 0 0 1-.5-.5z"/>
         </svg>
     </td>
-    <td>
-        {% if job.thumbnail_url %}
+    <td class="td-thumbnail">
+        {% if job.source == 'Local' %}
+            <img src="/static/thumbnails/job_{{ job.id }}.png" class="thumbnail" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'" alt="Thumbnail">
+            <div class="thumbnail-placeholder" style="display: none;">STL</div>
+        {% elif job.thumbnail_url %}
             <img src="{{ job.thumbnail_url }}" alt="Thumbnail">
         {% else %}
             <div class="no-img">No Img</div>

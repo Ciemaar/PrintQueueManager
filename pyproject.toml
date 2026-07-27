@@ -45,7 +45,12 @@ dependencies = [
     "httpx",
     "ollama",
     "playwright",
-    "watchfiles"
+    "watchfiles",
+    "pyglet<2",
+    "pillow>=12.3.0",
+    "numpy>=2.2.6",
+    "scipy>=1.15.3",
+    "trimesh>=4.12.2",
 ]
 requires-python = ">=3.10"
 

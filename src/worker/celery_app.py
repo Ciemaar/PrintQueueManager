@@ -1,6 +1,7 @@
 """Celery worker configuration and scheduled tasks for external data sync."""
 
 import logging
+import os
 from pathlib import Path
 from typing import Any, List
 
@@ -14,6 +15,7 @@ from src.app.models import PrintJob, PrintStatus
 
 from .llm_scraper import run_scraper
 from .thingiverse_api import fetch_thingiverse_collections
+from .thumbnail_generator import generate_thumbnail, get_thumbnail_file_path
 
 setup_logging()
 logger = logging.getLogger(__name__)
@@ -50,6 +52,10 @@ def setup_periodic_tasks(sender: Any, **kwargs: Any) -> None:
     # Run the priority normalization task daily at midnight UTC
     sender.add_periodic_task(
         crontab(minute="0", hour="0"), normalize_priorities.s(), name="normalize_priorities_daily"
+    )
+    # Run thumbnail generation every hour
+    sender.add_periodic_task(
+        crontab(minute="0"), generate_local_thumbnails.s(), name="generate_local_thumbnails_hourly"
     )
 
 
@@ -223,3 +229,30 @@ def normalize_priorities() -> None:
         except Exception as e:
             logger.error(f"Failed to normalize priorities: {e}")
             db.rollback()
+
+
+@celery_app.task(name="generate_local_thumbnails")
+def generate_local_thumbnails() -> int:
+    """Scan the database for local PrintJobs and generate missing thumbnails."""
+    logger.info("Scanning for missing local thumbnails...")
+    db = SessionLocal()
+    generated_count = 0
+    try:
+        local_jobs = db.query(PrintJob).filter(PrintJob.source == "Local").all()
+        for job in local_jobs:
+            if job.file_path:
+                thumb_path = get_thumbnail_file_path(job.id)
+                # Only generate if it doesn't already exist and the source file exists
+                if not os.path.exists(thumb_path) and os.path.exists(job.file_path):
+                    logger.info(f"Generating thumbnail for job {job.id}: {job.title}")
+                    success = generate_thumbnail(job.file_path, job.id)
+                    if success:
+                        generated_count += 1
+
+        logger.info(f"Thumbnail generation complete. Generated {generated_count} new thumbnails.")
+    except Exception as e:
+        logger.error(f"Error generating local thumbnails: {e}")
+    finally:
+        db.close()
+
+    return generated_count

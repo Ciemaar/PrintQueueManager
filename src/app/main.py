@@ -8,6 +8,7 @@ from typing import Optional
 
 from fastapi import Depends, FastAPI, Form, Request
 from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
@@ -69,6 +70,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Print Queue Manager", lifespan=lifespan)
+
+app.mount("/static", StaticFiles(directory="src/app/static"), name="static")
 
 templates = Jinja2Templates(directory="src/app/templates")
 
