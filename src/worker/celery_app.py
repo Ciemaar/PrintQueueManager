@@ -240,8 +240,12 @@ def generate_local_thumbnails() -> int:
     try:
         local_jobs = db.query(PrintJob).filter(PrintJob.source == "Local").all()
         for job in local_jobs:
-            job_id = int(str(job.id))
-            file_path = str(getattr(job, 'file_path')) if getattr(job, 'file_path') else None
+            # Type ignore because Pyright sometimes incorrectly types SQLAlchemy models as Column properties
+            job_id_val = getattr(job, "id")
+            job_id = int(str(job_id_val)) # type: ignore
+
+            file_path_val = getattr(job, "file_path")
+            file_path = str(file_path_val) if file_path_val else None # type: ignore
 
             if file_path:
                 thumb_path = get_thumbnail_file_path(job_id)
