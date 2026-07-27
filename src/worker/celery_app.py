@@ -240,12 +240,15 @@ def generate_local_thumbnails() -> int:
     try:
         local_jobs = db.query(PrintJob).filter(PrintJob.source == "Local").all()
         for job in local_jobs:
-            if job.file_path:
-                thumb_path = get_thumbnail_file_path(job.id)
+            job_id = int(str(job.id))
+            file_path = str(getattr(job, 'file_path')) if getattr(job, 'file_path') else None
+
+            if file_path:
+                thumb_path = get_thumbnail_file_path(job_id)
                 # Only generate if it doesn't already exist and the source file exists
-                if not os.path.exists(thumb_path) and os.path.exists(job.file_path):
-                    logger.info(f"Generating thumbnail for job {job.id}: {job.title}")
-                    success = generate_thumbnail(job.file_path, job.id)
+                if not os.path.exists(thumb_path) and os.path.exists(file_path):
+                    logger.info(f"Generating thumbnail for job {job_id}: {job.title}")
+                    success = generate_thumbnail(file_path, job_id)
                     if success:
                         generated_count += 1
 
