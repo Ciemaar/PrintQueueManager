@@ -213,10 +213,23 @@ def test_normalize_priorities_exception(mock_session_local):
     """Verify that database exceptions trigger a rollback."""
     mock_db = MagicMock()
     mock_session_local.return_value.__enter__.return_value = mock_db
-    mock_db.query.side_effect = Exception("DB Error")
+    mock_db.query.side_effect = SQLAlchemyError("DB Error")
 
     # The task should catch the exception, log it, and rollback
     normalize_priorities()
+
+    mock_db.rollback.assert_called_once()
+
+
+@patch("src.worker.celery_app.SessionLocal")
+def test_normalize_priorities_unknown_exception(mock_session_local):
+    """Verify that unknown exceptions are rolled back and re-raised."""
+    mock_db = MagicMock()
+    mock_session_local.return_value.__enter__.return_value = mock_db
+    mock_db.query.side_effect = Exception("Unknown Error")
+
+    with pytest.raises(Exception, match="Unknown Error"):
+        normalize_priorities()
 
     mock_db.rollback.assert_called_once()
 
