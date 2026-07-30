@@ -1,6 +1,5 @@
 """FastAPI application entrypoint and route definitions."""
 
-import html
 import logging
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
@@ -322,7 +321,7 @@ def update_notes(
 
 
 @app.post("/sync/{platform}", response_class=HTMLResponse)
-def trigger_sync(platform: str) -> HTMLResponse:
+def trigger_sync(request: Request, platform: str) -> HTMLResponse:
     """Manually trigger a background Celery task to synchronize a specific platform."""
     tasks = {
         "makerworld": sync_makerworld,
@@ -336,12 +335,12 @@ def trigger_sync(platform: str) -> HTMLResponse:
     task = tasks.get(platform.lower())
     if task:
         task.delay()
-        msg = f"Sync started for {html.escape(platform.capitalize())}!"
-        return HTMLResponse(
-            f'<div class="sync-toast" style="color: var(--pico-primary); '
-            f'font-weight: bold; margin-bottom: 1rem;">{msg}</div>'
+        msg = f"Sync started for {platform.capitalize()}!"
+        return templates.TemplateResponse(  # type: ignore
+            request=request, name="sync_toast.html", context={"message": msg, "is_error": False}
         )
-    return HTMLResponse(
-        f'<div class="sync-toast" style="color: var(--pico-del-color); '
-        f'font-weight: bold; margin-bottom: 1rem;">Unknown platform: {html.escape(platform)}</div>'
+    return templates.TemplateResponse(  # type: ignore
+        request=request,
+        name="sync_toast.html",
+        context={"message": f"Unknown platform: {platform}", "is_error": True},
     )
