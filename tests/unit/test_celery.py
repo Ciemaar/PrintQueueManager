@@ -2,6 +2,9 @@
 
 from unittest.mock import MagicMock, patch
 
+import pytest
+from sqlalchemy.exc import SQLAlchemyError
+
 from src.worker.celery_app import (
     normalize_priorities,
     setup_periodic_tasks,
@@ -227,7 +230,7 @@ def test_sync_local_db_query_error(mock_session_local, mock_settings, tmp_path):
     mock_session_local.return_value = mock_db
 
     # Simulate an error when querying for known paths
-    mock_db.query.side_effect = Exception("Database query failed")
+    mock_db.query.side_effect = SQLAlchemyError("Database query failed")
 
     sync_local()
     mock_db.rollback.assert_called_once()
@@ -250,8 +253,26 @@ def test_sync_local_db_commit_error(mock_session_local, mock_settings, tmp_path)
     mock_db.query.return_value.filter.return_value.__iter__.return_value = []
 
     # Simulate an error during commit
-    mock_db.commit.side_effect = Exception("Database commit failed")
+    mock_db.commit.side_effect = SQLAlchemyError("Database commit failed")
 
     sync_local()
+    mock_db.rollback.assert_called_once()
+    mock_db.close.assert_called_once()
+
+
+@patch("src.worker.celery_app.settings")
+@patch("src.worker.celery_app.SessionLocal")
+def test_sync_local_unknown_error(mock_session_local, mock_settings, tmp_path):
+    """Verify that an unknown error is re-raised and session is rolled back."""
+    mock_settings.watch_directory = str(tmp_path)
+    mock_db = MagicMock()
+    mock_session_local.return_value = mock_db
+
+    # Simulate an unknown exception during query
+    mock_db.query.side_effect = Exception("Unknown failure")
+
+    with pytest.raises(Exception, match="Unknown failure"):
+        sync_local()
+
     mock_db.rollback.assert_called_once()
     mock_db.close.assert_called_once()
