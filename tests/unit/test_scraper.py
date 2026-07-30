@@ -3,6 +3,7 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
+from playwright.sync_api import Error as PlaywrightError
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -70,7 +71,7 @@ def test_get_page_html_playwright_error(mock_settings, mock_sync_playwright):
 
     mock_p = MagicMock()
     mock_sync_playwright.return_value.__enter__.return_value = mock_p
-    mock_p.chromium.launch.side_effect = Exception("Playwright crash")
+    mock_p.chromium.launch.side_effect = PlaywrightError("Playwright crash")
 
     html = get_page_html("makerworld", "http://test.com")
     assert html == ""
