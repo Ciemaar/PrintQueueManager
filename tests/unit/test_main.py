@@ -299,6 +299,13 @@ def test_undelete_job_from_printed():
     db.close()
 
 
+def test_undelete_job_not_found():
+    """Verify that undeleting a non-existent job safely returns an empty string."""
+    response = client.post("/jobs/999/undelete")
+    assert response.status_code == 200
+    assert response.content == b""
+
+
 def test_read_deleted_jobs():
     """Verify that the deleted jobs view accurately filters and displays records."""
     db = TestingSessionLocal()
