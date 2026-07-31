@@ -23,3 +23,7 @@ This document outlines potential future enhancements, features, and architectura
 
 - **G-Code Generation (Slicer Integration):** Integrate with headless CLI slicers (like PrusaSlicer or BambuStudio CLI) to automatically slice incoming `.stl` files based on pre-defined material profiles and calculate accurate print timing and filament usage.
 - **OctoPrint / Klipper Integration:** Connect directly to 3D printer APIs (OctoPrint, Moonraker, Bambu Network) to push jobs straight from the queue to the printer, and track live printing status directly in the dashboard.
+
+## Frontend Template Refactoring
+
+- **Replace HTML Fragments with Proper Templates:** Replace inline HTML fragments and deeply-nested row snippets (like `deleted_job_row.html`) with a robust templating system (e.g., Jinja macros/components or an alternative template engine). A tool evaluation should be conducted as part of this task to determine the best library or approach for maintaining complex UI components.
