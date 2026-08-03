@@ -4,8 +4,6 @@ import logging
 import os
 from typing import Any, List, Optional
 
-from playwright.sync_api import Error as PlaywrightError
-from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 from playwright.sync_api import sync_playwright
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent
@@ -111,7 +109,7 @@ def get_page_html(source: str, url: str) -> str:
             content = str(page.content())
             browser.close()
             return content
-    except (PlaywrightError, PlaywrightTimeoutError) as e:
+    except Exception as e:
         logger.error(f"Failed to fetch {url} using Playwright: {e}")
         return ""
 

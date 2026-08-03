@@ -191,13 +191,9 @@ def sync_local() -> List[dict[str, Any]]:
             logger.info(f"Added {len(added_files)} local files to print queue.")
         else:
             logger.info("No new local files discovered.")
-    except (SQLAlchemyError, OSError) as e:
+    except Exception as e:
         logger.error(f"Error synchronizing local files: {e}")
         db.rollback()
-    except Exception as e:
-        logger.error(f"Unexpected error synchronizing local files: {e}")
-        db.rollback()
-        raise
     finally:
         db.close()
 

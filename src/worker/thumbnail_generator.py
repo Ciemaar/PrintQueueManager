@@ -65,11 +65,11 @@ def generate_thumbnail(
 
 def get_thumbnail_path(file_path: Path) -> str:
     """Get the expected thumbnail path relative to static dir."""
-    file_hash = hashlib.md5(str(file_path).encode()).hexdigest()
+    file_hash = hashlib.md5(str(file_path).encode(), usedforsecurity=False).hexdigest()
     return f"/static/thumbnails/{file_hash}.png"
 
 
 def get_thumbnail_file_path(file_path: Path) -> Path:
     """Get the expected thumbnail path on the file system."""
-    file_hash = hashlib.md5(str(file_path).encode()).hexdigest()
+    file_hash = hashlib.md5(str(file_path).encode(), usedforsecurity=False).hexdigest()
     return THUMBNAILS_DIR / f"{file_hash}.png"

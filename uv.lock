@@ -2723,10 +2723,7 @@ dev = [
 
 [package.dev-dependencies]
 dev = [
-    { name = "hypothesis" },
     { name = "pyright" },
-    { name = "pytest-asyncio" },
-    { name = "pytest-cov" },
 ]
 
 [package.metadata]
@@ -2766,12 +2763,7 @@ requires-dist = [
 provides-extras = ["dev"]
 
 [package.metadata.requires-dev]
-dev = [
-    { name = "hypothesis", specifier = ">=6.151.10" },
-    { name = "pyright", specifier = ">=1.1.408" },
-    { name = "pytest-asyncio", specifier = ">=1.3.0" },
-    { name = "pytest-cov", specifier = ">=7.1.0" },
-]
+dev = [{ name = "pyright", specifier = ">=1.1.408" }]
 
 [[package]]
 name = "prompt-toolkit"

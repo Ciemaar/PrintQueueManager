@@ -1,5 +1,4 @@
-"""
-Add user_priority column to print_jobs.
+"""Add user_priority column to print_jobs
 
 Revision ID: 3dc1a2df7d43
 Revises: 0001
@@ -8,9 +7,9 @@ Create Date: 2026-03-31 10:48:58.154556
 """
 from typing import Sequence, Union
 
+from alembic import op
 import sqlalchemy as sa
 
-from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = '3dc1a2df7d43'
