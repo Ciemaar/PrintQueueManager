@@ -7,6 +7,7 @@ from typing import Any, List
 
 from celery import Celery
 from celery.schedules import crontab
+from sqlalchemy.exc import SQLAlchemyError
 
 from src.app.config import settings
 from src.app.database import SessionLocal
@@ -201,9 +202,13 @@ def sync_local() -> List[dict[str, Any]]:
             logger.info(f"Added {len(added_files)} local files to print queue.")
         else:
             logger.info("No new local files discovered.")
-    except Exception as e:
+    except (SQLAlchemyError, OSError) as e:
         logger.error(f"Error synchronizing local files: {e}")
         db.rollback()
+    except Exception as e:
+        logger.error(f"Unexpected error synchronizing local files: {e}")
+        db.rollback()
+        raise
     finally:
         db.close()
 
