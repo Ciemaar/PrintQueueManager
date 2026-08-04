@@ -587,7 +587,7 @@ def test_settings(
                 success = True
             except Exception as e:
                 success = False
-                error_msg = f"Playwright/Agent Error: {e}"
+                error_msg = f"Playwright/Agent Error: {html.escape(str(e))}"
     except Exception as e:
         success = False
         error_msg = html.escape(str(e))
