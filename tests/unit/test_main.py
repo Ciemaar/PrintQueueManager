@@ -300,7 +300,11 @@ def test_undelete_job_from_printed():
 
 
 def test_undelete_job_not_found():
-    """Verify that undeleting a non-existent job safely returns an empty string and causes no side effects."""
+    """
+    Verify that undeleting a non-existent job safely returns an empty string.
+
+    It should also cause no side effects to the database.
+    """
     db = TestingSessionLocal()
     initial_count = db.query(PrintJob).count()
 
