@@ -225,6 +225,10 @@ def normalize_priorities() -> None:
 
             db.commit()
             logger.info(f"Successfully normalized priorities for {len(jobs)} active jobs.")
-        except Exception as e:
-            logger.error(f"Failed to normalize priorities: {e}")
+        except SQLAlchemyError as e:
+            logger.error(f"Failed to normalize priorities due to database error: {e}")
             db.rollback()
+        except Exception as e:
+            logger.error(f"Unexpected error normalizing priorities: {e}")
+            db.rollback()
+            raise
