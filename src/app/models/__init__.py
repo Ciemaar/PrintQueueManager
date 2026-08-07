@@ -1,10 +1,12 @@
 """SQLAlchemy database models for the application."""
 
+from collections.abc import Sequence
 from datetime import datetime, timezone
 from enum import Enum
 
 from sqlalchemy import Column, DateTime, Float, Integer, String
 from sqlalchemy import Enum as SQLAlchemyEnum
+from sqlalchemy.orm import Session
 from sqlalchemy.types import JSON
 
 from src.app.database import Base
@@ -52,3 +54,50 @@ class PrintJob(Base):
         onupdate=lambda: datetime.now(timezone.utc),
     )
     deleted_at = Column(DateTime, nullable=True)
+
+    @classmethod
+    def get_active_jobs(cls, db: Session, show_printed: bool = False) -> Sequence["PrintJob"]:
+        """
+        Retrieve active (non-deleted) jobs for the main dashboard.
+
+        This class method is the preferred pattern for encapsulating complex queries
+        to keep route handlers clean and focused on view logic.
+        """
+        query = db.query(cls)
+
+        if show_printed:
+            query = query.filter(cls.status.notin_([PrintStatus.SKIPPED, PrintStatus.DELETED]))
+        else:
+            query = query.filter(
+                cls.status.notin_([PrintStatus.PRINTED, PrintStatus.SKIPPED, PrintStatus.DELETED])
+            )
+
+        return query.order_by(cls.user_priority.asc().nullsfirst(), cls.updated_at.desc()).all()
+
+    @classmethod
+    def get_deleted_jobs(
+        cls, db: Session, show_printed: bool, show_skipped: bool, show_deleted: bool
+    ) -> Sequence["PrintJob"]:
+        """
+        Retrieve jobs for the deleted view, filtered by type.
+
+        This class method is the preferred pattern for encapsulating complex queries
+        to keep route handlers clean and focused on view logic.
+        """
+        status_filters = []
+        if show_printed:
+            status_filters.append(PrintStatus.PRINTED)
+        if show_skipped:
+            status_filters.append(PrintStatus.SKIPPED)
+        if show_deleted:
+            status_filters.append(PrintStatus.DELETED)
+
+        if not status_filters:
+            return []
+
+        return (
+            db.query(cls)
+            .filter(cls.status.in_(status_filters))
+            .order_by(cls.deleted_at.desc().nullslast())
+            .all()
+        )

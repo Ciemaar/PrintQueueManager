@@ -78,20 +78,7 @@ def index(
     request: Request, show_printed: bool = False, db: Session = Depends(get_db)
 ) -> HTMLResponse:
     """Render the main dashboard by fetching non-deleted PrintJobs from the database."""
-    query = db.query(PrintJob)
-
-    if show_printed:
-        query = query.filter(PrintJob.status.notin_([PrintStatus.SKIPPED, PrintStatus.DELETED]))
-    else:
-        query = query.filter(
-            PrintJob.status.notin_([PrintStatus.PRINTED, PrintStatus.SKIPPED, PrintStatus.DELETED])
-        )
-
-    # Use nullsfirst for SQLite/Postgres compatibility if NULLs slip in,
-    # though Alembic should catch them and default them to 0.0.
-    jobs = query.order_by(
-        PrintJob.user_priority.asc().nullsfirst(), PrintJob.updated_at.desc()
-    ).all()
+    jobs = PrintJob.get_active_jobs(db, show_printed)
 
     if request.headers.get("hx-request") == "true":
         return templates.TemplateResponse(
@@ -119,24 +106,7 @@ def deleted_jobs(
         show_skipped = True
         show_deleted = True
 
-    query = db.query(PrintJob)
-
-    status_filters = []
-    if show_printed:
-        status_filters.append(PrintStatus.PRINTED)
-    if show_skipped:
-        status_filters.append(PrintStatus.SKIPPED)
-    if show_deleted:
-        status_filters.append(PrintStatus.DELETED)
-
-    if not status_filters:
-        jobs = []
-    else:
-        jobs = (
-            query.filter(PrintJob.status.in_(status_filters))
-            .order_by(PrintJob.deleted_at.desc().nullslast())
-            .all()
-        )
+    jobs = PrintJob.get_deleted_jobs(db, show_printed, show_skipped, show_deleted)
 
     if request.headers.get("hx-request") == "true":
         return templates.TemplateResponse(
