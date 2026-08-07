@@ -299,6 +299,27 @@ def test_undelete_job_from_printed():
     db.close()
 
 
+def test_undelete_job_not_found():
+    """
+    Verify that undeleting a non-existent job safely returns an empty string.
+
+    It should also cause no side effects to the database.
+    """
+    db = TestingSessionLocal()
+    initial_count = db.query(PrintJob).count()
+
+    response = client.post("/jobs/999/undelete")
+    assert response.status_code == 200
+    assert response.content == b""
+
+    # Verify no unintended database modifications occurred
+    final_count = db.query(PrintJob).count()
+    assert initial_count == 0
+    assert final_count == 0
+
+    db.close()
+
+
 def test_read_deleted_jobs():
     """Verify that the deleted jobs view accurately filters and displays records."""
     db = TestingSessionLocal()
