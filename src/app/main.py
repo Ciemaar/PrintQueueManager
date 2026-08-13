@@ -339,6 +339,12 @@ def trigger_sync(platform: str) -> HTMLResponse:
     task = tasks.get(platform.lower())
     if task:
         task.delay()
+        if platform.lower() == "local":
+            # Also trigger thumbnail generation after local sync without explicitly chaining
+            # to avoid celery backend result requirements
+            from src.worker.celery_app import generate_local_thumbnails
+
+            generate_local_thumbnails.apply_async(countdown=5, ignore_result=True)
         msg = f"Sync started for {html.escape(platform.capitalize())}!"
         return HTMLResponse(
             f'<div class="sync-toast" style="color: var(--pico-primary); '

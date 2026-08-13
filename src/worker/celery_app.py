@@ -3,7 +3,7 @@
 import logging
 import os
 from pathlib import Path
-from typing import Any, List, cast
+from typing import Any, List
 
 from celery import Celery
 from celery.schedules import crontab
@@ -240,8 +240,9 @@ def generate_local_thumbnails() -> int:
     try:
         local_jobs = db.query(PrintJob).filter(PrintJob.source == "Local").all()
         for job in local_jobs:
-            job_id: int = cast(Any, job.id)
-            file_path: str | None = cast(Any, job.file_path)
+            job_id: int = int(str(job.id))  # type: ignore
+            raw_path = getattr(job, "file_path", None)
+            file_path: str | None = str(raw_path) if raw_path else None
 
             if file_path:
                 thumb_path = get_thumbnail_file_path(job_id)

@@ -18,8 +18,9 @@ def test_trigger_sync_success(mock_delay):
     mock_delay.assert_called_once()
 
 
+@patch("src.worker.celery_app.generate_local_thumbnails.apply_async")
 @patch("src.worker.celery_app.sync_local.delay")
-def test_trigger_sync_local(mock_delay):
+def test_trigger_sync_local(mock_delay, mock_generate):
     """Ensure that the local platform triggers the Celery task and returns a success message."""
     response = client.post("/sync/local")
     assert response.status_code == 200
