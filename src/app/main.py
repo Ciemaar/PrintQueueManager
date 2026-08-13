@@ -22,6 +22,9 @@ from src.worker.celery_app import (
     sync_thingiverse,
 )
 
+SKIPPED_OR_DELETED = frozenset({PrintStatus.SKIPPED, PrintStatus.DELETED})
+PRINTED_SKIPPED_DELETED = frozenset({PrintStatus.PRINTED, PrintStatus.SKIPPED, PrintStatus.DELETED})
+
 logger = logging.getLogger(__name__)
 
 setup_logging()
@@ -259,7 +262,7 @@ def undelete_job(job_id: int, request: Request, db: Session = Depends(get_db)) -
     if job:
         if job.status is PrintStatus.PRINTED or getattr(job, "status") == PrintStatus.PRINTED:
             job.status = PrintStatus.PRINT_AGAIN  # type: ignore
-        elif getattr(job, "status") in [PrintStatus.SKIPPED, PrintStatus.DELETED]:
+        elif getattr(job, "status") in SKIPPED_OR_DELETED:
             job.status = PrintStatus.TO_BE_PRINTED  # type: ignore
 
         job.deleted_at = None  # type: ignore
@@ -283,7 +286,7 @@ def update_status(
         try:
             enum_status = PrintStatus(status)
             job.status = enum_status  # type: ignore
-            if enum_status in [PrintStatus.PRINTED, PrintStatus.SKIPPED, PrintStatus.DELETED]:
+            if enum_status in PRINTED_SKIPPED_DELETED:
                 if job.deleted_at is None:
                     job.deleted_at = datetime.now(timezone.utc)  # type: ignore
             else:
