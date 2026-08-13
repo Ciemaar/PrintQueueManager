@@ -8,6 +8,7 @@ from openai import AsyncOpenAI
 from playwright.sync_api import sync_playwright
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent
+from pydantic_ai.providers import Provider
 
 from src.app.config import settings
 from src.app.database import SessionLocal, engine
@@ -33,6 +34,30 @@ class ScrapedPageData(BaseModel):
 
 if "OLLAMA_BASE_URL" not in os.environ:
     os.environ["OLLAMA_BASE_URL"] = settings.ollama_host
+
+
+class CustomOpenAIProvider(Provider[AsyncOpenAI]):
+    """Custom provider to cleanly pass AsyncOpenAI client credentials to Pydantic AI."""
+
+    def __init__(self, base_url: str, api_key: str):
+        """Initialize the custom OpenAI provider with a specific base URL and API key."""
+        self._client = AsyncOpenAI(base_url=base_url, api_key=api_key)
+        self._base_url = base_url
+
+    @property
+    def client(self) -> AsyncOpenAI:
+        """Return the configured AsyncOpenAI client."""
+        return self._client
+
+    @property
+    def base_url(self) -> str:
+        """Return the base URL of the client."""
+        return self._base_url
+
+    @property
+    def name(self) -> str:
+        """Return the name of the custom provider."""
+        return "custom_openai"
 
 
 def get_scraper_agent(source: str) -> Agent[Any, ScrapedPageData]:
@@ -70,9 +95,8 @@ def get_scraper_agent(source: str) -> Agent[Any, ScrapedPageData]:
         )
 
         from pydantic_ai.models.openai import OpenAIChatModel
-        from pydantic_ai.providers.openai import OpenAIProvider
 
-        provider = OpenAIProvider(openai_client=client)
+        provider = CustomOpenAIProvider(base_url=str(client.base_url), api_key=client.api_key)
         model = OpenAIChatModel(model_name, provider=provider)
 
         return Agent(
@@ -91,9 +115,8 @@ def get_scraper_agent(source: str) -> Agent[Any, ScrapedPageData]:
         )
 
         from pydantic_ai.models.openai import OpenAIChatModel
-        from pydantic_ai.providers.openai import OpenAIProvider
 
-        provider = OpenAIProvider(openai_client=client)
+        provider = CustomOpenAIProvider(base_url=str(client.base_url), api_key=client.api_key)
         model = OpenAIChatModel(model_name, provider=provider)
 
         return Agent(

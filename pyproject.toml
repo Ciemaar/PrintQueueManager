@@ -47,6 +47,8 @@ dependencies = [
     "openai",
     "playwright",
     "watchfiles",
+
+
 ]
 requires-python = ">=3.10"
 

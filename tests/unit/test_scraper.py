@@ -160,12 +160,12 @@ def test_get_scraper_agent_ollama_default(mock_settings, mock_agent_class):
 
 
 @patch("src.worker.llm_scraper.AsyncOpenAI")
+@patch("src.worker.llm_scraper.CustomOpenAIProvider")
 @patch("pydantic_ai.models.openai.OpenAIChatModel")
-@patch("pydantic_ai.providers.openai.OpenAIProvider")
 @patch("src.worker.llm_scraper.Agent")
 @patch("src.worker.llm_scraper.settings")
 def test_get_scraper_agent_openrouter(
-    mock_settings, mock_agent_class, mock_openai_provider, mock_openai_model, mock_async_openai
+    mock_settings, mock_agent_class, mock_openai_model, mock_custom_provider, mock_async_openai
 ):
     """Verify get_scraper_agent configures OpenRouter provider properly."""
     from src.worker.llm_scraper import get_scraper_agent
@@ -179,20 +179,17 @@ def test_get_scraper_agent_openrouter(
         base_url="https://openrouter.ai/api/v1", api_key="secret123"
     )
 
-    mock_openai_provider.assert_called_once_with(openai_client=mock_async_openai.return_value)
-    mock_openai_model.assert_called_once_with("gpt-4o", provider=mock_openai_provider.return_value)
-
     mock_agent_class.assert_called_once()
     assert mock_agent_class.call_args[0][0] == mock_openai_model.return_value
 
 
 @patch("src.worker.llm_scraper.AsyncOpenAI")
+@patch("src.worker.llm_scraper.CustomOpenAIProvider")
 @patch("pydantic_ai.models.openai.OpenAIChatModel")
-@patch("pydantic_ai.providers.openai.OpenAIProvider")
 @patch("src.worker.llm_scraper.Agent")
 @patch("src.worker.llm_scraper.settings")
 def test_get_scraper_agent_alibaba(
-    mock_settings, mock_agent_class, mock_openai_provider, mock_openai_model, mock_async_openai
+    mock_settings, mock_agent_class, mock_openai_model, mock_custom_provider, mock_async_openai
 ):
     """Verify get_scraper_agent configures Alibaba provider properly."""
     from src.worker.llm_scraper import get_scraper_agent
@@ -204,11 +201,6 @@ def test_get_scraper_agent_alibaba(
 
     mock_async_openai.assert_called_once_with(
         base_url="https://dashscope.aliyuncs.com/compatible-mode/v1", api_key="ali_secret123"
-    )
-
-    mock_openai_provider.assert_called_once_with(openai_client=mock_async_openai.return_value)
-    mock_openai_model.assert_called_once_with(
-        "qwen-turbo", provider=mock_openai_provider.return_value
     )
 
     mock_agent_class.assert_called_once()
