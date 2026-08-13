@@ -238,6 +238,7 @@ def normalize_priorities() -> None:
             db.rollback()
             raise
 
+
 @celery_app.task(name="generate_local_thumbnails")
 def generate_local_thumbnails() -> int:
     """Generate thumbnails for local files that do not have one yet."""

@@ -103,7 +103,8 @@ envlist = py314, ruff, pyright
 isolated_build = True
 
 [testenv]
-runner = uv-venv-lock-runner
+setenv =
+    PYTHONPATH = {toxinidir}
 extras = dev
 commands =
     pytest tests/ --cov=src --cov-fail-under=85

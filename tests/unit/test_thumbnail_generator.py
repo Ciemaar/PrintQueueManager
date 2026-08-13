@@ -27,6 +27,7 @@ def test_get_thumbnail_file_path():
 @patch("builtins.open")
 def test_generate_thumbnail_success(mock_open, mock_scene_cls, mock_load):
     """Test generating a thumbnail successfully from a mocked mesh."""
+
     class DummyMesh:
         pass
 
