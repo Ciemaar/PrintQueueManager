@@ -101,3 +101,18 @@ class PrintJob(Base):
             .order_by(cls.deleted_at.desc().nullslast())
             .all()
         )
+
+    @classmethod
+    def get_by_id(cls, db: Session, job_id: int) -> "PrintJob | None":
+        """Retrieve a single PrintJob by its ID."""
+        return db.query(cls).filter(cls.id == job_id).first()
+
+    @classmethod
+    def get_jobs_for_normalization(cls, db: Session) -> Sequence["PrintJob"]:
+        """Retrieve all active jobs ordered for priority normalization."""
+        return (
+            db.query(cls)
+            .filter(cls.status != PrintStatus.DELETED)
+            .order_by(cls.user_priority.asc(), cls.updated_at.desc())
+            .all()
+        )

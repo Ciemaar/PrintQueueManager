@@ -131,12 +131,7 @@ def _normalize_priorities_sync(db: Session) -> None:
 
     This is called when a priority collision is detected during drag-and-drop reordering.
     """
-    jobs = (
-        db.query(PrintJob)
-        .filter(PrintJob.status != PrintStatus.DELETED)
-        .order_by(PrintJob.user_priority.asc(), PrintJob.updated_at.desc())
-        .all()
-    )
+    jobs = PrintJob.get_jobs_for_normalization(db)
 
     for index, j in enumerate(jobs, start=1):
         setattr(j, "user_priority", float(index))
@@ -159,13 +154,13 @@ def reorder_job(
     a new user_priority float value. If the gap between items is too small or
     a collision exists, forces a sync normalization to guarantee distinct ordering.
     """
-    job = db.query(PrintJob).filter(PrintJob.id == job_id).first()
+    job = PrintJob.get_by_id(db, job_id)
     if not job:
         return HTMLResponse(status_code=404)
 
     # Fetch reference jobs
-    above_job = db.query(PrintJob).filter(PrintJob.id == above_id).first() if above_id else None
-    below_job = db.query(PrintJob).filter(PrintJob.id == below_id).first() if below_id else None
+    above_job = PrintJob.get_by_id(db, above_id) if above_id else None
+    below_job = PrintJob.get_by_id(db, below_id) if below_id else None
 
     # Detect priority collisions or inversions that prevent calculating a midpoint
     if above_job and below_job:
@@ -209,7 +204,7 @@ def delete_job(job_id: int, request: Request, db: Session = Depends(get_db)) -> 
     removing it from the active UI while preserving historical data.
     Returns an empty string for HTMX to remove the target HTML row dynamically.
     """
-    job = db.query(PrintJob).filter(PrintJob.id == job_id).first()
+    job = PrintJob.get_by_id(db, job_id)
     if job:
         job.status = PrintStatus.DELETED  # type: ignore
         job.deleted_at = datetime.now(timezone.utc)  # type: ignore
@@ -226,7 +221,7 @@ def undelete_job(job_id: int, request: Request, db: Session = Depends(get_db)) -
     Otherwise (SKIPPED or DELETED), it becomes TO BE PRINTED.
     Returns an empty string to remove it from the deleted jobs view via HTMX.
     """
-    job = db.query(PrintJob).filter(PrintJob.id == job_id).first()
+    job = PrintJob.get_by_id(db, job_id)
     if job:
         if job.status is PrintStatus.PRINTED or getattr(job, "status") == PrintStatus.PRINTED:
             job.status = PrintStatus.PRINT_AGAIN  # type: ignore
@@ -249,7 +244,7 @@ def update_status(
     updates the database, and returns the re-rendered template row to seamlessly
     update the UI without a full page refresh.
     """
-    job = db.query(PrintJob).filter(PrintJob.id == job_id).first()
+    job = PrintJob.get_by_id(db, job_id)
     if job:
         try:
             enum_status = PrintStatus(status)
@@ -282,7 +277,7 @@ def update_notes(
     Triggered dynamically via HTMX when the user blurs away from the input fields.
     Does not rerender the row, just acknowledges the save.
     """
-    job = db.query(PrintJob).filter(PrintJob.id == job_id).first()
+    job = PrintJob.get_by_id(db, job_id)
     if job:
         job.material_notes = material_notes  # type: ignore
         job.timing_notes = timing_notes  # type: ignore
