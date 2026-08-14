@@ -66,10 +66,25 @@ class PrintJob(Base):
         query = db.query(cls)
 
         if show_printed:
-            query = query.filter(cls.status.notin_([PrintStatus.SKIPPED, PrintStatus.DELETED]))
+            query = query.filter(
+                cls.status.in_(
+                    [
+                        PrintStatus.TO_BE_PRINTED,
+                        PrintStatus.PRINT_IN_PROGRESS,
+                        PrintStatus.PRINT_AGAIN,
+                        PrintStatus.PRINTED,
+                    ]
+                )
+            )
         else:
             query = query.filter(
-                cls.status.notin_([PrintStatus.PRINTED, PrintStatus.SKIPPED, PrintStatus.DELETED])
+                cls.status.in_(
+                    [
+                        PrintStatus.TO_BE_PRINTED,
+                        PrintStatus.PRINT_IN_PROGRESS,
+                        PrintStatus.PRINT_AGAIN,
+                    ]
+                )
             )
 
         return query.order_by(cls.user_priority.asc().nullsfirst(), cls.updated_at.desc()).all()
