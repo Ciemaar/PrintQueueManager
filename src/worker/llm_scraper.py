@@ -6,9 +6,11 @@ from typing import Any, List, Optional
 
 from playwright.sync_api import Error as PlaywrightError
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
+from openai import AsyncOpenAI
 from playwright.sync_api import sync_playwright
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent
+from pydantic_ai.providers import Provider
 
 from src.app.config import settings
 from src.app.database import SessionLocal, engine
@@ -35,15 +37,100 @@ class ScrapedPageData(BaseModel):
 if "OLLAMA_BASE_URL" not in os.environ:
     os.environ["OLLAMA_BASE_URL"] = settings.ollama_host
 
-scraper_agent: Agent[Any, ScrapedPageData] = Agent(
-    "ollama:llama3.2",  # Requires running Ollama locally with this model
-    output_type=ScrapedPageData,
-    system_prompt=(
+
+class CustomOpenAIProvider(Provider[AsyncOpenAI]):
+    """Custom provider to cleanly pass AsyncOpenAI client credentials to Pydantic AI."""
+
+    def __init__(self, base_url: str, api_key: str):
+        """Initialize the custom OpenAI provider with a specific base URL and API key."""
+        self._client = AsyncOpenAI(base_url=base_url, api_key=api_key)
+        self._base_url = base_url
+
+    @property
+    def client(self) -> AsyncOpenAI:
+        """Return the configured AsyncOpenAI client."""
+        return self._client
+
+    @property
+    def base_url(self) -> str:
+        """Return the base URL of the client."""
+        return self._base_url
+
+    @property
+    def name(self) -> str:
+        """Return the name of the custom provider."""
+        return "custom_openai"
+
+
+def get_scraper_agent(source: str) -> Agent[Any, ScrapedPageData]:
+    """Dynamically configure and return the appropriate Pydantic AI agent."""
+    # Find model string from mapping, falling back to wildcard or ollama default
+    mapping_key = f"scraper.{source}"
+    model_str = settings.llm_model_mapping.get(
+        mapping_key, settings.llm_model_mapping.get("scraper.*", "ollama:llama3.2")
+    )
+
+    provider_prefix = "ollama"
+    model_name = "llama3.2"
+
+    if ":" in model_str:
+        provider_prefix, model_name = model_str.split(":", 1)
+
+    system_prompt = (
         "You are an expert web scraping agent specialized in extracting 3D model data. "
         "Extract the model's title, direct URL, author name, and thumbnail image URL from the "
         "provided HTML content. Return the output exactly in the requested JSON format."
-    ),
-)
+    )
+
+    if provider_prefix == "openrouter":
+        api_key = (
+            settings.openrouter_api_key.get_secret_value() if settings.openrouter_api_key else ""
+        )
+        if not api_key:
+            logger.warning("OpenRouter API key is missing. Using model may fail.")
+        # OpenRouter expects the model name via the openai client
+
+        # We construct an AsyncOpenAI client and wrap it
+        client = AsyncOpenAI(
+            base_url="https://openrouter.ai/api/v1",
+            api_key=api_key,
+        )
+
+        from pydantic_ai.models.openai import OpenAIChatModel
+
+        provider = CustomOpenAIProvider(base_url=str(client.base_url), api_key=client.api_key)
+        model = OpenAIChatModel(model_name, provider=provider)
+
+        return Agent(
+            model,
+            output_type=ScrapedPageData,
+            system_prompt=system_prompt,
+        )
+    elif provider_prefix == "alibaba":
+        api_key = settings.alibaba_api_key.get_secret_value() if settings.alibaba_api_key else ""
+        if not api_key:
+            logger.warning("Alibaba API key is missing. Using model may fail.")
+
+        client = AsyncOpenAI(
+            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+            api_key=api_key,
+        )
+
+        from pydantic_ai.models.openai import OpenAIChatModel
+
+        provider = CustomOpenAIProvider(base_url=str(client.base_url), api_key=client.api_key)
+        model = OpenAIChatModel(model_name, provider=provider)
+
+        return Agent(
+            model,
+            output_type=ScrapedPageData,
+            system_prompt=system_prompt,
+        )
+    else:
+        # Default to Ollama
+        return Agent(
+            f"ollama:{model_name}", output_type=ScrapedPageData, system_prompt=system_prompt
+        )
 
 
 def get_page_html(source: str, url: str) -> str:
@@ -129,10 +216,11 @@ def run_scraper(source: str, url: str) -> List[dict[str, Any]]:
     logger.info(f"Agentic extraction starting for {source}...")
 
     try:
-        result = scraper_agent.run_sync(html_content)
+        agent = get_scraper_agent(source)
+        result = agent.run_sync(html_content)
         data = result.data.models  # type: ignore
     except Exception as e:
-        logger.error(f"Error communicating with Ollama: {e}. Returning fallback mock data.")
+        logger.error(f"Error communicating with LLM provider: {e}. Returning fallback mock data.")
         data = [
             ExtractedModelInfo(
                 title=f"Mock Vase from {source}",
@@ -160,7 +248,7 @@ def run_scraper(source: str, url: str) -> List[dict[str, Any]]:
                     source_url=model.url,
                     thumbnail_url=model.thumbnail,
                     author=model.author,
-                    metadata_json={"extracted_via": "ollama_agent"},
+                    metadata_json={"extracted_via": "llm_agent"},
                 )
                 db.add(new_job)
                 saved_items.append(model.model_dump())
