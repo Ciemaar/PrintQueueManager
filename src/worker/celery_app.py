@@ -1,7 +1,6 @@
 """Celery worker configuration and scheduled tasks for external data sync."""
 
 import logging
-import time
 from pathlib import Path
 from typing import Any, List
 
@@ -139,7 +138,6 @@ def sync_myminifactory() -> List[dict[str, Any]]:
     and leverages the local Pydantic AI agent to extract model attributes.
     """
     logger.info("Starting MyMiniFactory synchronization via Ollama agent...")
-    time.sleep(2)
     result = run_scraper("myminifactory", "https://www.myminifactory.com/library")
     logger.info(f"Sync complete. Found {len(result)} models.")
     return result
