@@ -102,7 +102,7 @@
                 type="checkbox"
                 name="enabled"
                 role="switch"
-                value="1"
+                value="1" hx-post="/settings/update" hx-include="closest form" hx-target="#save-feedback" hx-swap="innerHTML" hx-indicator="#global-indicator"
                 {%
                 if
                 details.config.enabled

@@ -22,6 +22,7 @@ from src.worker.celery_app import (
     sync_local,
     sync_makerworld,
     sync_minihoarder,
+    sync_myminifactory,
     sync_printables,
     sync_thingiverse,
 )
@@ -334,6 +335,7 @@ def trigger_sync(platform: str) -> HTMLResponse:
         "thingiverse": sync_thingiverse,
         "cults3d": sync_cults3d,
         "minihoarder": sync_minihoarder,
+        "myminifactory": sync_myminifactory,
         "local": sync_local,
     }
 
