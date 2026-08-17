@@ -48,6 +48,10 @@ To run these Docker containers in verbose mode, set the `VERBOSE` environment va
 
 Thank you for contributing to the PrintQueueManager!
 
+## Version Control Guidelines
+
+When working on an existing, previous branch (e.g., rebasing or merging), you must ensure that features added to the main branch in the intermediate interval are not removed. Additionally, all branches being merged in, as well as their matching PRs, must be referenced in the commit comments and any new PRs.
+
 ## Database Migrations (Alembic)
 
 This project uses `Alembic` to manage database schema updates. If you modify any SQLAlchemy models (like adding a column, changing a type, etc.), you **MUST** generate an Alembic migration:
