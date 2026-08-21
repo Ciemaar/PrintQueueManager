@@ -91,6 +91,10 @@ When instructed to run or mock services, be aware that `docker-compose.yml` spin
 - **Environment Variables:** When editing `docker-compose.yml`, always preserve environment variable fallbacks (e.g., `${POSTGRES_PASSWORD:-password}`) rather than hardcoding passwords to avoid security regressions.
 - **Headless Rendering:** When using `trimesh` and `pyglet` for headless 3D model rendering in a Dockerized environment, ensure the system packages `xvfb` and `libgl1` are installed in the `Dockerfile`. Furthermore, the execution command must be prefixed with `xvfb-run` (e.g., `xvfb-run celery ...` in `docker-compose.yml`) to utilize the virtual framebuffer.
 
+## Version Control Guidelines
+
+When working on an existing, previous branch (e.g., rebasing or merging), you must ensure that features added to the main branch in the intermediate interval are not removed. Additionally, all branches being merged in, as well as their matching PRs, must be referenced in the commit comments and any new PRs.
+
 ## Database Migrations (Alembic)
 
 This project uses `Alembic` to manage database schema updates. If you modify any SQLAlchemy models, you **MUST** generate an Alembic migration:
