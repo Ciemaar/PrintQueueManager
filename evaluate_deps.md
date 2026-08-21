@@ -76,3 +76,12 @@ FastAPI is blocked because it relies on `pydantic` (and therefore `pydantic-core
     * **Cons:** Much heavier, less performant for pure API use cases, and adopting their async capabilities often feels bolted-on compared to ASGI-native frameworks.
 
 **Conclusion on FastAPI:** Replacing FastAPI would require rewriting the entire routing and validation layer. Furthermore, our project heavily uses `pydantic-ai`, which inherently ties us to the `pydantic` ecosystem regardless of the web framework. Therefore, replacing FastAPI does not solve the underlying `pydantic-core` blocker unless we also rip out our core LLM agent logic (`pydantic-ai`).
+
+### Upgrading Pydantic
+In an attempt to resolve the `pydantic-core` 3.15 compilation failure, we upgraded `pydantic-core` to its absolute latest version (`v2.48.0` / PyO3 `v0.27.x`) and downgraded it to older versions (`v2.27.2` / PyO3 `v0.22.x`).
+
+Both approaches fail, but for different reasons that point to the same underlying problem:
+1. **Latest Versions (PyO3 v0.27):** Fail because `_PyCFrame` and internal type structures (`tp_new`, `tp_base`) were removed or altered in CPython 3.15.
+2. **Older Versions (PyO3 v0.22 via `jiter`):** Fail because CPython 3.15 completely removed the `PyUnicode_New`, `PyUnicode_KIND`, and `PyUnicode_1BYTE_KIND` macros from the C-API.
+
+Therefore, upgrading or downgrading Pydantic and `pydantic-core` does not resolve the Python 3.15 compatibility issue. We are fundamentally blocked until `PyO3` releases a patch that correctly implements the new Python 3.15 C-API, and `pydantic-core` subsequently upgrades to use that new version of PyO3.
