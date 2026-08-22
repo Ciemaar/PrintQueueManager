@@ -4,9 +4,9 @@ import logging
 import os
 from typing import Any, List, Optional
 
+from openai import AsyncOpenAI
 from playwright.sync_api import Error as PlaywrightError
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
-from openai import AsyncOpenAI
 from playwright.sync_api import sync_playwright
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent
