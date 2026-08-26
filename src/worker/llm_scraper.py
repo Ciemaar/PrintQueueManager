@@ -90,15 +90,9 @@ def get_scraper_agent(source: str) -> Agent[Any, ScrapedPageData]:
             logger.warning("OpenRouter API key is missing. Using model may fail.")
         # OpenRouter expects the model name via the openai client
 
-        # We construct an AsyncOpenAI client and wrap it
-        client = AsyncOpenAI(
-            base_url="https://openrouter.ai/api/v1",
-            api_key=api_key,
-        )
-
         from pydantic_ai.models.openai import OpenAIChatModel
 
-        provider = CustomOpenAIProvider(base_url=str(client.base_url), api_key=client.api_key)
+        provider = CustomOpenAIProvider(base_url="https://openrouter.ai/api/v1", api_key=api_key)
         model = OpenAIChatModel(model_name, provider=provider)
 
         return Agent(
@@ -111,14 +105,11 @@ def get_scraper_agent(source: str) -> Agent[Any, ScrapedPageData]:
         if not api_key:
             logger.warning("Alibaba API key is missing. Using model may fail.")
 
-        client = AsyncOpenAI(
-            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
-            api_key=api_key,
-        )
-
         from pydantic_ai.models.openai import OpenAIChatModel
 
-        provider = CustomOpenAIProvider(base_url=str(client.base_url), api_key=client.api_key)
+        provider = CustomOpenAIProvider(
+            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1", api_key=api_key
+        )
         model = OpenAIChatModel(model_name, provider=provider)
 
         return Agent(

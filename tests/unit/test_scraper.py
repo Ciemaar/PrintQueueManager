@@ -176,7 +176,7 @@ def test_get_scraper_agent_openrouter(
 
     get_scraper_agent("test_source")
 
-    mock_async_openai.assert_called_once_with(
+    mock_custom_provider.assert_called_once_with(
         base_url="https://openrouter.ai/api/v1", api_key="secret123"
     )
 
@@ -200,7 +200,7 @@ def test_get_scraper_agent_alibaba(
 
     get_scraper_agent("test_source")
 
-    mock_async_openai.assert_called_once_with(
+    mock_custom_provider.assert_called_once_with(
         base_url="https://dashscope.aliyuncs.com/compatible-mode/v1", api_key="ali_secret123"
     )
 
