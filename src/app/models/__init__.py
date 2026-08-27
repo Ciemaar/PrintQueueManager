@@ -139,9 +139,9 @@ class ServiceConfig(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     service_name = Column(String, unique=True, index=True)
-    enabled = Column(Integer, default=0)  # SQLite compatible boolean 1/0
-    credential = Column(String, nullable=True)
-    target_url = Column(String, nullable=True)
+    enabled: int = Column(Integer, default=0) # type: ignore  # SQLite compatible boolean 1/0
+    credential: str | None = Column(String, nullable=True) # type: ignore
+    target_url: str | None = Column(String, nullable=True) # type: ignore
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(
         DateTime,

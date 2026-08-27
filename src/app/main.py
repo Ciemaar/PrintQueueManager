@@ -385,11 +385,11 @@ def settings_page(request: Request, db: Session = Depends(get_db)) -> HTMLRespon
 
     # Fetch all existing configs from DB
     configs = db.query(ServiceConfig).all()
-    config_map = {c.service_name: c for c in configs}
+    config_map = {str(c.service_name): c for c in configs}
 
     # Merge static definitions with dynamic DB config state
     for s_name, s_def in service_defs.items():
-        s_def["config"] = config_map.get(s_name, ServiceConfig(enabled=0))  # type: ignore
+        s_def["config"] = config_map.get(s_name, ServiceConfig())  # type: ignore
 
     return templates.TemplateResponse(
         request=request, name="settings.html", context={"services": service_defs}
