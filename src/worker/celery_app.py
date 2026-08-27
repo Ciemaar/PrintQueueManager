@@ -233,6 +233,7 @@ def normalize_priorities() -> None:
             db.rollback()
             raise
 
+
 @celery_app.task(name="sync_myminifactory")
 def sync_myminifactory() -> List[dict[str, Any]]:
     """

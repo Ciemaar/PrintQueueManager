@@ -1,4 +1,3 @@
-
 """Unit tests for the FastAPI application main routes."""
 
 from datetime import datetime, timezone
@@ -371,6 +370,7 @@ def test_read_deleted_jobs():
     assert b"Skipped Job" not in response_none.content
     assert b"Printed Job" not in response_none.content
 
+
 def test_settings_page_get():
     """Verify that the settings configuration page renders successfully."""
     response = client.get("/settings")
@@ -501,7 +501,6 @@ def test_test_settings_db_credential_fallback():
     )
     db.add(existing)
     db.commit()
-
 
     with patch("src.worker.llm_scraper.run_scraper", return_value=[]) as mock_fetch:
         response = client.post(

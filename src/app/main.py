@@ -396,7 +396,6 @@ def settings_page(request: Request, db: Session = Depends(get_db)) -> HTMLRespon
     )
 
 
-
 @app.post("/settings/update", response_class=HTMLResponse)
 def update_settings(
     request: Request,
