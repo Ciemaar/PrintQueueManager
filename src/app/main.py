@@ -20,7 +20,6 @@ from src.worker.celery_app import (
     sync_local,
     sync_makerworld,
     sync_minihoarder,
-    sync_myminifactory,
     sync_printables,
     sync_thingiverse,
 )
@@ -390,9 +389,12 @@ def settings_page(request: Request, db: Session = Depends(get_db)) -> HTMLRespon
 
     # Merge static definitions with dynamic DB config state
     for s_name, s_def in service_defs.items():
-        s_def["config"] = config_map.get(s_name, ServiceConfig(enabled=0))
+        s_def["config"] = config_map.get(s_name, ServiceConfig(enabled=0))  # type: ignore
 
-    return templates.TemplateResponse(request=request, name="settings.html", context={"services": service_defs})
+    return templates.TemplateResponse(
+        request=request, name="settings.html", context={"services": service_defs}
+    )
+
 
 
 @app.post("/settings/update", response_class=HTMLResponse)
@@ -411,11 +413,11 @@ def update_settings(
         config = ServiceConfig(service_name=service_name)
         db.add(config)
 
-    config.enabled = enabled
+    config.enabled = enabled  # type: ignore
     if target_url:
-        config.target_url = target_url
+        config.target_url = target_url  # type: ignore
     if credential:
-        config.credential = credential
+        config.credential = credential  # type: ignore
 
     db.commit()
 
@@ -478,7 +480,7 @@ def test_settings(
                     credential = getattr(config, "credential")
 
             # Run a limited test fetch to verify connectivity
-            run_scraper(service_name, target_url, limit=1)
+            run_scraper(service_name, target_url)  # type: ignore
 
             return HTMLResponse(
                 f'<div style="color: var(--pico-ins-color);">Test successful for {html.escape(service_name).capitalize()}!</div><span id="status-indicator-{html.escape(service_name)}" hx-swap-oob="true">✅</span>'  # noqa: E501
