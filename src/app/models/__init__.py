@@ -131,3 +131,20 @@ class PrintJob(Base):
             .order_by(cls.user_priority.asc(), cls.updated_at.desc())
             .all()
         )
+
+class ServiceConfig(Base):
+    """Represents the configuration for an external model source."""
+
+    __tablename__ = "service_configs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    service_name = Column(String, unique=True, index=True)
+    enabled = Column(Integer, default=0)  # SQLite compatible boolean 1/0
+    credential = Column(String, nullable=True)
+    target_url = Column(String, nullable=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
