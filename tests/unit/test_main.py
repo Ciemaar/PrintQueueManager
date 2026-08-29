@@ -1,6 +1,7 @@
 """Unit tests for the FastAPI application main routes."""
 
 from datetime import datetime, timezone
+from unittest.mock import MagicMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
@@ -9,7 +10,7 @@ from sqlalchemy.orm import sessionmaker
 
 from src.app.database import Base, get_db
 from src.app.main import app
-from src.app.models import PrintJob, PrintStatus
+from src.app.models import PrintJob, PrintStatus, ServiceConfig
 
 # Test database
 SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
@@ -368,3 +369,245 @@ def test_read_deleted_jobs():
     assert b"Deleted Job 1" not in response_none.content
     assert b"Skipped Job" not in response_none.content
     assert b"Printed Job" not in response_none.content
+
+
+def test_settings_page_get():
+    """Verify that the settings configuration page renders successfully."""
+    response = client.get("/settings")
+    assert response.status_code == 200
+    assert b"Service Configuration" in response.content
+    assert b"MakerWorld" in response.content
+
+
+def test_update_settings_new_config():
+    """Verify that posting valid configuration creates a new DB record if missing."""
+    TestingSessionLocal()
+
+    response = client.post(
+        "/settings/update",
+        data={
+            "service_name": "makerworld",
+            "enabled": "1",
+            "target_url": "http://my-target.com",
+            "credential": "test_session_cookie",
+        },
+    )
+    assert response.status_code == 200
+
+
+def test_test_settings_exception_handling():
+    """Verify test_settings gracefully handles exceptions during the test."""
+    with patch("src.worker.llm_scraper.run_scraper", side_effect=Exception("Timeout Error")):
+        response = client.post(
+            "/settings/test",
+            data={
+                "service_name": "makerworld",
+                "target_url": "http://my-target.com",
+                "credential": "test_session_cookie",
+            },
+        )
+        assert response.status_code == 200
+        assert b"Timeout Error" in response.content
+
+
+def test_browse_directories_success():
+    """Test the /settings/browse endpoint returns directories correctly."""
+    with patch("os.scandir") as mock_scandir:
+        mock_entry1 = MagicMock()
+        mock_entry1.is_dir.return_value = True
+        mock_entry1.name = "folderA"
+        mock_entry1.path = "/mock/folderA"
+
+        mock_entry2 = MagicMock()
+        mock_entry2.is_dir.return_value = True
+        mock_entry2.name = ".hidden"
+
+        mock_entry3 = MagicMock()
+        mock_entry3.is_dir.return_value = False
+        mock_entry3.name = "file.txt"
+
+        mock_scandir.return_value.__enter__.return_value = [mock_entry1, mock_entry2, mock_entry3]
+
+        response = client.get("/settings/browse?path=/mock")
+        assert response.status_code == 200
+        assert "folderA" in response.text
+        assert ".hidden" not in response.text
+        assert "file.txt" not in response.text
+        assert ".." in response.text
+
+
+def test_browse_directories_root():
+    """Test the /settings/browse endpoint at root (no parent link)."""
+    with patch("os.scandir") as mock_scandir:
+        mock_scandir.return_value.__enter__.return_value = []
+
+        import os
+
+        root_dir = os.path.abspath("/")
+
+        response = client.get(f"/settings/browse?path={root_dir}")
+        assert response.status_code == 200
+        assert ".." not in response.text
+
+
+def test_browse_directories_error():
+    """Test the /settings/browse endpoint handles os errors."""
+    with patch("os.scandir") as mock_scandir:
+        mock_scandir.side_effect = PermissionError("Access denied")
+        response = client.get("/settings/browse?path=/mock")
+        assert response.status_code == 200
+        assert "Error accessing path" in response.text
+        assert "Access denied" in response.text
+
+
+def test_test_settings_local_success():
+    """Test the /settings/test endpoint for local service with valid dir."""
+    with patch("os.path.isdir") as mock_isdir:
+        mock_isdir.return_value = True
+        response = client.post(
+            "/settings/test",
+            data={
+                "service_name": "local",
+                "target_url": "/valid/dir",
+                "credential": "",
+            },
+        )
+        assert response.status_code == 200
+        assert "Test successful" in response.text
+
+
+def test_test_settings_local_failure():
+    """Test the /settings/test endpoint for local service with invalid dir."""
+    with patch("os.path.isdir") as mock_isdir:
+        mock_isdir.return_value = False
+        response = client.post(
+            "/settings/test",
+            data={
+                "service_name": "local",
+                "target_url": "/invalid/dir",
+                "credential": "",
+            },
+        )
+        assert response.status_code == 200
+        assert "Test failed" in response.text
+        assert "Directory not found: /invalid/dir" in response.text
+
+
+def test_test_settings_db_credential_fallback():
+    """Verify test_settings falls back to the database credential if none is provided."""
+    db = TestingSessionLocal()
+    existing = ServiceConfig(
+        service_name="minihoarder", enabled=1, target_url="old_url", credential="db_secret_cookie"
+    )
+    db.add(existing)
+    db.commit()
+
+    with patch("src.worker.llm_scraper.run_scraper", return_value=[]) as mock_fetch:
+        response = client.post(
+            "/settings/test",
+            data={
+                "service_name": "minihoarder",
+                "target_url": "http://my-target.com",
+                "credential": "",
+            },
+        )
+        assert response.status_code == 200
+        mock_fetch.assert_called_once_with("minihoarder", "http://my-target.com")
+    db.close()
+    assert b"Test successful for Minihoarder!" in response.content
+
+
+def test_update_settings_existing_config():
+    """Verify that posting valid configuration creates a new DB record if missing."""
+    db = TestingSessionLocal()
+
+    response = client.post(
+        "/settings/update",
+        data={
+            "service_name": "makerworld",
+            "enabled": "1",
+            "target_url": "http://my-target.com",
+            "credential": "test_session_cookie",
+        },
+    )
+    assert response.status_code == 200
+    assert b"Settings saved for Makerworld!" in response.content
+
+    config = db.query(ServiceConfig).filter(ServiceConfig.service_name == "makerworld").first()
+    assert config is not None
+    assert getattr(config, "enabled") == 1
+    assert getattr(config, "target_url") == "http://my-target.com"
+    assert getattr(config, "credential") == "test_session_cookie"
+    db.close()
+
+
+def test_update_settings_existing_config_no_credential():
+    """Verify that posting updates an existing DB record and preserves credential if empty."""
+    db = TestingSessionLocal()
+    existing = ServiceConfig(
+        service_name="makerworld", enabled=0, target_url="old_url", credential="old_credential"
+    )
+    db.add(existing)
+    db.commit()
+
+    response = client.post(
+        "/settings/update",
+        data={
+            "service_name": "makerworld",
+            "enabled": "1",
+            "target_url": "new_url",
+            "credential": "",
+        },
+    )
+    assert response.status_code == 200
+
+    db.expire_all()
+    config = db.query(ServiceConfig).filter(ServiceConfig.service_name == "makerworld").first()
+    assert getattr(config, "enabled") == 1
+    assert getattr(config, "target_url") == "new_url"
+    assert getattr(config, "credential") == "old_credential"
+    db.close()
+
+
+def test_test_settings_success():
+    """Verify that posting valid configuration tests connection successfully."""
+    response = client.post(
+        "/settings/test",
+        data={
+            "service_name": "makerworld",
+            "target_url": "http://my-target.com",
+            "credential": "test_session_cookie",
+        },
+    )
+    assert response.status_code == 200
+
+
+def test_test_settings_failure_no_url():
+    """Verify testing requires a target url."""
+    response = client.post(
+        "/settings/test",
+        data={
+            "service_name": "makerworld",
+            "target_url": "",
+            "credential": "test_session_cookie",
+        },
+    )
+    assert response.status_code == 200
+    assert b"Target URL is required" in response.content
+
+
+@patch("requests.get")
+def test_test_settings_thingiverse_api(mock_get):
+    """Verify testing Thingiverse hits the API path."""
+    mock_get.return_value.status_code = 200
+
+    response = client.post(
+        "/settings/test",
+        data={
+            "service_name": "thingiverse",
+            "target_url": "http://my-target.com",
+            "credential": "test_session_cookie",
+        },
+    )
+    assert response.status_code == 200
+    mock_get.assert_called_once()
