@@ -71,7 +71,7 @@ _If you are writing code, modifying the UI, or adding new websites to scrape._
 **Local Setup:**
 We recommend developing locally on your host machine while pointing to the Docker containers for the database and Redis cache.
 
-1. Ensure Python 3.10+ is installed.
+1. Ensure Python 3.14+ is installed.
 2. Set up a virtual environment (e.g. using `pyenv` or `python3 -m venv`):
    ```bash
    python3 -m venv venv
