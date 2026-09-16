@@ -26,38 +26,38 @@ _(For detailed info on how the system automatically scrapes sites like Printable
 
 _If you are deploying, monitoring, or managing the production infrastructure._
 
-The system is deployed using `docker compose`. It consists of an orchestrator for a PostgreSQL database, a Redis cache, an Ollama LLM server, the FastAPI backend, a Celery worker, a Celery beat scheduler, and a file watchdog.
+The system is deployed using `docker-compose`. It consists of an orchestrator for a PostgreSQL database, a Redis cache, an Ollama LLM server, the FastAPI backend, a Celery worker, a Celery beat scheduler, and a file watchdog.
 
 **Startup:**
 
 ```bash
-docker compose up -d --build
+docker-compose up -d --build
 ```
 
 **First-Time Setup (Crucial):**
 The background worker requires a local LLM to parse raw HTML from unsupported websites. Once the system is running, you must download the `llama3.2` model into the Ollama container:
 
 ```bash
-docker compose exec ollama ollama pull llama3.2
+docker-compose exec ollama ollama pull llama3.2
 ```
 
 **Monitoring and Logs:**
 If a user complains that models from a specific website aren't syncing, check the logs of the background worker:
 
 ```bash
-docker compose logs -f worker
+docker-compose logs -f worker
 ```
 
 To check if the periodic tasks are actually firing every 30 minutes, check the scheduler logs:
 
 ```bash
-docker compose logs -f beat
+docker-compose logs -f beat
 ```
 
 **Shutdown:**
 
 ```bash
-docker compose down
+docker-compose down
 ```
 
 _Note: This command shuts down the containers but preserves your database volumes so your print queue is not lost._
@@ -71,7 +71,7 @@ _If you are writing code, modifying the UI, or adding new websites to scrape._
 **Local Setup:**
 We recommend developing locally on your host machine while pointing to the Docker containers for the database and Redis cache.
 
-1. Ensure Python 3.14+ is installed.
+1. Ensure Python 3.10+ is installed.
 2. Set up a virtual environment (e.g. using `pyenv` or `python3 -m venv`):
    ```bash
    python3 -m venv venv
@@ -84,7 +84,7 @@ We recommend developing locally on your host machine while pointing to the Docke
    ```
 
 **Running Components Locally:**
-Ensure you stop any conflicting Docker containers (e.g., `docker compose stop worker web watchdog`) if you intend to run those components locally, otherwise you may face port conflicts or double-processing of events.
+Ensure you stop any conflicting Docker containers (e.g., `docker-compose stop worker web watchdog`) if you intend to run those components locally, otherwise you may face port conflicts or double-processing of events.
 The project uses a unified CLI to launch components individually if you don't want to use Docker for the Python code:
 
 - **Start Web Server:** `printqueue web` (or `uvicorn src.app.main:app --reload`)
@@ -94,12 +94,10 @@ The project uses a unified CLI to launch components individually if you don't wa
 _(Ensure `DATABASE_URL` and `REDIS_URL` are set as environment variables to point to your local development containers!)_
 
 **Testing and Static Analysis:**
-Before committing code, verify it against the project's strict rules using `tox`. This will run the `ruff` linter/formatter, the `pyright` type-checker, and the `pytest` suite with coverage.
+Before committing code, verify it against the project's strict rules using `poethepoet`. This will run the `ruff` linter/formatter, the `pyright` type-checker, and the `pytest` suite with coverage.
 
 ```bash
-export PYTHONPATH=src
-tox -e ruff,pyright
-pytest tests/ --cov=src --cov-fail-under=85
+uv run poe check
 ```
 
 _(For detailed architectural decisions regarding HTMX and Pyright, see `DEV_GUIDE.md` and `HTMX_TUTORIAL.md`)_.
