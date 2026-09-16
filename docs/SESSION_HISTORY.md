@@ -40,9 +40,9 @@ The user provided PR reviews modifying the data model and UI:
 - **HTMX Tutorial**: Added an `HTMX_TUTORIAL.md` file specifically designed to teach Python/Flask developers how HTMX works within the context of the repository's codebase.
 - **Grammar & Spelling**: Performed a thorough review of all documentation for clarity and spelling.
 
-## 5. Tool Evaluation, Python 3.14, and CI Automation
+## 5. Tool Evaluation, Python 3.13, and CI Automation
 
-- **Python 3.14**: Updated the Docker infrastructure and linter target configurations to utilize Python 3.14 features.
+- **Python 3.13**: Updated the Docker infrastructure and linter target configurations to utilize Python 3.13 features.
 - **Tool Evaluation**: Evaluated modern Python toolchains, resulting in the adoption of **Ruff** (for all linting and formatting, replacing Pylint) and **Pyright** (replacing Mypy for faster, tighter Pydantic validation). Documented in `TOOL_EVALUATION.md`.
 - **Centralization**: Merged `tox.ini` into `pyproject.toml` to consolidate configuration files.
 - **Docstrings**: Enforced the Ruff pydocstyle (`D`) ruleset to ensure no method, class, or module lacked a meaningful description. Rewrote placeholder docstrings to be highly descriptive.
