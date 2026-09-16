@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 from src.app.database import Base, SessionLocal, engine, get_db
 from src.app.logging_config import setup_logging
 from src.app.models import PrintJob, PrintStatus
-from src.worker.celery_app import (
+from src.worker.dramatiq_app import (
     sync_cults3d,
     sync_local,
     sync_makerworld,
@@ -63,7 +63,7 @@ async def lifespan(app: FastAPI):
         logger.error(f"Failed to normalize priorities during startup: {e}")
 
     try:
-        sync_local.delay()
+        sync_local.send()
     except Exception as e:
         logger.error(f"Failed to trigger initial sync_local task: {e}")
 
@@ -290,7 +290,7 @@ def update_notes(
 
 @app.post("/sync/{platform}", response_class=HTMLResponse)
 def trigger_sync(request: Request, platform: str) -> HTMLResponse:
-    """Manually trigger a background Celery task to synchronize a specific platform."""
+    """Manually trigger a background Dramatiq task to synchronize a specific platform."""
     tasks = {
         "makerworld": sync_makerworld,
         "printables": sync_printables,
@@ -302,7 +302,7 @@ def trigger_sync(request: Request, platform: str) -> HTMLResponse:
 
     task = tasks.get(platform.lower())
     if task:
-        task.delay()
+        task.send()
         msg = f"Sync started for {platform.capitalize()}!"
         return templates.TemplateResponse(  # type: ignore
             request=request, name="sync_toast.html", context={"message": msg, "is_error": False}

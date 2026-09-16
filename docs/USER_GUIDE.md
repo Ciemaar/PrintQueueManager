@@ -17,7 +17,7 @@ To retrieve the models you like from cloud platforms without using official APIs
 
 However, **when official APIs are available (such as for Thingiverse)**, the system prioritizes using them for perfect, structured data retrieval. You simply need to provide your `THINGIVERSE_API_TOKEN` in the environment configuration. If the token is missing, it will gracefully fall back to the local LLM scraping method.
 
-In the background, a Celery worker routinely queries these websites. The web page HTML is provided to an agent which understands its structure, extracting the Model Title, Author, Thumbnail, and a direct URL, then importing it into your dashboard.
+In the background, a Dramatiq worker routinely queries these websites. The web page HTML is provided to an agent which understands its structure, extracting the Model Title, Author, Thumbnail, and a direct URL, then importing it into your dashboard.
 
 ### Important Note on Agent Dependencies
 

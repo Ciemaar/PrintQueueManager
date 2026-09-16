@@ -83,9 +83,13 @@ tox -e ruff,pyright
 - **Reordering:** Drag-and-drop job reordering in the frontend UI is implemented using `Sortable.js` and `.drag-handle` classes within the PicoCSS-based templates.
 - **UI Verification:** Frontend UI changes require visual verification via Playwright scripts. For local verification using an SQLite database, set `DATABASE_URL=sqlite:///./test_ui.db` and `PYTHONPATH=..`. To run the FastAPI application locally without a running Redis instance, set `REDIS_URL=memory://` to bypass Celery broker connection errors.
 
-## Local Services & Docker
+- PostgreSQL (`db` on `5432`)
+- Redis (`redis` on `6379`)
+- Ollama (`ollama` on `11434`)
+- Dramatiq Worker & Beat scheduler
+- Watchdog Local File Monitor
 
-When instructed to run or mock services, be aware that `docker-compose.yml` spins up: PostgreSQL (`db` on `5432`), Redis (`redis` on `6379`), Ollama (`ollama` on `11434`), Celery Worker & Beat scheduler, and a Watchdog Local File Monitor.
+When instructed to run or mock services, be aware that `docker-compose.yml` spins up: PostgreSQL (`db` on `5432`), Redis (`redis` on `6379`), Ollama (`ollama` on `11434`), Dramatiq Worker & Beat scheduler, and a Watchdog Local File Monitor.
 
 - **Verbose Logging:** To run Docker containers in verbose mode, set the `VERBOSE` environment variable to `"true"`.
 - **Environment Variables:** When editing `docker-compose.yml`, always preserve environment variable fallbacks (e.g., `${POSTGRES_PASSWORD:-password}`) rather than hardcoding passwords to avoid security regressions.
