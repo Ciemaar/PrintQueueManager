@@ -35,11 +35,11 @@ Verify the installation by running `docker compose version` (it should output a 
 When you run Docker Compose, you are spinning up seven distinct "services" (containers):
 
 1. **`db`**: The PostgreSQL 15 database where all your print jobs and metadata are permanently stored.
-2. **`redis`**: The high-speed memory broker used by Celery to pass background tasks.
+2. **`redis`**: The high-speed memory broker used by Dramatiq to pass background tasks.
 3. **`ollama`**: The local AI inference server. (Note: You still have to pull your desired model, like `llama3.2`, manually the first time).
 4. **`web`**: The main FastAPI application serving the HTMX user interface on port `8000`.
-5. **`worker`**: The Celery process that listens to Redis and executes the heavy LLM scraping tasks.
-6. **`beat`**: The Celery scheduler that drops synchronization tasks into Redis every 30 minutes.
+5. **`worker`**: The Dramatiq process that listens to Redis and executes the heavy LLM scraping tasks.
+6. **`beat`**: The Dramatiq scheduler that drops synchronization tasks into Redis every 30 minutes.
 7. **`watchdog`**: A persistent Python process monitoring the `./watched_folder` directory on your host machine for new `.stl` or `.3mf` files.
 
 ---
