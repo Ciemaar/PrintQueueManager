@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=82.0.1", "wheel"]
+requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -10,16 +10,20 @@ authors = [
     { name = "Developer", email = "dev@example.com" }
 ]
 readme = "README.md"
-license = { text = "GPL-3.0-or-later" }
+license = { text = "MIT" }
 keywords = ["3d printing", "queue", "manager", "stl", "makerworld", "printables", "htmx", "fastapi"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Environment :: Web Environment",
     "Framework :: FastAPI",
     "Intended Audience :: Manufacturing",
-    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
     "Topic :: Printing",
 ]
@@ -43,7 +47,7 @@ dependencies = [
     "playwright",
     "watchfiles"
 ]
-requires-python = ">=3.14"
+requires-python = ">=3.10"
 
 [project.scripts]
 printqueue = "src.app.cli:main"
@@ -54,8 +58,7 @@ dev = [
     "pytest-asyncio",
     "pytest-cov",
     "hypothesis",
-    "tox",
-    "tox-uv",
+    "poethepoet",
     "ruff",
     "pyright"
 ]
@@ -69,7 +72,6 @@ select = [
     "E",  # pycodestyle errors
     "F",  # pyflakes
     "D",  # pydocstyle
-    "I",  # isort (import sorting)
 ]
 ignore = [
     "D104", # Allow tests without docstrings for brevity
@@ -87,36 +89,20 @@ include = ["src", "tests"]
 pythonVersion = "3.14"
 typeCheckingMode = "basic"
 
-[tool.tox]
-legacy_tox_ini = """
-[tox]
-envlist = py314, ruff, pyright
-isolated_build = True
+[tool.poe.tasks]
+test = { cmd = "pytest tests/ --cov=src --cov-fail-under=85", env = { PYTHONPATH = "." } }
+pyright = "pyright src/ tests/"
 
-[testenv]
-extras = dev
-commands =
-    pytest tests/ --cov=src --cov-fail-under=85
+[tool.poe.tasks.ruff_check]
+cmd = "ruff check src/ tests/"
 
-[testenv:ruff]
-allowlist_externals = ruff
-deps = ruff
-commands =
-    ruff check src/ tests/
-    ruff format --check src/ tests/
+[tool.poe.tasks.ruff_format]
+cmd = "ruff format --check src/ tests/"
 
-[testenv:pyright]
-allowlist_externals = pyright
-extras = dev
-deps =
-    pyright
-commands = pyright src/ tests/
-"""
+[tool.poe.tasks.ruff]
+sequence = ["ruff_check", "ruff_format"]
+ignore_fail = false
 
-[dependency-groups]
-dev = [
-    "hypothesis>=6.151.10",
-    "pyright>=1.1.408",
-    "pytest-asyncio>=1.3.0",
-    "pytest-cov>=7.1.0",
-]
+[tool.poe.tasks.check]
+sequence = ["ruff", "pyright", "test"]
+ignore_fail = false
