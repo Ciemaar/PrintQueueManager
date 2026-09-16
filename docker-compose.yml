@@ -48,7 +48,7 @@ services:
 
   worker:
     build: .
-    command: watchfiles --filter default 'celery -A src.worker.celery_app worker --loglevel=info' ./src
+    command: watchfiles --filter default 'xvfb-run celery -A src.worker.celery_app worker --loglevel=info' ./src
     volumes:
       - ./src:/app/src
       - ./watched_folder:/watched_folder
