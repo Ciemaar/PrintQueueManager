@@ -20,6 +20,10 @@ classifiers = [
     "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
     "Topic :: Printing",
 ]
@@ -43,7 +47,7 @@ dependencies = [
     "playwright",
     "watchfiles"
 ]
-requires-python = ">=3.14"
+requires-python = ">=3.10"
 
 [project.scripts]
 printqueue = "src.app.cli:main"
@@ -62,7 +66,7 @@ dev = [
 
 [tool.ruff]
 line-length = 100
-target-version = "py314"
+target-version = "py313"
 
 [tool.ruff.lint]
 select = [
@@ -94,7 +98,10 @@ envlist = py314, ruff, pyright
 isolated_build = True
 
 [testenv]
+
 extras = dev
+setenv =
+    PYTHONPATH = {toxinidir}
 commands =
     pytest tests/ --cov=src --cov-fail-under=85
 
