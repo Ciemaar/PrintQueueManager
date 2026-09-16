@@ -1,13 +1,12 @@
-"""Test module for the Celery worker scheduled tasks."""
+"""Test module for the Dramatiq worker scheduled tasks."""
 
+from typing import Any, List
 from unittest.mock import MagicMock, patch
 
 import pytest
-from sqlalchemy.exc import SQLAlchemyError
 
-from src.worker.celery_app import (
+from src.worker.dramatiq_app import (
     normalize_priorities,
-    setup_periodic_tasks,
     sync_cults3d,
     sync_local,
     sync_makerworld,
@@ -17,49 +16,42 @@ from src.worker.celery_app import (
 )
 
 
-def test_setup_periodic_tasks():
-    """Ensure all expected periodic synchronization tasks are registered."""
-    sender_mock = MagicMock()
-    setup_periodic_tasks(sender=sender_mock)
-    assert sender_mock.add_periodic_task.call_count == 6
-
-
-@patch("src.worker.celery_app.run_scraper")
+@patch("src.worker.dramatiq_app.run_scraper")
 def test_sync_makerworld(mock_run_scraper):
     """Verify that the MakerWorld task triggers the scraper with the correct target."""
     mock_run_scraper.return_value = [{"title": "Test"}]
-    result = sync_makerworld()
+    result = sync_makerworld.fn()
     mock_run_scraper.assert_called_once_with("makerworld", "https://makerworld.com/en/user/likes")
     assert result == [{"title": "Test"}]
 
 
-@patch("src.worker.celery_app.run_scraper")
+@patch("src.worker.dramatiq_app.run_scraper")
 def test_sync_printables(mock_run_scraper):
     """Verify that the Printables task triggers the scraper with the correct target."""
     mock_run_scraper.return_value = [{"title": "Test"}]
-    result = sync_printables()
+    result = sync_printables.fn()
     mock_run_scraper.assert_called_once_with(
         "printables", "https://www.printables.com/user/collections"
     )
     assert result == [{"title": "Test"}]
 
 
-@patch("src.worker.celery_app.fetch_thingiverse_collections")
+@patch("src.worker.dramatiq_app.fetch_thingiverse_collections")
 def test_sync_thingiverse_api_success(mock_fetch_api):
     """Verify that the Thingiverse task prefers the API over scraping if data is returned."""
     mock_fetch_api.return_value = [{"title": "Test from API"}]
-    result = sync_thingiverse()
+    result = sync_thingiverse.fn()
     mock_fetch_api.assert_called_once()
     assert result == [{"title": "Test from API"}]
 
 
-@patch("src.worker.celery_app.run_scraper")
-@patch("src.worker.celery_app.fetch_thingiverse_collections")
+@patch("src.worker.dramatiq_app.run_scraper")
+@patch("src.worker.dramatiq_app.fetch_thingiverse_collections")
 def test_sync_thingiverse_api_fallback(mock_fetch_api, mock_run_scraper):
     """Verify that the Thingiverse task falls back to the scraper if the API returns no data."""
     mock_fetch_api.return_value = []
     mock_run_scraper.return_value = [{"title": "Test from Scraper"}]
-    result = sync_thingiverse()
+    result = sync_thingiverse.fn()
     mock_fetch_api.assert_called_once()
     mock_run_scraper.assert_called_once_with(
         "thingiverse", "https://www.thingiverse.com/user/collections"
@@ -67,26 +59,26 @@ def test_sync_thingiverse_api_fallback(mock_fetch_api, mock_run_scraper):
     assert result == [{"title": "Test from Scraper"}]
 
 
-@patch("src.worker.celery_app.run_scraper")
+@patch("src.worker.dramatiq_app.run_scraper")
 def test_sync_cults3d(mock_run_scraper):
     """Verify that the Cults3D task triggers the scraper with the correct target."""
     mock_run_scraper.return_value = [{"title": "Test"}]
-    result = sync_cults3d()
+    result = sync_cults3d.fn()
     mock_run_scraper.assert_called_once_with("cults3d", "https://cults3d.com/en/users/collections")
     assert result == [{"title": "Test"}]
 
 
-@patch("src.worker.celery_app.run_scraper")
+@patch("src.worker.dramatiq_app.run_scraper")
 def test_sync_minihoarder(mock_run_scraper):
     """Verify that the Minihoarder task triggers the scraper with the correct target."""
     mock_run_scraper.return_value = [{"title": "Test"}]
-    result = sync_minihoarder()
+    result = sync_minihoarder.fn()
     mock_run_scraper.assert_called_once_with("minihoarder", "https://www.minihoarder.com/library/")
     assert result == [{"title": "Test"}]
 
 
-@patch("src.worker.celery_app.settings")
-@patch("src.worker.celery_app.SessionLocal")
+@patch("src.worker.dramatiq_app.settings")
+@patch("src.worker.dramatiq_app.SessionLocal")
 def test_sync_local(mock_session, mock_settings, tmp_path):
     """Verify the local directory scan properly identifies and inserts missing files."""
     # Point settings.watch_directory to the temporary py.test directory
@@ -153,7 +145,10 @@ def test_sync_local(mock_session, mock_settings, tmp_path):
 
     mock_db.query.return_value = MockFilter()
 
-    result = sync_local()
+    # Dramatiq actors return a Message when called. To test the underlying function
+    # synchronously, we must call its .fn attribute or the message's get_result()
+    # but the simplest way is .fn
+    result: List[dict[str, Any]] = sync_local.fn()  # type: ignore
 
     # The function should find "new.3mf", "nested_new.STL", "valid_link.3mf", and "broken_link.stl"
     assert len(result) == 4
@@ -177,7 +172,7 @@ def test_sync_local(mock_session, mock_settings, tmp_path):
     mock_db.close.assert_called_once()
 
 
-@patch("src.worker.celery_app.SessionLocal")
+@patch("src.worker.dramatiq_app.SessionLocal")
 def test_normalize_priorities_success(mock_session_local):
     """Verify that priorities are reassigned as sequential floats."""
     mock_db = MagicMock()
@@ -208,9 +203,11 @@ def test_normalize_priorities_success(mock_session_local):
     assert mock_filter.order_by.called
 
 
-@patch("src.worker.celery_app.SessionLocal")
+@patch("src.worker.dramatiq_app.SessionLocal")
 def test_normalize_priorities_exception(mock_session_local):
     """Verify that database exceptions trigger a rollback."""
+    from sqlalchemy.exc import SQLAlchemyError
+
     mock_db = MagicMock()
     mock_session_local.return_value.__enter__.return_value = mock_db
     mock_db.query.side_effect = SQLAlchemyError("DB Error")
@@ -221,7 +218,7 @@ def test_normalize_priorities_exception(mock_session_local):
     mock_db.rollback.assert_called_once()
 
 
-@patch("src.worker.celery_app.SessionLocal")
+@patch("src.worker.dramatiq_app.SessionLocal")
 def test_normalize_priorities_unknown_exception(mock_session_local):
     """Verify that unknown exceptions are rolled back and re-raised."""
     mock_db = MagicMock()
@@ -234,10 +231,12 @@ def test_normalize_priorities_unknown_exception(mock_session_local):
     mock_db.rollback.assert_called_once()
 
 
-@patch("src.worker.celery_app.settings")
-@patch("src.worker.celery_app.SessionLocal")
+@patch("src.worker.dramatiq_app.settings")
+@patch("src.worker.dramatiq_app.SessionLocal")
 def test_sync_local_db_query_error(mock_session_local, mock_settings, tmp_path):
     """Verify that a database error during the query phase triggers a rollback."""
+    from sqlalchemy.exc import SQLAlchemyError
+
     mock_settings.watch_directory = str(tmp_path)
     mock_db = MagicMock()
     mock_session_local.return_value = mock_db
@@ -250,10 +249,12 @@ def test_sync_local_db_query_error(mock_session_local, mock_settings, tmp_path):
     mock_db.close.assert_called_once()
 
 
-@patch("src.worker.celery_app.settings")
-@patch("src.worker.celery_app.SessionLocal")
+@patch("src.worker.dramatiq_app.settings")
+@patch("src.worker.dramatiq_app.SessionLocal")
 def test_sync_local_db_commit_error(mock_session_local, mock_settings, tmp_path):
     """Verify that a database error during the commit phase triggers a rollback."""
+    from sqlalchemy.exc import SQLAlchemyError
+
     mock_settings.watch_directory = str(tmp_path)
     mock_db = MagicMock()
     mock_session_local.return_value = mock_db
@@ -273,8 +274,8 @@ def test_sync_local_db_commit_error(mock_session_local, mock_settings, tmp_path)
     mock_db.close.assert_called_once()
 
 
-@patch("src.worker.celery_app.settings")
-@patch("src.worker.celery_app.SessionLocal")
+@patch("src.worker.dramatiq_app.settings")
+@patch("src.worker.dramatiq_app.SessionLocal")
 def test_sync_local_unknown_error(mock_session_local, mock_settings, tmp_path):
     """Verify that an unknown error is re-raised and session is rolled back."""
     mock_settings.watch_directory = str(tmp_path)

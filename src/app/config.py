@@ -19,12 +19,12 @@ class Settings(BaseSettings):
     minihoarder_cookie: str = ""
     demo_mode: bool = False
 
-    # Synchronization Intervals (in seconds, defaulting to 1 week = 604800 seconds)
-    makerworld_sync_interval: float = 604800.0
-    printables_sync_interval: float = 604800.0
-    thingiverse_sync_interval: float = 604800.0
-    cults3d_sync_interval: float = 604800.0
-    minihoarder_sync_interval: float = 604800.0
+    # Synchronization Schedules (Cron format, defaulting to once a week on Sunday at midnight)
+    makerworld_sync_cron: str = "0 0 * * 0"
+    printables_sync_cron: str = "0 0 * * 0"
+    thingiverse_sync_cron: str = "0 0 * * 0"
+    cults3d_sync_cron: str = "0 0 * * 0"
+    minihoarder_sync_cron: str = "0 0 * * 0"
 
     # Debugging
     verbose: bool = False
