@@ -24,6 +24,7 @@ classifiers = [
     "Topic :: Printing",
 ]
 dependencies = [
+    "rq-scheduler",
     "fastapi",
     "uvicorn",
     "pydantic",
