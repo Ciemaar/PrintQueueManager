@@ -17,10 +17,22 @@ services:
       timeout: 5s
       retries: 5
 
-  redis:
-    image: redis:7
+
+  temporal:
+    image: temporalio/auto-setup:1.22.7
     ports:
-      - "6379:6379"
+      - "7233:7233"
+      - "8233:8233"
+    environment:
+      - DB=postgresql
+      - DB_PORT=5432
+      - POSTGRES_USER=printqueue
+      - POSTGRES_PWD=${POSTGRES_PASSWORD:-password}
+      - POSTGRES_SEEDS=db
+      - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development-sql.yaml
+    depends_on:
+      db:
+        condition: service_healthy
 
   ollama:
     image: ollama/ollama
@@ -38,45 +50,26 @@ services:
       - "8000:8000"
     environment:
       - DATABASE_URL=${DATABASE_URL:-postgresql://printqueue:${POSTGRES_PASSWORD:-password}@db:5432/printqueue}
-      - REDIS_URL=redis://redis:6379/0
+      - TEMPORAL_TARGET=temporal:7233
       - OLLAMA_HOST=http://ollama:11434
     depends_on:
       db:
         condition: service_healthy
-      redis:
-        condition: service_started
 
   worker:
     build: .
-    command: watchfiles --filter default 'celery -A src.worker.celery_app worker --loglevel=info' ./src
+    command: watchfiles --filter default 'python -m src.worker.main' ./src
     volumes:
       - ./src:/app/src
       - ./watched_folder:/watched_folder
     environment:
       - DATABASE_URL=${DATABASE_URL:-postgresql://printqueue:${POSTGRES_PASSWORD:-password}@db:5432/printqueue}
-      - REDIS_URL=redis://redis:6379/0
+      - TEMPORAL_TARGET=temporal:7233
       - OLLAMA_HOST=http://ollama:11434
       - WATCH_DIRECTORY=/watched_folder
     depends_on:
       db:
         condition: service_healthy
-      redis:
-        condition: service_started
-
-  beat:
-    build: .
-    command: watchfiles --filter default 'celery -A src.worker.celery_app beat --loglevel=info' ./src
-    volumes:
-      - ./src:/app/src
-    environment:
-      - DATABASE_URL=${DATABASE_URL:-postgresql://printqueue:${POSTGRES_PASSWORD:-password}@db:5432/printqueue}
-      - REDIS_URL=redis://redis:6379/0
-      - OLLAMA_HOST=http://ollama:11434
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_started
 
   watchdog:
     build: .

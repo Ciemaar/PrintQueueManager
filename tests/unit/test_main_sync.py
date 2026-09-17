@@ -9,7 +9,7 @@ from src.app.main import app
 client = TestClient(app)
 
 
-@patch("src.worker.celery_app.sync_makerworld.delay")
+@patch("src.app.main.get_temporal_client")
 def test_trigger_sync_success(mock_delay):
     """Ensure that a valid platform triggers the Celery task and returns a success message."""
     response = client.post("/sync/makerworld")
@@ -18,7 +18,7 @@ def test_trigger_sync_success(mock_delay):
     mock_delay.assert_called_once()
 
 
-@patch("src.worker.celery_app.sync_local.delay")
+@patch("src.app.main.get_temporal_client")
 def test_trigger_sync_local(mock_delay):
     """Ensure that the local platform triggers the Celery task and returns a success message."""
     response = client.post("/sync/local")

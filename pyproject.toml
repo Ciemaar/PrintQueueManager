@@ -32,7 +32,7 @@ dependencies = [
     "sqlalchemy",
     "psycopg2-binary",
     "alembic",
-    "celery",
+    "temporalio",
     "redis",
     "watchdog",
     "jinja2",

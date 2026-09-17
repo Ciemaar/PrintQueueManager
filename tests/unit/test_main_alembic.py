@@ -8,7 +8,7 @@ from src.app.main import app, lifespan
 @pytest.mark.asyncio
 @patch("src.app.main.Base.metadata.create_all")
 @patch("alembic.command.upgrade")
-@patch("src.app.main.sync_local.delay")
+@patch("src.app.main.get_temporal_client")
 async def test_startup_event(mock_sync, mock_upgrade, mock_create):
     """Verify that startup event successfully creates tables, runs migrations, and triggers sync."""
     async with lifespan(app):
@@ -21,7 +21,7 @@ async def test_startup_event(mock_sync, mock_upgrade, mock_create):
 @pytest.mark.asyncio
 @patch("src.app.main.Base.metadata.create_all")
 @patch("alembic.command.upgrade", side_effect=Exception("Alembic failed"))
-@patch("src.app.main.sync_local.delay", side_effect=Exception("Celery failed"))
+@patch("src.app.main.get_temporal_client", side_effect=Exception("Celery failed"))
 async def test_startup_event_exceptions(mock_sync, mock_upgrade, mock_create, capfd, caplog):
     """Verify that exceptions during alembic or celery sync are gracefully caught and logged."""
     import logging

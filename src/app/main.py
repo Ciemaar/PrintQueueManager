@@ -3,7 +3,7 @@
 import logging
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Any, Optional
 
 from fastapi import Depends, FastAPI, Form, Request
 from fastapi.responses import HTMLResponse
@@ -13,13 +13,14 @@ from sqlalchemy.orm import Session
 from src.app.database import Base, SessionLocal, engine, get_db
 from src.app.logging_config import setup_logging
 from src.app.models import PrintJob, PrintStatus
-from src.worker.celery_app import (
-    sync_cults3d,
-    sync_local,
-    sync_makerworld,
-    sync_minihoarder,
-    sync_printables,
-    sync_thingiverse,
+from src.app.temporal_client import get_temporal_client
+from src.worker.temporal_workflows import (
+    SyncCults3dWorkflow,
+    SyncLocalWorkflow,
+    SyncMakerworldWorkflow,
+    SyncMinihoarderWorkflow,
+    SyncPrintablesWorkflow,
+    SyncThingiverseWorkflow,
 )
 
 SKIPPED_OR_DELETED = frozenset({PrintStatus.SKIPPED, PrintStatus.DELETED})
@@ -63,7 +64,14 @@ async def lifespan(app: FastAPI):
         logger.error(f"Failed to normalize priorities during startup: {e}")
 
     try:
-        sync_local.delay()
+        client = await get_temporal_client()
+        import uuid
+
+        await client.start_workflow(
+            SyncLocalWorkflow.run,
+            id=f"sync-local-{uuid.uuid4()}",
+            task_queue="sync-task-queue",
+        )
     except Exception as e:
         logger.error(f"Failed to trigger initial sync_local task: {e}")
 
@@ -289,24 +297,38 @@ def update_notes(
 
 
 @app.post("/sync/{platform}", response_class=HTMLResponse)
-def trigger_sync(request: Request, platform: str) -> HTMLResponse:
-    """Manually trigger a background Celery task to synchronize a specific platform."""
-    tasks = {
-        "makerworld": sync_makerworld,
-        "printables": sync_printables,
-        "thingiverse": sync_thingiverse,
-        "cults3d": sync_cults3d,
-        "minihoarder": sync_minihoarder,
-        "local": sync_local,
+async def trigger_sync(request: Request, platform: str) -> HTMLResponse:
+    """Manually trigger a background Temporal workflow to synchronize a specific platform."""
+    workflows: dict[str, Any] = {
+        "makerworld": SyncMakerworldWorkflow,
+        "printables": SyncPrintablesWorkflow,
+        "thingiverse": SyncThingiverseWorkflow,
+        "cults3d": SyncCults3dWorkflow,
+        "minihoarder": SyncMinihoarderWorkflow,
+        "local": SyncLocalWorkflow,
     }
 
-    task = tasks.get(platform.lower())
-    if task:
-        task.delay()
-        msg = f"Sync started for {platform.capitalize()}!"
-        return templates.TemplateResponse(  # type: ignore
-            request=request, name="sync_toast.html", context={"message": msg, "is_error": False}
-        )
+    workflow_cls = workflows.get(platform.lower())
+    if workflow_cls:
+        try:
+            client = await get_temporal_client()
+            import uuid
+
+            await client.start_workflow(
+                workflow_cls.run,
+                id=f"sync-{platform.lower()}-{uuid.uuid4()}",
+                task_queue="sync-task-queue",
+            )
+            msg = f"Sync started for {platform.capitalize()}!"
+            return templates.TemplateResponse(  # type: ignore
+                request=request, name="sync_toast.html", context={"message": msg, "is_error": False}
+            )
+        except Exception as e:
+            return templates.TemplateResponse(  # type: ignore
+                request=request,
+                name="sync_toast.html",
+                context={"message": f"Error: {e}", "is_error": True},
+            )
     return templates.TemplateResponse(  # type: ignore
         request=request,
         name="sync_toast.html",
