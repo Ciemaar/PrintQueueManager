@@ -27,6 +27,8 @@ class Settings(BaseSettings):
     minihoarder_sync_interval: float = 604800.0
 
     # Debugging
+    thumbnails_dir: str = "src/app/static/thumbnails"
+
     verbose: bool = False
 
 
