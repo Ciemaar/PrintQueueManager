@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379/0"
     ollama_host: str = "http://localhost:11434"
     watch_directory: str = "./watched_folder"
+    thumbnails_dir: str = "./thumbnails"
 
     # API Authentication & Session Configurations
     thingiverse_api_token: str = ""
@@ -27,8 +28,6 @@ class Settings(BaseSettings):
     minihoarder_sync_interval: float = 604800.0
 
     # Debugging
-    thumbnails_dir: str = "src/app/static/thumbnails"
-
     verbose: bool = False
 
 
