@@ -447,8 +447,6 @@ def test_settings(
             import os
 
             if os.path.isdir(target_url):
-
-
                 return HTMLResponse(
                     f'<div style="color: var(--pico-ins-color);">Test successful! Directory found.</div><span id="status-indicator-{html.escape(service_name)}" hx-swap-oob="true">✅</span>'  # noqa: E501
                 )
@@ -509,8 +507,6 @@ def test_settings(
                 service_name in allowed_domains
                 and parsed_url.netloc not in allowed_domains[service_name]
             ):
-
-
                 return HTMLResponse(
                     f'<div style="color: var(--pico-del-color);">'
                     f"Test failed: Invalid URL domain for {html.escape(service_name)}</div>"
