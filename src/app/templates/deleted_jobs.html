@@ -46,20 +46,9 @@
 <body>
     <main class="container">
         <header>
-            <nav>
-                <ul>
-                    <li>
-                        <hgroup>
-                            <h1>Deleted Jobs</h1>
-                            <p>History of deleted, skipped, and printed models.</p>
-                        </hgroup>
-                    </li>
-                </ul>
-                <ul>
-                    <li><a href="/" class="secondary">Main View</a></li>
-                    <li><a href="/deleted" class="secondary">Deleted Jobs</a></li>
-                </ul>
-            </nav>
+            {% set page_title = "Deleted Jobs - Print Queue" %}
+            {% set page_subtitle = "Review and restore previously deleted print jobs." %}
+            {% include 'nav.html' with context %}
         </header>
 
         <article>
