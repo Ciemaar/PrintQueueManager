@@ -1,24 +1,24 @@
-"""RQ worker configuration and tasks for external data sync."""
+"""Celery worker configuration and scheduled tasks for external data sync."""
 
 import logging
-import time
 from pathlib import Path
 from typing import Any, List
 
 from redis import Redis
 from rq import Queue
+from sqlalchemy.exc import SQLAlchemyError
 
 from src.app.config import settings
 from src.app.database import SessionLocal
 from src.app.logging_config import setup_logging
-from src.app.models import PrintJob
+from src.app.models import PrintJob, PrintStatus
 
 from .llm_scraper import run_scraper
 from .thingiverse_api import fetch_thingiverse_collections
+from .thumbnail_generator import generate_thumbnail, get_thumbnail_file_path, get_thumbnail_path
 
 setup_logging()
 logger = logging.getLogger(__name__)
-
 
 def get_redis_connection() -> Redis:
     """Return a configured Redis connection instance."""
@@ -30,6 +30,11 @@ def get_queue() -> Queue:
     return Queue(connection=get_redis_connection())
 
 
+
+
+
+
+
 def sync_makerworld() -> List[dict[str, Any]]:
     """
     Fetch the user's liked models from MakerWorld.
@@ -38,10 +43,10 @@ def sync_makerworld() -> List[dict[str, Any]]:
     and leverages the local Pydantic AI agent to extract model attributes.
     """
     logger.info("Starting MakerWorld synchronization via Ollama agent...")
-    time.sleep(2)
     result = run_scraper("makerworld", "https://makerworld.com/en/user/likes")
     logger.info(f"Sync complete. Found {len(result)} models.")
     return result
+
 
 
 def sync_printables() -> List[dict[str, Any]]:
@@ -52,10 +57,10 @@ def sync_printables() -> List[dict[str, Any]]:
     and leverages the local Pydantic AI agent to extract model attributes.
     """
     logger.info("Starting Printables synchronization via Ollama agent...")
-    time.sleep(2)
     result = run_scraper("printables", "https://www.printables.com/user/collections")
     logger.info(f"Sync complete. Found {len(result)} models.")
     return result
+
 
 
 def sync_thingiverse() -> List[dict[str, Any]]:
@@ -67,7 +72,6 @@ def sync_thingiverse() -> List[dict[str, Any]]:
     Playwright and the local LLM agent to scrape the user's public collections page.
     """
     logger.info("Starting Thingiverse synchronization via Official API...")
-    time.sleep(2)
     # Prefer API logic for structured Thingiverse data.
     # If a token isn't provided, `fetch_thingiverse_collections` simply returns `[]`.
     result = fetch_thingiverse_collections()
@@ -78,6 +82,7 @@ def sync_thingiverse() -> List[dict[str, Any]]:
     return result
 
 
+
 def sync_cults3d() -> List[dict[str, Any]]:
     """
     Fetch the user's collections from Cults3D.
@@ -86,10 +91,10 @@ def sync_cults3d() -> List[dict[str, Any]]:
     and leverages the local Pydantic AI agent to extract model attributes.
     """
     logger.info("Starting Cults3D synchronization via Ollama agent...")
-    time.sleep(2)
     result = run_scraper("cults3d", "https://cults3d.com/en/users/collections")
     logger.info(f"Sync complete. Found {len(result)} models.")
     return result
+
 
 
 def sync_minihoarder() -> List[dict[str, Any]]:
@@ -100,10 +105,10 @@ def sync_minihoarder() -> List[dict[str, Any]]:
     and leverages the local Pydantic AI agent to extract model attributes.
     """
     logger.info("Starting Minihoarder synchronization via Ollama agent...")
-    time.sleep(2)
     result = run_scraper("minihoarder", "https://www.minihoarder.com/library/")
     logger.info(f"Sync complete. Found {len(result)} models.")
     return result
+
 
 
 def sync_local() -> List[dict[str, Any]]:
@@ -161,10 +166,104 @@ def sync_local() -> List[dict[str, Any]]:
             logger.info(f"Added {len(added_files)} local files to print queue.")
         else:
             logger.info("No new local files discovered.")
-    except Exception as e:
+    except (SQLAlchemyError, OSError) as e:
         logger.error(f"Error synchronizing local files: {e}")
         db.rollback()
+    except Exception as e:
+        logger.error(f"Unexpected error synchronizing local files: {e}")
+        db.rollback()
+        raise
     finally:
         db.close()
 
     return added_files
+
+
+
+def normalize_priorities() -> None:
+    """
+    Normalize the user_priority values for all active PrintJobs.
+
+    This helps prevent precision loss from continuously halving user_priority
+    floats when moving items between other items. It reassigns priorities as
+    sequential integers (1.0, 2.0, 3.0, etc.) based on their current order.
+    """
+    logger.info("Starting daily normalization of PrintJob priorities.")
+    with SessionLocal() as db:
+        try:
+            # Fetch all active jobs in their current sorted order
+            jobs = (
+                db.query(PrintJob)
+                .filter(PrintJob.status != PrintStatus.DELETED)
+                .order_by(PrintJob.user_priority.asc().nullsfirst(), PrintJob.updated_at.desc())
+                .all()
+            )
+
+            # Reassign sequential float priorities
+            for index, job in enumerate(jobs, start=1):
+                setattr(job, "user_priority", float(index))
+
+            db.commit()
+            logger.info(f"Successfully normalized priorities for {len(jobs)} active jobs.")
+        except SQLAlchemyError as e:
+            logger.error(f"Failed to normalize priorities due to database error: {e}")
+            db.rollback()
+        except Exception as e:
+            logger.error(f"Unexpected error normalizing priorities: {e}")
+            db.rollback()
+            raise
+
+
+
+def generate_local_thumbnails() -> int:
+    """Generate thumbnails for local files that do not have one yet."""
+    logger.info("Checking for missing local thumbnails...")
+    db = SessionLocal()
+    generated_count = 0
+    try:
+        # Find all Local print jobs that don't have a thumbnail
+        jobs = (
+            db.query(PrintJob)
+            .filter(
+                PrintJob.source == "Local",
+                PrintJob.thumbnail_url.is_(None),  # type: ignore
+                PrintJob.file_path.isnot(None),  # type: ignore
+            )
+            .all()
+        )
+
+        for job in jobs:
+            file_path = str(job.file_path) if job.file_path is not None else None
+            if not file_path:
+                continue
+
+            path_obj = Path(file_path)
+            if not path_obj.exists() or not path_obj.is_file():
+                continue
+
+            expected_thumb_file = get_thumbnail_file_path(path_obj)
+
+            # Generate the thumbnail
+            success = generate_thumbnail(path_obj, expected_thumb_file)
+            if success:
+                # Update the job with the new URL
+                job.thumbnail_url = get_thumbnail_path(path_obj)  # type: ignore
+                generated_count += 1
+            else:
+                # If rendering fails (e.g. corrupted file), mark it so we don't retry forever
+                job.thumbnail_url = "error"  # type: ignore
+            db.commit()
+
+        if generated_count > 0:
+            logger.info(f"Generated {generated_count} new thumbnails.")
+        else:
+            logger.info("No new thumbnails needed.")
+
+        return generated_count
+
+    except SQLAlchemyError as e:
+        logger.exception(f"Error generating thumbnails: {e}")
+        db.rollback()
+        return 0
+    finally:
+        db.close()

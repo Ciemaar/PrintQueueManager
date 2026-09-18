@@ -121,7 +121,7 @@ def test_sync_local(mock_session, mock_settings, tmp_path):
             yield FakeJob(existing_file)
 
     class MockFilter:
-        def filter(self, *args, **kwargs):
+        def filter(self, *_args, **_kwargs):
             return MockQuery()
 
     mock_db.query.return_value = MockFilter()

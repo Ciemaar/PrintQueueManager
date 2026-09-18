@@ -42,7 +42,12 @@ dependencies = [
     "httpx",
     "ollama",
     "playwright",
-    "watchfiles"
+    "watchfiles",
+    "trimesh",
+    "pyglet<2",
+    "pillow",
+    "numpy",
+    "scipy"
 ]
 requires-python = ">=3.14"
 
@@ -95,6 +100,8 @@ envlist = py314, ruff, pyright
 isolated_build = True
 
 [testenv]
+setenv =
+    PYTHONPATH = {toxinidir}
 extras = dev
 commands =
     pytest tests/ --cov=src --cov-fail-under=85
