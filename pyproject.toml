@@ -20,10 +20,6 @@ classifiers = [
     "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
     "Topic :: Printing",
 ]
@@ -45,9 +41,14 @@ dependencies = [
     "httpx",
     "ollama",
     "playwright",
-    "watchfiles"
+    "watchfiles",
+    "trimesh",
+    "pyglet<2",
+    "pillow",
+    "numpy",
+    "scipy"
 ]
-requires-python = ">=3.10"
+requires-python = ">=3.14"
 
 [project.scripts]
 printqueue = "src.app.cli:main"
@@ -66,7 +67,7 @@ dev = [
 
 [tool.ruff]
 line-length = 100
-target-version = "py313"
+target-version = "py314"
 
 [tool.ruff.lint]
 select = [
@@ -98,7 +99,8 @@ envlist = py314, ruff, pyright
 isolated_build = True
 
 [testenv]
-runner = uv-venv-lock-runner
+setenv =
+    PYTHONPATH = {toxinidir}
 extras = dev
 commands =
     pytest tests/ --cov=src --cov-fail-under=85
