@@ -30,6 +30,7 @@ from celery import Celery
 # 1. Connect Celery to our Redis broker
 celery_app = Celery("printqueue", broker="redis://localhost:6379/0")
 
+
 # 2. Define a task using the @task decorator
 @celery_app.task
 def sync_makerworld():
@@ -51,7 +52,7 @@ In `src/worker/celery_app.py`, we hook into the configuration phase to set up a 
 @celery_app.on_after_configure.connect
 def setup_periodic_tasks(sender, **kwargs):
     # Schedule the sync_makerworld task to run every 1800 seconds (1 week)
-    sender.add_periodic_task(604800.0, sync_makerworld.s(), name='sync_makerworld_periodic')
+    sender.add_periodic_task(604800.0, sync_makerworld.s(), name="sync_makerworld_periodic")
 ```
 
 _Note the `.s()` on `sync_makerworld.s()`. This creates a "Signature"—a packaged up version of the task that Celery can send over the network to Redis._
