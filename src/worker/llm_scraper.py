@@ -132,7 +132,7 @@ def run_scraper(source: str, url: str) -> List[dict[str, Any]]:
     try:
         result = scraper_agent.run_sync(html_content)
         data = result.data.models  # type: ignore
-    except (pydantic_core.ValidationError, Exception) as e:
+    except (pydantic_core.ValidationError, ValueError, TypeError) as e:
         logger.error(f"Error communicating with Ollama: {e}. Returning fallback mock data.")
         data = [
             ExtractedModelInfo(

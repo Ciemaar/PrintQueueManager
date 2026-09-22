@@ -46,6 +46,7 @@ async def lifespan(app: FastAPI):
 
         import alembic.command
         import alembic.config
+        import alembic.util.exc
 
         project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
         alembic_ini_path = os.path.join(project_root, "alembic.ini")
@@ -529,7 +530,7 @@ def test_settings(
                 f'<div style="color: var(--pico-ins-color);">Test successful for {html.escape(service_name).capitalize()}!</div><span id="status-indicator-{html.escape(service_name)}" hx-swap-oob="true">✅</span>'  # noqa: E501
             )
 
-    except (Exception) as e: # requests may be unimported here
+    except Exception as e:  # Intentionally broad to catch arbitrary module failures
         logger.exception(f"Settings test failed for {service_name}")
         return HTMLResponse(
             f'<div style="color: var(--pico-del-color);">Test failed: {html.escape(str(e))}</div><span id="status-indicator-{html.escape(service_name)}" hx-swap-oob="true">❌</span>'  # noqa: E501

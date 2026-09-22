@@ -113,7 +113,7 @@ def test_run_scraper_success(mock_get_html, mock_run_sync):
 def test_run_scraper_llm_error(mock_get_html, mock_run_sync):
     """Verify run_scraper uses fallback mock data if LLM throws an exception."""
     mock_get_html.return_value = "<html>Complex Data</html>"
-    mock_run_sync.side_effect = Exception("Ollama disconnected")
+    mock_run_sync.side_effect = ValueError("Ollama disconnected")
 
     result = run_scraper("test", "http://test.com")
 

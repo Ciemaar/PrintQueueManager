@@ -1,9 +1,8 @@
 """Unit tests for the watchdog directory monitor."""
 
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 from sqlalchemy.exc import SQLAlchemyError
-from unittest.mock import patch
 
 from src.watchdog.main import PrintQueueEventHandler, main
 
