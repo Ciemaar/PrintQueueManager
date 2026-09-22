@@ -1840,7 +1840,7 @@ requires-dist = [
     { name = "pydantic" },
     { name = "pydantic-ai" },
     { name = "pydantic-settings" },
-    { name = "pyglet", specifier = "<2" },
+    { name = "pyglet", specifier = "<3" },
     { name = "pyright", marker = "extra == 'dev'" },
     { name = "pytest", marker = "extra == 'dev'" },
     { name = "pytest-asyncio", marker = "extra == 'dev'" },

@@ -43,7 +43,7 @@ dependencies = [
     "playwright",
     "watchfiles",
     "trimesh",
-    "pyglet<2",
+    "pyglet<3",
     "pillow",
     "numpy",
     "scipy"
