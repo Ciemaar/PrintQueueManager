@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from playwright.sync_api import Error as PlaywrightError
 from sqlalchemy import create_engine
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import sessionmaker
 
 # Mock the database before importing
@@ -132,7 +133,7 @@ def test_run_scraper_db_error(mock_get_html, mock_run_sync):
     with patch("src.worker.llm_scraper.SessionLocal") as mock_session_local:
         mock_db = MagicMock()
         mock_session_local.return_value = mock_db
-        mock_db.commit.side_effect = Exception("DB Constraints")
+        mock_db.commit.side_effect = SQLAlchemyError("DB Constraints")
 
         result = run_scraper("test", "http://test.com")
 

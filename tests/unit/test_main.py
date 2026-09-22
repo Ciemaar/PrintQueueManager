@@ -397,7 +397,7 @@ def test_update_settings_new_config():
 
 def test_test_settings_exception_handling():
     """Verify test_settings gracefully handles exceptions during the test."""
-    with patch("src.worker.llm_scraper.run_scraper", side_effect=Exception("Timeout Error")):
+    with patch("src.worker.llm_scraper.run_scraper", side_effect=ValueError("Timeout Error")):
         response = client.post(
             "/settings/test",
             data={

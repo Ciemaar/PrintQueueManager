@@ -4,9 +4,12 @@ import logging
 import os
 from typing import Any, List, Optional
 
+import playwright.sync_api
+import pydantic_core
 from playwright.sync_api import sync_playwright
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent
+from sqlalchemy.exc import SQLAlchemyError
 
 from src.app.config import settings
 from src.app.database import SessionLocal, engine
@@ -109,7 +112,7 @@ def get_page_html(source: str, url: str) -> str:
             content = str(page.content())
             browser.close()
             return content
-    except Exception as e:
+    except (playwright.sync_api.Error, playwright.sync_api.TimeoutError) as e:
         logger.error(f"Failed to fetch {url} using Playwright: {e}")
         return ""
 
@@ -129,7 +132,7 @@ def run_scraper(source: str, url: str) -> List[dict[str, Any]]:
     try:
         result = scraper_agent.run_sync(html_content)
         data = result.data.models  # type: ignore
-    except Exception as e:
+    except (pydantic_core.ValidationError, Exception) as e:
         logger.error(f"Error communicating with Ollama: {e}. Returning fallback mock data.")
         data = [
             ExtractedModelInfo(
@@ -163,7 +166,7 @@ def run_scraper(source: str, url: str) -> List[dict[str, Any]]:
                 db.add(new_job)
                 saved_items.append(model.model_dump())
         db.commit()
-    except Exception as e:
+    except SQLAlchemyError as e:
         logger.error(f"Database error saving models: {e}")
         db.rollback()
     finally:

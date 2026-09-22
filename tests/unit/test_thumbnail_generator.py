@@ -51,7 +51,7 @@ def test_generate_thumbnail_success(mock_open, mock_scene_cls, mock_load):
 @patch("src.worker.thumbnail_generator.trimesh.load")
 def test_generate_thumbnail_failure(mock_load):
     """Test thumbnail generation gracefully handles exceptions."""
-    mock_load.side_effect = Exception("Load failed")
+    mock_load.side_effect = ValueError("Load failed")
 
     result = generate_thumbnail(Path("/test/file.stl"), Path("out.png"))
 

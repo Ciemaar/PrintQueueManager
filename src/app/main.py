@@ -11,6 +11,7 @@ from fastapi import Depends, FastAPI, Form, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from src.app.database import Base, SessionLocal, engine, get_db
@@ -54,7 +55,7 @@ async def lifespan(app: FastAPI):
         alembic_cfg.set_main_option("script_location", alembic_dir)
 
         alembic.command.upgrade(alembic_cfg, "head")
-    except Exception as e:
+    except alembic.util.exc.CommandError as e:
         print(f"Failed to run database migrations: {e}")
 
     # Normalize priorities synchronously so the first page load has valid integer sorting
@@ -62,7 +63,7 @@ async def lifespan(app: FastAPI):
         db = SessionLocal()
         _normalize_priorities_sync(db)
         db.close()
-    except Exception as e:
+    except SQLAlchemyError as e:
         logger.error(f"Failed to normalize priorities during startup: {e}")
 
     try:
@@ -528,7 +529,7 @@ def test_settings(
                 f'<div style="color: var(--pico-ins-color);">Test successful for {html.escape(service_name).capitalize()}!</div><span id="status-indicator-{html.escape(service_name)}" hx-swap-oob="true">✅</span>'  # noqa: E501
             )
 
-    except Exception as e:
+    except (Exception) as e: # requests may be unimported here
         logger.exception(f"Settings test failed for {service_name}")
         return HTMLResponse(
             f'<div style="color: var(--pico-del-color);">Test failed: {html.escape(str(e))}</div><span id="status-indicator-{html.escape(service_name)}" hx-swap-oob="true">❌</span>'  # noqa: E501
@@ -582,7 +583,7 @@ def browse_directories(path: str = "/") -> HTMLResponse:
         html_parts.append("</ul>")
         return HTMLResponse("".join(html_parts))
 
-    except Exception as e:
+    except OSError as e:
         return HTMLResponse(
             f'<div style="color: var(--pico-del-color);">Error accessing path: {html.escape(str(e))}</div>'  # noqa: E501
         )
