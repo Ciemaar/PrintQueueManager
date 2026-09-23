@@ -6,6 +6,7 @@ import os
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from typing import Optional
+from urllib.parse import urlparse
 
 from fastapi import Depends, FastAPI, Form, Request
 from fastapi.responses import HTMLResponse
@@ -457,8 +458,6 @@ def test_settings(
                     f'<div style="color: var(--pico-del-color);">Test failed: Directory not found: {html.escape(target_url)}</div><span id="status-indicator-{html.escape(service_name)}" hx-swap-oob="true">❌</span>'  # noqa: E501
                 )
         elif service_name == "thingiverse":
-            from urllib.parse import urlparse
-
             import requests
 
             parsed_url = urlparse(target_url)
@@ -484,8 +483,6 @@ def test_settings(
             # Note: We must import run_scraper inline because celery_app.py relies on
             # PrintJob models, and importing it at the module level creates a circular
             # import loop with llm_scraper -> celery_app -> main.
-            from urllib.parse import urlparse
-
             from src.worker.llm_scraper import run_scraper
 
             parsed_url = urlparse(target_url)
