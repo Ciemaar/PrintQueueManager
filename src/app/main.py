@@ -8,6 +8,10 @@ from datetime import datetime, timezone
 from typing import Optional
 from urllib.parse import urlparse
 
+import alembic.command
+import alembic.config
+import alembic.util.exc
+import requests
 from fastapi import Depends, FastAPI, Form, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
@@ -26,6 +30,7 @@ from src.worker.celery_app import (
     sync_printables,
     sync_thingiverse,
 )
+from src.worker.llm_scraper import run_scraper
 
 SKIPPED_OR_DELETED = frozenset({PrintStatus.SKIPPED, PrintStatus.DELETED})
 PRINTED_SKIPPED_DELETED = frozenset({PrintStatus.PRINTED, PrintStatus.SKIPPED, PrintStatus.DELETED})  # noqa: E501
@@ -43,12 +48,6 @@ async def lifespan(app: FastAPI):
 
     # Run Alembic migrations programmatically
     try:
-        import os
-
-        import alembic.command
-        import alembic.config
-        import alembic.util.exc
-
         project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
         alembic_ini_path = os.path.join(project_root, "alembic.ini")
         alembic_dir = os.path.join(project_root, "alembic")
@@ -447,8 +446,6 @@ def test_settings(
 
     try:
         if service_name == "local":
-            import os
-
             if os.path.isdir(target_url):
                 return HTMLResponse(
                     f'<div style="color: var(--pico-ins-color);">Test successful! Directory found.</div><span id="status-indicator-{html.escape(service_name)}" hx-swap-oob="true">✅</span>'  # noqa: E501
@@ -458,8 +455,6 @@ def test_settings(
                     f'<div style="color: var(--pico-del-color);">Test failed: Directory not found: {html.escape(target_url)}</div><span id="status-indicator-{html.escape(service_name)}" hx-swap-oob="true">❌</span>'  # noqa: E501
                 )
         elif service_name == "thingiverse":
-            import requests
-
             parsed_url = urlparse(target_url)
             if parsed_url.scheme not in ("http", "https") or parsed_url.netloc not in (
                 "thingiverse.com",
@@ -483,7 +478,6 @@ def test_settings(
             # Note: We must import run_scraper inline because celery_app.py relies on
             # PrintJob models, and importing it at the module level creates a circular
             # import loop with llm_scraper -> celery_app -> main.
-            from src.worker.llm_scraper import run_scraper
 
             parsed_url = urlparse(target_url)
 
@@ -537,8 +531,6 @@ def test_settings(
 @app.get("/settings/browse", response_class=HTMLResponse)
 def browse_directories(path: str = "/") -> HTMLResponse:
     """Browse local filesystem directories for the UI path picker."""
-    import os
-
     # Restrict to an allowed base directory to prevent arbitrary filesystem traversal
     allowed_base_dir = os.path.abspath(os.environ.get("ALLOWED_BROWSE_DIR", "/"))
 
