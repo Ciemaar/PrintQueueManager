@@ -4,6 +4,7 @@ import logging
 from typing import Any, List
 
 import httpx
+from sqlalchemy.exc import SQLAlchemyError
 
 from src.app.config import settings
 from src.app.database import SessionLocal, engine
@@ -67,7 +68,7 @@ def fetch_thingiverse_collections() -> List[dict[str, Any]]:
                     saved_items.append(extracted.model_dump())
             db.commit()
             logger.info(f"Successfully synced {len(saved_items)} models from Thingiverse API.")
-        except Exception as e:
+        except SQLAlchemyError as e:
             logger.error(f"Database error saving Thingiverse models: {e}")
             db.rollback()
         finally:

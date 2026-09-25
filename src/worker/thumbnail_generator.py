@@ -60,7 +60,7 @@ def generate_thumbnail(
 
         logger.info(f"Successfully generated thumbnail: {thumbnail_path}")
         return True
-    except Exception as e:
+    except (OSError, ValueError) as e:
         logger.error(f"Failed to generate thumbnail for {file_path}: {e}")
         return False
 
