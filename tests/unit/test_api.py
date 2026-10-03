@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, patch
 import httpx
 import pytest
 from sqlalchemy import create_engine
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import sessionmaker
 
 # Mock the database before importing the API code
@@ -123,7 +124,7 @@ def test_fetch_thingiverse_db_error(mock_settings, mock_get):
     with patch("src.worker.thingiverse_api.SessionLocal") as mock_session_local:
         mock_db = MagicMock()
         mock_session_local.return_value = mock_db
-        mock_db.query.side_effect = Exception("DB Error")
+        mock_db.query.side_effect = SQLAlchemyError("DB Error")
 
         result = fetch_thingiverse_collections()
 

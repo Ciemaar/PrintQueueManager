@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <title>Service Settings - Print Queue</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <script src="https://unpkg.com/htmx.org@1.9.10" integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC" crossorigin="anonymous"></script>
+    <style>
+        .service-card {
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            border: 1px solid var(--pico-muted-border-color);
+            border-radius: var(--pico-border-radius);
+            background: var(--pico-background-color);
+        }
+        .service-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid var(--pico-muted-border-color);
+            padding-bottom: 0.5rem;
+        }
+        .service-header h2 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+        .instructions {
+            font-size: 0.9rem;
+            color: var(--pico-muted-color);
+            margin-bottom: 1.5rem;
+        }
+        .instructions code {
+            background: var(--pico-code-background-color);
+            padding: 0.2rem 0.4rem;
+            border-radius: 0.2rem;
+        }
+    </style>
+</head>
+<body>
+    <main class="container">
+        <header>
+            {% set page_title = "Service Configuration" %}
+            {% set page_subtitle = "Configure credentials and target collections for each platform." %}
+            {% include 'nav.html' with context %}
+        </header>
+
+        <div id="save-feedback" style="margin-bottom: 1rem;"></div>
+
+        <div id="global-indicator" class="htmx-indicator sync-toast" style="color: var(--pico-muted-color); font-weight: bold; margin-bottom: 1rem; padding: 0.5rem; background: var(--pico-card-background-color); border-radius: 0.25rem;">
+            Testing configuration, please wait...
+        </div>
+
+        <!-- Directory Picker Modal -->
+        <dialog id="directory-modal">
+            <article>
+                <header>
+                    <button aria-label="Close" rel="prev" onclick="document.getElementById('directory-modal').removeAttribute('open');"></button>
+                    <p><strong>Select Directory</strong></p>
+                </header>
+                <div id="directory-browser-content">
+                    Loading...
+                </div>
+            </article>
+        </dialog>
+
+        {% for service_name, details in services.items() %}
+            <article class="service-card">
+                <form hx-post="/settings/update" hx-target="#save-feedback" hx-swap="innerHTML">
+                    <input type="hidden" name="service_name" value="{{ service_name }}">
+                    <div class="service-header">
+                        <h2>{{ details.display_name }} <span id="status-indicator-{{ service_name }}"></span></h2>
+                        <label>
+                            <input type="checkbox" name="enabled" role="switch" value="1" hx-post="/settings/update" hx-include="closest form" hx-target="#save-feedback" hx-swap="innerHTML" hx-indicator="#global-indicator" {% if details.config.enabled %}checked{% endif %}>
+                            Enabled
+                        </label>
+                    </div>
+
+                    <div class="instructions">
+                        {{ details.instructions | safe }}
+                    </div>
+
+                    <div class="grid">
+                        <div>
+                            <label for="{{ service_name }}_target_url">
+                                {% if service_name == "local" %}Directory Path{% else %}Target URL / Collection{% endif %}
+                            </label>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <input type="text" id="{{ service_name }}_target_url" name="target_url" value="{{ details.config.target_url or '' }}" placeholder="e.g. {{ details.example_url }}" required>
+                                {% if service_name == "local" %}
+                                <button type="button" class="secondary"
+                                        onclick="document.getElementById('directory-modal').setAttribute('open', 'open');"
+                                        hx-get="/settings/browse?path={{ details.config.target_url or '/' }}"
+                                        hx-target="#directory-browser-content">
+                                    Browse
+                                </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% if service_name != "local" %}
+                        <div>
+                            <label for="{{ service_name }}_credential">Credential / Cookie</label>
+                            <input type="password" id="{{ service_name }}_credential" name="credential" placeholder="{% if details.config.credential %}******** (Leave empty to keep current){% else %}{{ details.credential_placeholder }}{% endif %}">
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div style="display: flex; gap: 1rem; align-items: center;">
+                        <button type="submit">Save {{ details.display_name }} Settings</button>
+                        <button type="button" class="secondary outline"
+                                hx-post="/settings/test"
+                                hx-include="closest form"
+                                hx-target="#save-feedback"
+                                hx-indicator="#global-indicator"
+                                hx-swap="innerHTML">
+                            Test Configuration
+                        </button>
+                        <button type="button" class="outline"
+                                hx-post="/sync/{{ service_name }}"
+                                hx-target="#save-feedback"
+                                hx-swap="innerHTML"
+                                hx-indicator="#global-indicator"
+                                {% if not details.config.target_url or (details.config.target_url == details.example_url) %}disabled{% endif %}>
+                            Sync {{ details.display_name }} Now
+                        </button>
+                    </div>
+                </form>
+            </article>
+        {% endfor %}
+    </main>
+</body>
+</html>

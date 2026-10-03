@@ -49,7 +49,7 @@ def setup_periodic_tasks(sender: Any, **kwargs: Any) -> None:
     sender.add_periodic_task(
         settings.minihoarder_sync_interval, sync_minihoarder.s(), name="sync_minihoarder_periodic"
     )
-    # Run thumbnail generation periodically, e.g., every 5 minutes (300 seconds)
+    # Run the priority normalization task daily at midnight UTC
     sender.add_periodic_task(
         300, generate_local_thumbnails.s(), name="generate_local_thumbnails_periodic"
     )
@@ -237,6 +237,20 @@ def normalize_priorities() -> None:
             logger.error(f"Unexpected error normalizing priorities: {e}")
             db.rollback()
             raise
+
+
+@celery_app.task(name="sync_myminifactory")
+def sync_myminifactory() -> List[dict[str, Any]]:
+    """
+    Fetch the user's purchased/downloaded library from MyMiniFactory.
+
+    Uses Playwright and session cookies to access the private user library,
+    and leverages the local Pydantic AI agent to extract model attributes.
+    """
+    logger.info("Starting MyMiniFactory synchronization via Ollama agent...")
+    result = run_scraper("myminifactory", "https://www.myminifactory.com/library")
+    logger.info(f"Sync complete. Found {len(result)} models.")
+    return result
 
 
 @celery_app.task(name="generate_local_thumbnails")

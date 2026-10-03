@@ -2,6 +2,8 @@
 
 from unittest.mock import MagicMock, patch
 
+from sqlalchemy.exc import SQLAlchemyError
+
 from src.watchdog.main import PrintQueueEventHandler, main
 
 
@@ -92,7 +94,7 @@ def test_add_to_queue_exception_handling(mock_session_local):
     mock_session_local.return_value = mock_db
 
     # Simulate DB query raising an exception
-    mock_db.query.side_effect = Exception("DB Connection Error")
+    mock_db.query.side_effect = SQLAlchemyError("DB Connection Error")
 
     handler = PrintQueueEventHandler()
     handler._add_to_queue("/fake/test.stl", "test.stl")  # pylint: disable=protected-access

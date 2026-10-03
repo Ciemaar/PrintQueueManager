@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from playwright.sync_api import Error as PlaywrightError
 from sqlalchemy import create_engine
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import sessionmaker
 
 # Mock the database before importing
@@ -60,7 +61,7 @@ def test_get_page_html_with_cookie(mock_settings, mock_sync_playwright):
 
     assert html == "<html>Live Page</html>"
     mock_context.add_cookies.assert_called_once()
-    mock_page.goto.assert_called_with("http://test.com", wait_until="networkidle")
+    mock_page.goto.assert_called_with("http://test.com", wait_until="networkidle", timeout=15000)
 
 
 @patch("src.worker.llm_scraper.sync_playwright")
@@ -115,7 +116,7 @@ def test_run_scraper_llm_error(mock_get_html, mock_get_agent):
     """Verify run_scraper uses fallback mock data if LLM throws an exception."""
     mock_get_html.return_value = "<html>Complex Data</html>"
     mock_agent = MagicMock()
-    mock_agent.run_sync.side_effect = Exception("Ollama disconnected")
+    mock_agent.run_sync.side_effect = ValueError("Ollama disconnected")
     mock_get_agent.return_value = mock_agent
 
     result = run_scraper("test", "http://test.com")
@@ -138,7 +139,7 @@ def test_run_scraper_db_error(mock_get_html, mock_get_agent):
     with patch("src.worker.llm_scraper.SessionLocal") as mock_session_local:
         mock_db = MagicMock()
         mock_session_local.return_value = mock_db
-        mock_db.commit.side_effect = Exception("DB Constraints")
+        mock_db.commit.side_effect = SQLAlchemyError("DB Constraints")
 
         result = run_scraper("test", "http://test.com")
 

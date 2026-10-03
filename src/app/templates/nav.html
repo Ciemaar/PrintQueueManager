@@ -1,0 +1,27 @@
+<nav>
+    <ul>
+        <li>
+            <hgroup>
+                <h1>{{ page_title }}</h1>
+                <p>{{ page_subtitle }}</p>
+            </hgroup>
+        </li>
+    </ul>
+    <ul>
+        <li>
+            <a href="/" {% if request.url.path == "/" %}class="secondary"{% endif %}>
+                Dashboard
+            </a>
+        </li>
+        <li>
+            <a href="/deleted" {% if request.url.path == "/deleted" %}class="secondary"{% endif %}>
+                Deleted Jobs
+            </a>
+        </li>
+        <li>
+            <a href="/settings" {% if request.url.path == "/settings" %}class="secondary"{% endif %}>
+                ⚙️ Settings
+            </a>
+        </li>
+    </ul>
+</nav>

@@ -5,6 +5,7 @@ import os
 import time
 from typing import Any
 
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
@@ -76,7 +77,7 @@ class PrintQueueEventHandler(FileSystemEventHandler):
             db.add(new_job)
             db.commit()
             logger.info(f"Added {filename} to print queue.")
-        except Exception as e:
+        except SQLAlchemyError as e:
             logger.error(f"Failed to add {filename} to queue: {e}")
             db.rollback()
         finally:

@@ -1,5 +1,6 @@
 from unittest.mock import patch
 
+import alembic.util.exc
 import pytest
 
 from src.app.main import app, lifespan
@@ -20,7 +21,7 @@ async def test_startup_event(mock_sync, mock_upgrade, mock_create):
 
 @pytest.mark.asyncio
 @patch("src.app.main.Base.metadata.create_all")
-@patch("alembic.command.upgrade", side_effect=Exception("Alembic failed"))
+@patch("alembic.command.upgrade", side_effect=alembic.util.exc.CommandError("Alembic failed"))
 @patch("src.app.main.sync_local.delay", side_effect=Exception("Celery failed"))
 async def test_startup_event_exceptions(mock_sync, mock_upgrade, mock_create, capfd, caplog):
     """Verify that exceptions during alembic or celery sync are gracefully caught and logged."""
